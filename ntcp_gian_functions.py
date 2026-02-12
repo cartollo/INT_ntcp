@@ -1,4 +1,5 @@
 from ntcp_gian_common_imports import *
+from ntcp_gian_optimization_function import *
 
 def predict_logistic(data, params):
     """

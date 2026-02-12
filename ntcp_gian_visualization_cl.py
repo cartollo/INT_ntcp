@@ -1,4 +1,6 @@
 from ntcp_gian_common_imports import *
+from ntcp_gian_optimization_function import *
+from ntcp_gian_functions import *
 
 def summarize_fit(results_jk, coverage=0.68, plot_histograms=False):
     """

@@ -1,3 +1,6 @@
+from ntcp_gian_common_imports import *
+from ntcp_gian_optimization_function import *
+
 def check_convergence(data, coverage=0.68, do_plot=False):
     '''
     The purpose of this procedure is to verify the robustness of the optimization algorithm. By exploring a substantially broader parameter 
