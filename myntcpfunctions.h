@@ -7,6 +7,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <map>
 
 
 // ROOT
@@ -27,6 +28,7 @@ using std::vector;
 using std::string;
 using std::cout;
 using std::endl;
+using std::map;
 
 struct PatientData {
 int id;
@@ -36,12 +38,14 @@ double max_dose_st;
 double min_dose_st;
 double mean_dose_st;
 vector<double> dvhmap;
+int tgt_acutegitox;
 };
 
 
 
-void bookHisto(TFile *outrootfile, const vector<PatientData> &sample);
-void PrintSampleLine(int idx, const vector<PatientData> &sample);
-void loadDvhCsv(const string& filename, vector<PatientData> &sample);
+void bookHisto(TFile *outrootfile, const   map<int, PatientData> &sample);
+void PrintSampleLine(int idx, const   map<int, PatientData> &sample);
+int loadDvhFile(const string& filename,   map<int, PatientData> &sample);
+int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname);
 string trim(const string& s);
-vector<string> splitCsvLine(const string& line);
+vector<string> splitCsvLine(const string& line, const TString delimiter);

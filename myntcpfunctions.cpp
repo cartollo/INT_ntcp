@@ -2,7 +2,7 @@
 
 
 
-void bookHisto(TFile *outrootfile, const vector<PatientData> &sample){
+void bookHisto(TFile *outrootfile, const   map<int, PatientData> &sample){
    TDirectory* dvhdir = outrootfile->GetDirectory("dvhplots");
   if (!dvhdir) dvhdir = outrootfile->mkdir("dvhplots");
   dvhdir->cd();
@@ -10,10 +10,10 @@ void bookHisto(TFile *outrootfile, const vector<PatientData> &sample){
   return;
 }
 
-void PrintSampleLine(int idx, const vector<PatientData> &sample){
+void PrintSampleLine(int idx, const   map<int, PatientData> &sample){
   cout<<"Print sample at index: "<<idx<<endl;  
-  if(idx<0 || idx>=sample.size()){
-    throw std::runtime_error("PrintSampleLine: wrong idx" + idx);
+  if(sample.count(idx)==0 ){
+    throw std::runtime_error("PrintSampleLine: idx not present in sample" + idx);
     return;
   }
   cout<<sample.at(idx).id<<" "<<sample.at(idx).volume<<" "<<sample.at(idx).max_dose_plan<<" "<<sample.at(idx).max_dose_st<<" "<<sample.at(idx).min_dose_st<<" "<<sample.at(idx).mean_dose_st<<endl;
@@ -22,11 +22,12 @@ void PrintSampleLine(int idx, const vector<PatientData> &sample){
   cout<<endl; 
 }
 
-vector<string> splitCsvLine(const string& line) {
+vector<string> splitCsvLine(const string& line, const TString delimiter) {
   vector<string> out;
   std::stringstream ss(line);
   string item;
-  while (getline(ss, item, ' ')) 
+  char dummy=delimiter[0];
+  while (getline(ss, item, dummy)) 
     out.push_back(item);
   return out;
 }
@@ -41,15 +42,17 @@ string trim(const string& s) {
   return s.substr(start, end - start);
 }
 
- void loadDvhCsv(const string& filename, vector<PatientData> &sample) {
+ int loadDvhFile(const string& filename,   map<int, PatientData> &sample) {
   std::ifstream in(filename);
   if (!in) {
     throw std::runtime_error("loadDvhCsv: cannot open file " + filename);
   }
   string line;
   // ---------- prima riga: header ----------
-  if (!std::getline(in, line))
+  if (!std::getline(in, line)){
     throw std::runtime_error("loadDvhCsv: empty file " + filename);
+    return 1;
+  }
 
   // regex per id tipo RQ12345-6
   std::regex id_pattern(R"(ML-\d{4})");
@@ -58,7 +61,8 @@ string trim(const string& s) {
     PatientData patient;
     if (line.empty())
       continue;
-    vector<string> parts = splitCsvLine(line);
+    TString delimiter(" ");
+    vector<string> parts = splitCsvLine(line, delimiter);
     if (parts.size() < 8){
       // throw std::runtime_error("loadDvhCsv: check your dvh file, there is a line with less than 8 elements: " + filename);
       continue;
@@ -70,7 +74,7 @@ string trim(const string& s) {
       continue;
     }
 
-    patient.id=std::stoi(readed.substr(readed.size() - 4));;
+    int id=std::stoi(readed.substr(readed.size() - 4));
     readed = trim(parts[2]);
     patient.volume=std::stod(readed);
     readed = trim(parts[3]);
@@ -87,8 +91,65 @@ string trim(const string& s) {
       readed = trim(parts[i]);
       patient.dvhmap.push_back(std::stod(readed));
     }
-  sample.push_back(patient);
+  sample.insert(std::pair{id,patient});
   }
   cout<<"loadDvhCsv done, read from "<<filename<<" "<<sample.size()<<" elements"<<endl;
-  return;
+  return 0;
+}
+
+int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname){
+
+  std::ifstream in(filename);
+  if (!in) {
+    throw std::runtime_error("loadMetaFile: cannot open file " + filename);
+  }
+  string line;
+  // ---------- prima riga: header ----------
+  if (!std::getline(in, line))
+    throw std::runtime_error("loadMetaFile: empty file " + filename);
+    TString delimiter(",");
+    vector<string> parts = splitCsvLine(line, delimiter);
+    
+    int tgtpos=-1;
+    for(int i=0;i<parts.size();i++){
+      if(tgtname.CompareTo(parts[i])==0){
+        tgtpos=i;
+        break;
+      }
+    }
+    if(tgtpos==-1) {
+      throw std::runtime_error("loadMetaFile: target not found " + tgtname);
+      return 1;
+    }
+
+
+  // regex per id tipo RQ12345-6
+  std::regex id_pattern(R"(ML-\d{4})");
+  // ---------- righe dati ----------
+  int addedinmap=0;
+  while (std::getline(in, line)) {
+    if (line.empty())
+      continue;
+    TString delimiter(",");
+    vector<string> parts = splitCsvLine(line, delimiter);
+    if (parts.size() < tgtpos)
+      continue;
+
+    string readed = trim(parts[0]);
+    if (!std::regex_search(readed, id_pattern)) {
+      throw std::runtime_error("loadDvhCsv: check your dvh file, there is a non valid id: " +readed+ " " +filename);
+      continue;
+    }
+    auto it=sample.find(std::stoi(readed.substr(readed.size() - 4)));
+    if(it!=sample.end()){
+      it->second.tgt_acutegitox=std::stoi(trim(parts[tgtpos]));
+      addedinmap++;
+    }
+  }
+  if(addedinmap!=sample.size())
+    cout<<"WARNING: mismatch between addedinmap="<<addedinmap<<"  and  sample.size()="<<sample.size()<<endl;
+  else
+    cout<<"loadMetaFile done, target aquired target="<<tgtname<<"  overall sample size="<<sample.size()<<endl;
+
+  return 0;
 }
