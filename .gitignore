@@ -1,5 +1,10 @@
 Synthetic_Data/*
 ntcp_phyton_ex.code-workspace
+myntcpanalysis
+*.o
+.*
 pdf_statsstuff/*
 .DS_Store
 __pycache__/
+*.csv
+*.xlsx

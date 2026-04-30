@@ -20,7 +20,7 @@ data = create_data(outcome, cumulative_dsh, n_fractions, clinical_factors) # Ali
 data_to_dataframe(data)
 
 # Fit the model and visualize the results
-results_jk = fit_model(data, N_jk = 2, p_jk=0.9) # Fits the model, using 1000 Jack-Knife iterations with 90% resampling 
+results_jk = fit_model(data, N_jk = 10, p_jk=0.9) # Fits the model, using 1000 Jack-Knife iterations with 90% resampling 
 # takes ~ 18 minutes on 8 processors including one risk factor
 results_summarized, parameters_logistic_model, parameters_lyman_model = summarize_fit(results_jk, coverage = 0.68, plot_histograms = True)
 
