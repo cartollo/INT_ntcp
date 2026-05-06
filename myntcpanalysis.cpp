@@ -1,9 +1,9 @@
 #include "myntcpfunctions.h"
 
+int debug = 0;
 
 int main(int argc, char* argv[]) {
   
-  int debug = 0;
   TString dvhfilename("DVH_PRIME_bowel_by_Boris_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv");
   TString metafilename("metadata_paper_release_JI_COMBINED_metadata_microlearner_prostate_base_05_24.csv");
   TString outrootname("ntcp_outputs.root");
@@ -24,5 +24,19 @@ int main(int argc, char* argv[]) {
     return 1;
   if(loadMetaFile(metafilename.Data(), sample, tgtname))
     return 1;
+
+  TFile* outrootfile = new TFile(outrootname, "RECREATE");
+  if (!outrootfile || outrootfile->IsZombie()) {
+    cerr << "ERROR: cannot create output ROOT file " << outrootname.Data() << endl;
+    return 1;
+  }
+ 
+  bookHisto(outrootfile);
+  fillHisto(outrootfile, sample);
+  fitNtcpLinearRegression(sample, tgtname);
+
+  outrootfile->Write();
+  outrootfile->Close();
+
 return 0;
 }
