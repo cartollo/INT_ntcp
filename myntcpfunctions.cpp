@@ -30,7 +30,7 @@ void bookHisto(TFile *outrootfile){
   return;
 }
 
-void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample){
+void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample, double eqd2binwidth){
 
   if(debug)
     cout<<"start fillHisto"<<endl;
@@ -38,10 +38,13 @@ void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample){
   // TDirectory* dvhdir = outrootfile->GetDirectory("dvhplots");
   gDirectory->cd("dvhplots");
   for(auto &paziente : sample){
-    TH1D* h=new TH1D(Form("pzdvh_%i",paziente.second.id), "DVH plot;Dose [gy];Volume",100, 0., 100);
+    TH1D* hdvh=new TH1D(Form("pzdvh_%i",paziente.second.id), "DVH plot;Dose [gy];Volume",paziente.second.dvhmap.size(), 0., paziente.second.dvhmap.size());
+    TH1D* heqd2=new TH1D(Form("pzeqd2_%i",paziente.second.id), "eqd2 plot;bin;equivalent dose value [gy]",paziente.second.eqd2map.size(), 0., paziente.second.eqd2map.size());
+    TH1D* hdvhnorm=new TH1D(Form("pzdvhnorm_%i",paziente.second.id), "Normalized DVH plot;Equivalent Dose [gy];Volume",paziente.second.dvhnormmap.size(), 0., paziente.second.dvhnormmap.size()*eqd2binwidth);
+
     bool isboring=true; //si dice vingardium monotonic
     for(int i=0;i<paziente.second.dvhmap.size();i++){
-      h->SetBinContent(i+1,paziente.second.dvhmap.at(i));
+      hdvh->SetBinContent(i+1,paziente.second.dvhmap.at(i));
       if(i>0){
         if(paziente.second.dvhmap.at(i)>paziente.second.dvhmap.at(i-1)){
           cout<<"WARNING in bookHisto: the dvh function of patient id="<<paziente.second.id<<"is not monotonous"<<endl;
@@ -51,8 +54,15 @@ void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample){
         }
       }
     }
+    
+    for(int i=0;i<paziente.second.eqd2map.size();i++)
+      heqd2->SetBinContent(i+1,paziente.second.eqd2map.at(i));
+
+    for(int i=0;i<paziente.second.dvhnormmap.size();i++)
+      hdvhnorm->SetBinContent(i+1,paziente.second.dvhnormmap.at(i));
+    
     if(!isboring){
-      h->SetName(Form("pzdvh_%i_notmonotonous",paziente.second.id));
+      hdvh->SetName(Form("pzdvh_%i_notmonotonous",paziente.second.id));
       paziente.second.status=1;
     }
     (dynamic_cast<TH1D*>(gDirectory->Get("../sample_volumes")))->Fill(paziente.second.volume);
@@ -94,17 +104,6 @@ int fitNtcpLinearRegression(map<int, PatientData> &sample, TString tgtname){
   gr->SetName("ntcp_linear_mean_dose_st_"+tgtname);
   ntcp_linear_models["mean_dose_st"]=gr;
 
-  // TH1D* h;
-  // h=new TH1D("ntcp_linear_volume_"+tgtname, tgtname+" ntcp linear;volumes",2000, 0., 2000.);
-  // ntcp_linear_models["volume"]=h;
-  // h=new TH1D("ntcp_linear_max_dose_plan_"+tgtname, tgtname+" ntcp linear;max dose plan [gy]",100, 50., 100.);
-  // ntcp_linear_models["max_dose_plan"]=h;
-  // h=new TH1D("ntcp_linear_max_dose_st_"+tgtname, tgtname+" ntcp linear;max dose st [gy]",200, 0., 100.);
-  // ntcp_linear_models["max_dose_st"]=h;
-  // h=new TH1D("ntcp_linear_min_dose_st_"+tgtname, tgtname+" ntcp linear;min dose st [gy]",20, 0., 10.);
-  // ntcp_linear_models["min_dose_st"]=h;
-  // h=new TH1D("ntcp_linear_mean_dose_st_"+tgtname, tgtname+" ntcp linear;mean dose st [gy]",100, 0., 50.);
-  // ntcp_linear_models["mean_dose_st"]=h;
   int index=0;
   for(auto &paziente : sample){
     ntcp_linear_models["volume"]->SetPoint(index, paziente.second.volume, paziente.second.tgt_acutegitox);
@@ -212,6 +211,7 @@ string trim(const string& s) {
       patient.dvhmap.push_back(std::stod(readed));
     }
   patient.status=-1;
+  patient.eqd2map.resize(patient.dvhmap.size(),0);
   sample.insert(std::pair{id,patient});
   }
 
@@ -221,10 +221,45 @@ string trim(const string& s) {
     return 0;
 }
 
-int evaluateEqdEud(PatientData &patient){
+int evaluateEqdEud(map<int, PatientData> &sample, double alfabeta, double eqd2binwidth){
   
+  if(debug)
+  cout<<"start evaluateEqdEud"<<endl;
+  
+  for(auto &paziente : sample){
+    //fill eqd2map
+    for(int dose=0;dose<paziente.second.eqd2map.size();dose++){
+      if(paziente.second.dvhmap.at(dose)==0){ //non dovrebbe succedere
+        throw std::runtime_error(Form("Error in evaluateEqdEud: dvhmap contains a 0 value dose=%i",dose));
+        paziente.second.eqd2map.resize(dose+1);
+        paziente.second.eqd2map.shrink_to_fit();
+        break;
+      }
+      paziente.second.eqd2map.at(dose)=((double)dose)*(alfabeta+((double)dose)/paziente.second.nfraction)/(alfabeta+2.);
+    }
 
-
+    //fill dvhnormmap
+    paziente.second.dvhnormmap.resize(paziente.second.eqd2map.size()/eqd2binwidth+0.5,0);
+    int eqd2index=0;
+    for(int i=0;i<paziente.second.dvhnormmap.size();i++){ 
+      double dose=eqd2binwidth*i;
+      if(paziente.second.eqd2map.back()<dose){
+        paziente.second.dvhnormmap.at(i)=0;
+        continue;
+      }
+      for(int k=eqd2index;k<paziente.second.eqd2map.size();k++){
+        if(paziente.second.eqd2map.at(k)>dose){
+          break;
+        }
+        eqd2index=k;
+      }
+      paziente.second.dvhnormmap.at(i)=paziente.second.dvhmap.at(eqd2index);
+    } 
+  }
+  
+  if(debug)
+    cout<<"evaluateEqdEud done"<<endl;
+  
   return 0;
 }
 
