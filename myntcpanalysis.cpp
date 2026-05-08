@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
  
   bookHisto(outrootfile, alfabeta,nvalue4eud, eqd2binwidth);
   fillHisto(outrootfile, sample, alfabeta, nvalue4eud, eqd2binwidth);
-  fitNtcpLinearRegression(sample, tgtname);
+  fitNtcpSigmoidal(sample, tgtname, alfabeta, nvalue4eud);
 
   outrootfile->Write();
   outrootfile->Close();

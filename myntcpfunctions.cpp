@@ -137,7 +137,11 @@ void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample, const vector<
 }
 
 
-int fitNtcpLinearRegression(map<int, PatientData> &sample, TString tgtname){
+int fitNtcpSigmoidal(map<int, PatientData> &sample, TString tgtname, const vector<double> &alfabeta, const vector<double> &nvalue4eud){
+
+  gDirectory->mkdir("ntpc_linear");
+  gDirectory->cd("ntpc_linear");
+
   map <string, TGraph*> ntcp_linear_models;
   TGraph *gr;
   gr=new TGraph(sample.size());
@@ -155,6 +159,14 @@ int fitNtcpLinearRegression(map<int, PatientData> &sample, TString tgtname){
   gr=new TGraph(sample.size());
   gr->SetName("ntcp_linear_mean_dose_st_"+tgtname);
   ntcp_linear_models["mean_dose_st"]=gr;
+  
+  for(auto const &paziente:sample){
+    for(auto const &comb:paziente.second.eudmap){
+      gr=new TGraph(sample.size());
+      gr->SetName(Form("ntcp_linear_eud_n%f_alphabeta%.3f_",comb.first.first, comb.first.second)+tgtname);
+      ntcp_linear_models[Form("ntcp_linear_eud_n%f_alphabeta%.3f_",comb.first.first, comb.first.second)]=gr;
+    }
+  }
 
   int index=0;
   for(auto &paziente : sample){
@@ -163,6 +175,8 @@ int fitNtcpLinearRegression(map<int, PatientData> &sample, TString tgtname){
     ntcp_linear_models["max_dose_st"]->SetPoint(index, paziente.second.max_dose_st, paziente.second.tgt_acutegitox);
     ntcp_linear_models["min_dose_st"]->SetPoint(index, paziente.second.min_dose_st, paziente.second.tgt_acutegitox);
     ntcp_linear_models["mean_dose_st"]->SetPoint(index, paziente.second.mean_dose_st, paziente.second.tgt_acutegitox);
+    for(auto const &comb:paziente.second.eudmap)
+      ntcp_linear_models[Form("ntcp_linear_eud_n%f_alphabeta%.3f_",comb.first.first, comb.first.second)]->SetPoint(index, comb.second,paziente.second.tgt_acutegitox);
     index++;
   }
 
@@ -176,6 +190,7 @@ int fitNtcpLinearRegression(map<int, PatientData> &sample, TString tgtname){
     graph.second->Write();
   }
 
+  gDirectory->cd("..");
 
   return 0;
 }
@@ -276,6 +291,45 @@ string trim(const string& s) {
     return 0;
 }
 
+double CalculateEudFromScratch(PatientData &paziente, double eqd2binwidth, double alfabeta, double nvalue){
+
+  if(debug)
+    cout<<"start CalculateEudFromScratch with paziente.id="<<paziente.id<<" eqd2binwidth="<<eqd2binwidth<<endl;
+
+    vector<double> eqd2map;
+    for(int dose=0;dose<paziente.dvhmap.size();dose++){
+      if(paziente.dvhmap.at(dose)!=0){
+        eqd2map.push_back(((double)dose)*(alfabeta+((double)dose)/paziente.nfraction)/(alfabeta+2.));
+      }else
+        break;
+    }     
+
+    int eqd2index=0;
+    double eud=0;
+    vector<double> dvhnormmap(eqd2map.size()/eqd2binwidth+0.5,0);
+    for(int i=0;i<dvhnormmap.size();i++){
+      double dose=eqd2binwidth*(i+1);
+      if(eqd2map.back()<dose){
+        dvhnormmap.at(i)=0;
+        break;
+      }
+      for(int k=eqd2index;k<eqd2map.size();k++){
+        if(eqd2map.at(k)>dose){
+          break;
+        }
+        eqd2index=k;
+      }
+      dvhnormmap.at(i)=paziente.dvhmap.at(eqd2index);     
+      eud+=pow(dose,nvalue)*dvhnormmap.at(i)/dvhnormmap.at(0);
+    }
+    eud=pow(eud,1./nvalue);
+    
+  if(debug)
+    cout<<"CalculateEudFromScratch done; eud="<<eud<<endl;
+
+    return eud;
+}
+
 int evaluateEqdEud(map<int, PatientData> &sample, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth){
   
   if(debug)
@@ -302,7 +356,7 @@ int evaluateEqdEud(map<int, PatientData> &sample, const vector<double> &alfabeta
         double dose=eqd2binwidth*(i+1);
         if(paziente.second.eqd2map.at(asub).back()<dose){
           paziente.second.dvhnormmap[asub].at(i)=0;
-          continue;
+          break;
         }
         for(int k=eqd2index;k<paziente.second.eqd2map.at(asub).size();k++){
           if(paziente.second.eqd2map.at(asub).at(k)>dose){
@@ -320,12 +374,16 @@ int evaluateEqdEud(map<int, PatientData> &sample, const vector<double> &alfabeta
       
       for(auto const &n:nvalue4eud){
         paziente.second.eudmap.at(make_pair(n,asub))=pow(paziente.second.eudmap.at(make_pair(n,asub)),1./n);
-        cout<<"n="<<n<<" asub="<<asub<<" eud="<<paziente.second.eudmap[make_pair(n,asub)]<<endl;
+        //check consistency with function
+        double tmpeud=CalculateEudFromScratch(paziente.second, eqd2binwidth, asub, n);
+        if((fabs(tmpeud)-paziente.second.eudmap.at(make_pair(n,asub)))>0.1)
+          cout<<"inconsistency: tmpeud="<<tmpeud<<"  paziente.second.eudmap.at(make_pair(n,asub)))="<<paziente.second.eudmap.at(make_pair(n,asub))<<endl;
       }
 
     } //end of loop on alfabeta
   }//end of loop on patients
   
+
   if(debug)
     cout<<"evaluateEqdEud done"<<endl;
   
