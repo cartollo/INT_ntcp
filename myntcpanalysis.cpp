@@ -9,8 +9,9 @@ int main(int argc, char* argv[]) {
   TString outrootname("ntcp_outputs.root");
   TString txtappended(".txt");
   TString tgtname("acute GI toxicity");
-  double alfabeta=2.5; //da letteratura, da chiedere
   double eqd2binwidth=0.5; //binwidth in gy di eqd2 normalizzato
+  vector<double> alfabeta={1.,1.25,1.5,1.75,2.,2.5,3};
+  vector<double> nvalue4eud={1,5,10,100}; //1->eud=mean dose, +inf->eud=max dose
 
   for (int i = 0; i < argc; i++) {
     if (strcmp(argv[i], "-d") == 0)         debug = atoi(argv[++i]);
@@ -19,16 +20,15 @@ int main(int argc, char* argv[]) {
     if (strcmp(argv[i], "-out") == 0)       outrootname = TString(argv[++i]);
     if (strcmp(argv[i], "-txt") == 0)       txtappended = TString(argv[++i]);
     if (strcmp(argv[i], "-tgt") == 0)       tgtname = TString(argv[++i]);
-    if (strcmp(argv[i], "-alfabeta") == 0)  alfabeta = atof(argv[++i]);
   }
 
   map<int, PatientData> sample;
-  if(loadDvhFile(dvhfilename.Data(), sample))
+  if(loadDvhFile(dvhfilename.Data(), sample, alfabeta))
     return 1;
   if(loadMetaFile(metafilename.Data(), sample, tgtname))
     return 1;
 
-  if(evaluateEqdEud(sample, alfabeta, eqd2binwidth))
+  if(evaluateEqdEud(sample, alfabeta, nvalue4eud,eqd2binwidth))
     return 1;
 
   TFile* outrootfile = new TFile(outrootname, "RECREATE");
@@ -37,8 +37,8 @@ int main(int argc, char* argv[]) {
     return 1;
   }
  
-  bookHisto(outrootfile);
-  fillHisto(outrootfile, sample, eqd2binwidth);
+  bookHisto(outrootfile, alfabeta,nvalue4eud, eqd2binwidth);
+  fillHisto(outrootfile, sample, alfabeta, nvalue4eud, eqd2binwidth);
   fitNtcpLinearRegression(sample, tgtname);
 
   outrootfile->Write();

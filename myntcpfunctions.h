@@ -30,6 +30,8 @@ using std::cout;
 using std::endl;
 using std::map;
 using std::cerr;
+using std::make_pair;
+using std::pair;
 
 struct PatientData {
 int id;
@@ -51,20 +53,20 @@ int tgt_acutegitox;
 
 //calculated stuff
 map<double, double> n_eud; //eud value for different n values
-vector<double> eqd2map; //equivalent dose in 2 gy fraction, each value in this vector is a dose value
-vector<double> dvhnormmap; //equivalent dvh normalized to the same scale for all the patients with eqd2map
-
+map<double, vector<double>> eqd2map; //equivalent dose in 2 gy fraction, each value in this vector is a dose value, key=alfabeta
+map<double,vector<double>> dvhnormmap; //equivalent dvh normalized to the same scale for all the patients with eqd2map, key=alfabeta
+map<pair<double,double>, double> eudmap; //eud value (value) for given n and alfa/beta (key=make_pair(n,alfabeta))
 int status; //-1=not set, 0=all ok, 1=not monotonous
 };
 
 
 
-void fillHisto(TFile *outrootfile, map<int, PatientData> &sample,  double eqd2binwidth);
-void bookHisto(TFile *outrootfile);
+void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth);
+void bookHisto(TFile *outrootfile, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth);
 int fitNtcpLinearRegression(map<int, PatientData> &sample, TString tgtname);
 void PrintSampleLine(int idx, const   map<int, PatientData> &sample);
-int loadDvhFile(const string& filename,   map<int, PatientData> &sample);
+int loadDvhFile(const string& filename,   map<int, PatientData> &sample, const vector<double> &alfabeta);
 int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname);
-int evaluateEqdEud(map<int, PatientData> &sample, double alfabeta, double eqd2binwidth);
+int evaluateEqdEud(map<int, PatientData> &sample, const vector<double> &alfabeta,const vector<double> &nvalue4eud, double eqd2binwidth);
 string trim(const string& s);
 vector<string> splitCsvLine(const string& line, const TString delimiter);

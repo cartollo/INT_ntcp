@@ -2,7 +2,7 @@
 
 extern int debug;
 
-void bookHisto(TFile *outrootfile){
+void bookHisto(TFile *outrootfile, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth){
 
   if(debug)
     cout<<"start bookHisto"<<endl;
@@ -23,6 +23,16 @@ void bookHisto(TFile *outrootfile){
   h=new TH1D("dose_per_fraction", "mean dose st;min dose st [gymax_dose_st];Number of patients",42, -0.1, 4.1);
   h=new TH1D("mean_dose_rectum", "mean dose st;min dose st [gymax_dose_st];Number of patients",101, -0.5, 100.5);
   h=new TH1D("tgt_acutegitox", "tgt_acutegitox;tgt_acutegitox dose st [gymax_dose_st];Number of patients",2, -0.5, 1.5);
+  
+  //normalized dvh fofr targets:
+  for(auto const &asub:alfabeta){
+    h=new TH1D(Form("dvhnorm_tgt_%.3f_Yes",asub), "mean dvh plot for patients with tox;normalized dose [gy];mean volume",100/eqd2binwidth, 0., 100);
+    h=new TH1D(Form("dvhnorm_tgt_%.3f_No",asub), "mean dvh plot for patients without tox;normalized dose [gy];mean volume",100/eqd2binwidth, 0., 100);
+    h=new TH1D(Form("dvhnorm_tgt_%.3f_Diff",asub), "mean dvh plot for difference between patients w/o tox;normalized dose [gy];mean volume",100/eqd2binwidth, 0., 100);
+    
+    for(auto const &n:nvalue4eud)
+      h=new TH1D(Form("eud_n_%.3f_asub%.3f",n,asub), "eud value;eud;Number of patients",100, 0., 100);    
+  }
     
   if(debug)
     cout<<"bookHisto done"<<endl;
@@ -30,41 +40,58 @@ void bookHisto(TFile *outrootfile){
   return;
 }
 
-void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample, double eqd2binwidth){
+
+void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth){
 
   if(debug)
     cout<<"start fillHisto"<<endl;
 
-  // TDirectory* dvhdir = outrootfile->GetDirectory("dvhplots");
   gDirectory->cd("dvhplots");
+  map<double,vector<double>> dvhnorm_tgtyes;
+  map<double,vector<double>> dvhnorm_tgtno;
+  int tgtyescounter=0, tgtnocounter=0;
+  for(auto const &asub:alfabeta){
+    dvhnorm_tgtyes[asub].resize(100/eqd2binwidth,0); //ensure that this length is the same of Form("dvhnorm_tgt_%.3f_Yes",asub)
+    dvhnorm_tgtno[asub].resize(100/eqd2binwidth,0);
+  }
   for(auto &paziente : sample){
+    //dvh plots
+    gDirectory->mkdir(Form("pz_%i",paziente.second.id));
+    gDirectory->cd(Form("pz_%i",paziente.second.id));
     TH1D* hdvh=new TH1D(Form("pzdvh_%i",paziente.second.id), "DVH plot;Dose [gy];Volume",paziente.second.dvhmap.size(), 0., paziente.second.dvhmap.size());
-    TH1D* heqd2=new TH1D(Form("pzeqd2_%i",paziente.second.id), "eqd2 plot;bin;equivalent dose value [gy]",paziente.second.eqd2map.size(), 0., paziente.second.eqd2map.size());
-    TH1D* hdvhnorm=new TH1D(Form("pzdvhnorm_%i",paziente.second.id), "Normalized DVH plot;Equivalent Dose [gy];Volume",paziente.second.dvhnormmap.size(), 0., paziente.second.dvhnormmap.size()*eqd2binwidth);
-
     bool isboring=true; //si dice vingardium monotonic
     for(int i=0;i<paziente.second.dvhmap.size();i++){
       hdvh->SetBinContent(i+1,paziente.second.dvhmap.at(i));
       if(i>0){
         if(paziente.second.dvhmap.at(i)>paziente.second.dvhmap.at(i-1)){
-          cout<<"WARNING in bookHisto: the dvh function of patient id="<<paziente.second.id<<"is not monotonous"<<endl;
+          cout<<"WARNING in fillHisto: the dvh function of patient id="<<paziente.second.id<<"is not monotonous"<<endl;
           throw std::runtime_error("patient dhv not monotonous, patient id: " + paziente.second.id);         
           isboring=false;
           break;
         }
       }
     }
-    
-    for(int i=0;i<paziente.second.eqd2map.size();i++)
-      heqd2->SetBinContent(i+1,paziente.second.eqd2map.at(i));
-
-    for(int i=0;i<paziente.second.dvhnormmap.size();i++)
-      hdvhnorm->SetBinContent(i+1,paziente.second.dvhnormmap.at(i));
-    
     if(!isboring){
       hdvh->SetName(Form("pzdvh_%i_notmonotonous",paziente.second.id));
       paziente.second.status=1;
+    }    
+
+    //scaled dose plots
+    map <double, vector<TH1D*>> heqd2vec, hdvhnormvec;
+    for(auto const &asub:alfabeta){
+      TH1D* heqd2=new TH1D(Form("pzeqd2_%i_%.2f",paziente.second.id, asub), "eqd2 plot;bin;equivalent dose value [gy]",paziente.second.eqd2map.at(asub).size(), 0., paziente.second.eqd2map.at(asub).size());
+      heqd2vec[asub].push_back(heqd2);
+      TH1D* hdvhnorm=new TH1D(Form("pzdvhnorm_%i_%.2f",paziente.second.id, asub), "Normalized DVH plot;Equivalent Dose [gy];Volume",paziente.second.dvhnormmap.at(asub).size(), 0., paziente.second.dvhnormmap.at(asub).size()*eqd2binwidth);
+      hdvhnormvec[asub].push_back(hdvhnorm);
+      for(int i=0;i<paziente.second.eqd2map.at(asub).size();i++)
+        heqd2->SetBinContent(i+1,paziente.second.eqd2map.at(asub).at(i));
+      for(int i=0;i<paziente.second.dvhnormmap.at(asub).size();i++){
+        hdvhnorm->SetBinContent(i+1,paziente.second.dvhnormmap.at(asub).at(i));
+      }
     }
+    
+    gDirectory->cd(".."); 
+
     (dynamic_cast<TH1D*>(gDirectory->Get("../sample_volumes")))->Fill(paziente.second.volume);
     (dynamic_cast<TH1D*>(gDirectory->Get("../max_dose_plan")))->Fill(paziente.second.max_dose_plan);
     (dynamic_cast<TH1D*>(gDirectory->Get("../max_dose_st")))->Fill(paziente.second.max_dose_st);
@@ -75,7 +102,32 @@ void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample, double eqd2bi
     (dynamic_cast<TH1D*>(gDirectory->Get("../dose_per_fraction")))->Fill(paziente.second.dose_per_fraction);
     (dynamic_cast<TH1D*>(gDirectory->Get("../mean_dose_rectum")))->Fill(paziente.second.mean_dose_rectum);
     (dynamic_cast<TH1D*>(gDirectory->Get("../tgt_acutegitox")))->Fill(paziente.second.tgt_acutegitox);
+    
+    if(paziente.second.tgt_acutegitox>0) tgtyescounter++; else tgtnocounter++;
+    
+    for(auto const &asub:alfabeta){
+      for(int i=0;i<paziente.second.dvhnormmap.at(asub).size();i++){
+        if(paziente.second.tgt_acutegitox>0)
+        dvhnorm_tgtyes[asub].at(i)+=paziente.second.dvhnormmap.at(asub).at(i);
+        else
+        dvhnorm_tgtno[asub].at(i)+=paziente.second.dvhnormmap.at(asub).at(i);
+      }
+      
+      for(auto const &n:nvalue4eud)
+        (dynamic_cast<TH1D*>(gDirectory->Get(Form("../eud_n_%.3f_asub%.3f",n,asub))))->Fill(paziente.second.eudmap.at(make_pair(n,asub)));
+
+    }
+  }//end of loop on patient
+
+  for(auto const &asub:alfabeta){
+    for(int i=0;i<dvhnorm_tgtyes.at(asub).size();i++){
+      // cout<<"suba="<<asub<<" i="<<i<<" dvhnorm_tgtyes.at(asub).at(i)/sample.size()="<<dvhnorm_tgtyes.at(asub).at(i)/sample.size()<<endl;
+      (dynamic_cast<TH1D*>(gDirectory->Get(Form("../dvhnorm_tgt_%.3f_Yes",asub))))->SetBinContent(i+1,dvhnorm_tgtyes.at(asub).at(i)/tgtyescounter);
+      (dynamic_cast<TH1D*>(gDirectory->Get(Form("../dvhnorm_tgt_%.3f_No",asub))))->SetBinContent(i+1,dvhnorm_tgtno.at(asub).at(i)/tgtnocounter);
+      (dynamic_cast<TH1D*>(gDirectory->Get(Form("../dvhnorm_tgt_%.3f_Diff",asub))))->SetBinContent(i+1,dvhnorm_tgtyes.at(asub).at(i)/tgtyescounter-dvhnorm_tgtno.at(asub).at(i)/tgtnocounter);
+    }
   }
+
   gDirectory->cd(".."); 
 
   if(debug)
@@ -160,7 +212,7 @@ string trim(const string& s) {
   return s.substr(start, end - start);
 }
 
- int loadDvhFile(const string& filename,   map<int, PatientData> &sample) {
+ int loadDvhFile(const string& filename,   map<int, PatientData> &sample, const vector<double> &alfabeta) {
   std::ifstream in(filename);
   if (!in) {
     throw std::runtime_error("loadDvhCsv: cannot open file " + filename);
@@ -211,7 +263,10 @@ string trim(const string& s) {
       patient.dvhmap.push_back(std::stod(readed));
     }
   patient.status=-1;
-  patient.eqd2map.resize(patient.dvhmap.size(),0);
+  for(auto const asub:alfabeta){
+    vector<double> tmpvec(patient.dvhmap.size(),0);
+    patient.eqd2map[asub]=tmpvec;
+  }
   sample.insert(std::pair{id,patient});
   }
 
@@ -221,41 +276,55 @@ string trim(const string& s) {
     return 0;
 }
 
-int evaluateEqdEud(map<int, PatientData> &sample, double alfabeta, double eqd2binwidth){
+int evaluateEqdEud(map<int, PatientData> &sample, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth){
   
   if(debug)
   cout<<"start evaluateEqdEud"<<endl;
   
   for(auto &paziente : sample){
-    //fill eqd2map
-    for(int dose=0;dose<paziente.second.eqd2map.size();dose++){
-      if(paziente.second.dvhmap.at(dose)==0){ //non dovrebbe succedere
-        throw std::runtime_error(Form("Error in evaluateEqdEud: dvhmap contains a 0 value dose=%i",dose));
-        paziente.second.eqd2map.resize(dose+1);
-        paziente.second.eqd2map.shrink_to_fit();
-        break;
-      }
-      paziente.second.eqd2map.at(dose)=((double)dose)*(alfabeta+((double)dose)/paziente.second.nfraction)/(alfabeta+2.);
-    }
-
-    //fill dvhnormmap
-    paziente.second.dvhnormmap.resize(paziente.second.eqd2map.size()/eqd2binwidth+0.5,0);
-    int eqd2index=0;
-    for(int i=0;i<paziente.second.dvhnormmap.size();i++){ 
-      double dose=eqd2binwidth*i;
-      if(paziente.second.eqd2map.back()<dose){
-        paziente.second.dvhnormmap.at(i)=0;
-        continue;
-      }
-      for(int k=eqd2index;k<paziente.second.eqd2map.size();k++){
-        if(paziente.second.eqd2map.at(k)>dose){
+    for(auto const &asub:alfabeta){
+      //fill eqd2map
+      for(int dose=0;dose<paziente.second.eqd2map.at(asub).size();dose++){
+        if(paziente.second.dvhmap.at(dose)==0){ //non dovrebbe succedere
+          throw std::runtime_error(Form("Error in evaluateEqdEud: dvhmap contains a 0 value dose=%i",dose));
+          paziente.second.eqd2map.at(asub).resize(dose+1);
+          paziente.second.eqd2map.at(asub).shrink_to_fit();
           break;
         }
-        eqd2index=k;
+        paziente.second.eqd2map.at(asub).at(dose)=((double)dose)*(asub+((double)dose)/paziente.second.nfraction)/(asub+2.);
       }
-      paziente.second.dvhnormmap.at(i)=paziente.second.dvhmap.at(eqd2index);
-    } 
-  }
+  
+      //calculate dvhnormmap
+      vector<double> tmpmap(paziente.second.eqd2map.at(asub).size()/eqd2binwidth+0.5,0);
+      paziente.second.dvhnormmap[asub]=tmpmap;
+      int eqd2index=0;
+      for(int i=0;i<paziente.second.dvhnormmap[asub].size();i++){ 
+        double dose=eqd2binwidth*(i+1);
+        if(paziente.second.eqd2map.at(asub).back()<dose){
+          paziente.second.dvhnormmap[asub].at(i)=0;
+          continue;
+        }
+        for(int k=eqd2index;k<paziente.second.eqd2map.at(asub).size();k++){
+          if(paziente.second.eqd2map.at(asub).at(k)>dose){
+            break;
+          }
+          eqd2index=k;
+        }
+        paziente.second.dvhnormmap[asub].at(i)=paziente.second.dvhmap.at(eqd2index);
+      
+        for(auto const &n:nvalue4eud){
+          paziente.second.eudmap[make_pair(n,asub)]+=pow(dose,n)*paziente.second.dvhnormmap[asub].at(i)/paziente.second.dvhnormmap[asub].at(0);
+        }
+
+      }
+      
+      for(auto const &n:nvalue4eud){
+        paziente.second.eudmap.at(make_pair(n,asub))=pow(paziente.second.eudmap.at(make_pair(n,asub)),1./n);
+        cout<<"n="<<n<<" asub="<<asub<<" eud="<<paziente.second.eudmap[make_pair(n,asub)]<<endl;
+      }
+
+    } //end of loop on alfabeta
+  }//end of loop on patients
   
   if(debug)
     cout<<"evaluateEqdEud done"<<endl;
