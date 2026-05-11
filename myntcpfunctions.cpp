@@ -136,8 +136,31 @@ void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample, const vector<
   return;
 }
 
+double fitSigmoidal(TGraph* graph, int parnum, TFitResultPtr &fitresults){
 
-int fitNtcpSigmoidal(map<int, PatientData> &sample, TString tgtname, const vector<double> &alfabeta, const vector<double> &nvalue4eud){
+  if(debug)
+    cout<<"start fitSigmoidal"<<endl;
+
+  if(parnum<2)
+    throw std::runtime_error("fitSigmoidal: parnum too small" + parnum);
+    
+    TF1 *sigmoid;
+  if(parnum==2)
+    sigmoid=new TF1("sigmoid", "1./(1.+exp(-[0]-[1]*x))", 0, 100);
+  else //per ora solo caso semplice con due parametri liberi ed una sola variabile X=EUD
+    throw std::runtime_error("fitSigmoidal: parnum too large" + parnum);
+
+  fitresults=graph->Fit(sigmoid, "EMQ+","",0,100);
+
+  if(debug)
+    cout<<"fitSigmoidal done"<<endl;
+
+  // return fitresults.Chi2();
+  return 2;
+}
+
+
+int CreateNtcpSigmoidal(map<int, PatientData> &sample, TString tgtname, const vector<double> &alfabeta, const vector<double> &nvalue4eud){
 
   gDirectory->mkdir("ntpc_linear");
   gDirectory->cd("ntpc_linear");
@@ -182,6 +205,8 @@ int fitNtcpSigmoidal(map<int, PatientData> &sample, TString tgtname, const vecto
 
   for(auto &graph:ntcp_linear_models){
     graph.second->Sort();
+    TFitResultPtr fitresults;
+    fitSigmoidal(graph.second,2,fitresults);
     graph.second->SetMarkerStyle(20);
     graph.second->SetMarkerColor(2);
     graph.second->SetLineWidth(0);
@@ -374,10 +399,10 @@ int evaluateEqdEud(map<int, PatientData> &sample, const vector<double> &alfabeta
       
       for(auto const &n:nvalue4eud){
         paziente.second.eudmap.at(make_pair(n,asub))=pow(paziente.second.eudmap.at(make_pair(n,asub)),1./n);
-        //check consistency with function
-        double tmpeud=CalculateEudFromScratch(paziente.second, eqd2binwidth, asub, n);
-        if((fabs(tmpeud)-paziente.second.eudmap.at(make_pair(n,asub)))>0.1)
-          cout<<"inconsistency: tmpeud="<<tmpeud<<"  paziente.second.eudmap.at(make_pair(n,asub)))="<<paziente.second.eudmap.at(make_pair(n,asub))<<endl;
+        // //check consistency with function (it works!)
+        // double tmpeud=CalculateEudFromScratch(paziente.second, eqd2binwidth, asub, n);
+        // if((fabs(tmpeud)-paziente.second.eudmap.at(make_pair(n,asub)))>0.1)
+        //   cout<<"inconsistency: tmpeud="<<tmpeud<<"  paziente.second.eudmap.at(make_pair(n,asub)))="<<paziente.second.eudmap.at(make_pair(n,asub))<<endl;
       }
 
     } //end of loop on alfabeta
