@@ -38,8 +38,9 @@ int main(int argc, char* argv[]) {
   }
  
   bookHisto(outrootfile, alfabeta,nvalue4eud, eqd2binwidth);
-  fillHisto(outrootfile, sample, alfabeta, nvalue4eud, eqd2binwidth);
-  CreateNtcpSigmoidal(sample, tgtname, alfabeta, nvalue4eud);
+  fillHisto(sample, alfabeta, nvalue4eud, eqd2binwidth);
+  CreateNtcpSigmoidalPredefined(sample, tgtname, alfabeta, nvalue4eud);
+  PostLoopAnalysis(sample, alfabeta, nvalue4eud, eqd2binwidth);
 
   outrootfile->Write();
   outrootfile->Close();

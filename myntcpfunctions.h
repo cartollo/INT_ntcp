@@ -21,7 +21,9 @@
 #include "TROOT.h"
 #include <TCanvas.h>
 #include <TGraph.h>
-
+#include <TFitResultPtr.h>
+#include <TFitResult.h>
+#include <TVectorD.h>
 
 #define maxdvhgy 77
 
@@ -61,14 +63,17 @@ int status; //-1=not set, 0=all ok, 1=not monotonous
 
 
 
-void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth);
+void fillHisto(map<int, PatientData> &sample, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth);
+void PostLoopAnalysis(map<int, PatientData> &sample, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth);
 void bookHisto(TFile *outrootfile, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth);
-int CreateNtcpSigmoidal(map<int, PatientData> &sample, TString tgtname, const vector<double> &alfabeta, const vector<double> &nvalue4eud);
+int CreateNtcpSigmoidalSingle(TString pltname, const TVectorD &vx, const TVectorD &vy);
+int CreateNtcpSigmoidalPredefined(map<int, PatientData> &sample, TString tgtname, const vector<double> &alfabeta, const vector<double> &nvalue4eud);
 void PrintSampleLine(int idx, const   map<int, PatientData> &sample);
 int loadDvhFile(const string& filename,   map<int, PatientData> &sample, const vector<double> &alfabeta);
 int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname);
 int evaluateEqdEud(map<int, PatientData> &sample, const vector<double> &alfabeta,const vector<double> &nvalue4eud, double eqd2binwidth);
 double CalculateEudFromScratch(PatientData &paziente, double eqd2binwidth, double alfabeta, double nvalue);
-double fitSigmoidal(TGraph* graph, int parnum, TFitResultPtr &fitresults);
+double fitSigmoidal(TGraph* graph, int parnum, int functype);
 string trim(const string& s);
 vector<string> splitCsvLine(const string& line, const TString delimiter);
+void CreateHistoFromTgraph(TGraph *gr, TH1D *h);

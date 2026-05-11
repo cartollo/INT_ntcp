@@ -13,15 +13,33 @@ void bookHisto(TFile *outrootfile, const vector<double> &alfabeta, const vector<
   TH2D* h2;
 
   //map properties
-  h=new TH1D("sample_volumes", "sample volumes;Volume;patients [cm3];Number of patients;Number of patients",300, 0., 3000);
-  h=new TH1D("max_dose_plan", "max dose plan;max dose plan [gy];Number of patients",100, 50., 100);
-  h=new TH1D("max_dose_st", "max dose st;max dose st [gy];Number of patients",200, 0., 100);
-  h=new TH1D("min_dose_st", "min dose st;min dose st [gy];Number of patients",20, 0., 10);
-  h=new TH1D("mean_dose_st", "mean dose st;min dose st [gymax_dose_st];Number of patients",100, 0., 50);
-  h=new TH1D("dose_ptv", "Dose to the PTV;ptv dose [gymax_dose_st];Number of patients",101, -0.5, 100.5);
-  h=new TH1D("nfraction", "Total number of fractions;Number of fractions;Number of patients",101, -0.5, 100.5);
-  h=new TH1D("dose_per_fraction", "mean dose st;min dose st [gymax_dose_st];Number of patients",42, -0.1, 4.1);
-  h=new TH1D("mean_dose_rectum", "mean dose st;min dose st [gymax_dose_st];Number of patients",101, -0.5, 100.5);
+  h=new TH1D("sample_volumesAll", "sample volumes;Volume;Number of patients",300, 0., 3000);
+  h=new TH1D("sample_volumesYes", "sample volumes;Volume;Number of patients",300, 0., 3000);
+  h=new TH1D("sample_volumesNo", "sample volumes;Volume;Number of patients",300, 0., 3000);
+  h=new TH1D("max_dose_planAll", "max dose plan;max dose plan [gy];Number of patients",100, 50., 100);
+  h=new TH1D("max_dose_planYes", "max dose plan;max dose plan [gy];Number of patients",100, 50., 100);
+  h=new TH1D("max_dose_planNo", "max dose plan;max dose plan [gy];Number of patients",100, 50., 100);
+  h=new TH1D("max_dose_stAll", "max dose st;max dose st [gy];Number of patients",200, 0., 100);
+  h=new TH1D("max_dose_stYes", "max dose st;max dose st [gy];Number of patients",200, 0., 100);
+  h=new TH1D("max_dose_stNo", "max dose st;max dose st [gy];Number of patients",200, 0., 100);
+  h=new TH1D("min_dose_stAll", "min dose st;min dose st [gy];Number of patients",20, 0., 10);
+  h=new TH1D("min_dose_stYes", "min dose st;min dose st [gy];Number of patients",20, 0., 10);
+  h=new TH1D("min_dose_stNo", "min dose st;min dose st [gy];Number of patients",20, 0., 10);
+  h=new TH1D("mean_dose_stAll", "mean dose st;min dose st [gymax_dose_st];Number of patients",100, 0., 50);
+  h=new TH1D("mean_dose_stYes", "mean dose st;min dose st [gymax_dose_st];Number of patients",100, 0., 50);
+  h=new TH1D("mean_dose_stNo", "mean dose st;min dose st [gymax_dose_st];Number of patients",100, 0., 50);
+  h=new TH1D("dose_ptvAll", "Dose to the PTV;ptv dose [gymax_dose_st];Number of patients",101, -0.5, 100.5);
+  h=new TH1D("dose_ptvYes", "Dose to the PTV;ptv dose [gymax_dose_st];Number of patients",101, -0.5, 100.5);
+  h=new TH1D("dose_ptvNo", "Dose to the PTV;ptv dose [gymax_dose_st];Number of patients",101, -0.5, 100.5);
+  h=new TH1D("nfractionAll", "Total number of fractions;Number of fractions;Number of patients",101, -0.5, 100.5);
+  h=new TH1D("nfractionYes", "Total number of fractions;Number of fractions;Number of patients",101, -0.5, 100.5);
+  h=new TH1D("nfractionNo", "Total number of fractions;Number of fractions;Number of patients",101, -0.5, 100.5);
+  h=new TH1D("dose_per_fractionAll", "mean dose st;min dose st [gymax_dose_st];Number of patients",42, -0.1, 4.1);
+  h=new TH1D("dose_per_fractionYes", "mean dose st;min dose st [gymax_dose_st];Number of patients",42, -0.1, 4.1);
+  h=new TH1D("dose_per_fractionNo", "mean dose st;min dose st [gymax_dose_st];Number of patients",42, -0.1, 4.1);
+  h=new TH1D("mean_dose_rectumAll", "mean dose st;min dose st [gymax_dose_st];Number of patients",101, -0.5, 100.5);
+  h=new TH1D("mean_dose_rectumYes", "mean dose st;min dose st [gymax_dose_st];Number of patients",101, -0.5, 100.5);
+  h=new TH1D("mean_dose_rectumNo", "mean dose st;min dose st [gymax_dose_st];Number of patients",101, -0.5, 100.5);
   h=new TH1D("tgt_acutegitox", "tgt_acutegitox;tgt_acutegitox dose st [gymax_dose_st];Number of patients",2, -0.5, 1.5);
   
   //normalized dvh fofr targets:
@@ -30,8 +48,11 @@ void bookHisto(TFile *outrootfile, const vector<double> &alfabeta, const vector<
     h=new TH1D(Form("dvhnorm_tgt_%.3f_No",asub), "mean dvh plot for patients without tox;normalized dose [gy];mean volume",100/eqd2binwidth, 0., 100);
     h=new TH1D(Form("dvhnorm_tgt_%.3f_Diff",asub), "mean dvh plot for difference between patients w/o tox;normalized dose [gy];mean volume",100/eqd2binwidth, 0., 100);
     
-    for(auto const &n:nvalue4eud)
-      h=new TH1D(Form("eud_n_%.3f_asub%.3f",n,asub), "eud value;eud;Number of patients",100, 0., 100);    
+    for(auto const &n:nvalue4eud){
+      h=new TH1D(Form("eud_n_%.3f_asub%.3f_All",n,asub), "eud value;eud;Number of patients",100, 0., (n<=3) ? 1000:100);    
+      h=new TH1D(Form("eud_n_%.3f_asub%.3f_Yes",n,asub), "eud value;eud;Number of patients",100, 0., (n<=3) ? 1000:100);    
+      h=new TH1D(Form("eud_n_%.3f_asub%.3f_No",n,asub), "eud value;eud;Number of patients",100, 0., (n<=3) ? 1000:100);    
+    }
   }
     
   if(debug)
@@ -41,7 +62,7 @@ void bookHisto(TFile *outrootfile, const vector<double> &alfabeta, const vector<
 }
 
 
-void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth){
+void fillHisto(map<int, PatientData> &sample, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth){
 
   if(debug)
     cout<<"start fillHisto"<<endl;
@@ -92,15 +113,24 @@ void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample, const vector<
     
     gDirectory->cd(".."); 
 
-    (dynamic_cast<TH1D*>(gDirectory->Get("../sample_volumes")))->Fill(paziente.second.volume);
-    (dynamic_cast<TH1D*>(gDirectory->Get("../max_dose_plan")))->Fill(paziente.second.max_dose_plan);
-    (dynamic_cast<TH1D*>(gDirectory->Get("../max_dose_st")))->Fill(paziente.second.max_dose_st);
-    (dynamic_cast<TH1D*>(gDirectory->Get("../min_dose_st")))->Fill(paziente.second.min_dose_st);
-    (dynamic_cast<TH1D*>(gDirectory->Get("../mean_dose_st")))->Fill(paziente.second.mean_dose_st);
-    (dynamic_cast<TH1D*>(gDirectory->Get("../dose_ptv")))->Fill(paziente.second.dose_ptv);
-    (dynamic_cast<TH1D*>(gDirectory->Get("../nfraction")))->Fill(paziente.second.nfraction);
-    (dynamic_cast<TH1D*>(gDirectory->Get("../dose_per_fraction")))->Fill(paziente.second.dose_per_fraction);
-    (dynamic_cast<TH1D*>(gDirectory->Get("../mean_dose_rectum")))->Fill(paziente.second.mean_dose_rectum);
+    (dynamic_cast<TH1D*>(gDirectory->Get("../sample_volumesAll")))->Fill(paziente.second.volume);
+    (dynamic_cast<TH1D*>(gDirectory->Get(paziente.second.tgt_acutegitox>0 ? "../sample_volumesYes" : "../sample_volumesNo")))->Fill(paziente.second.volume);
+    (dynamic_cast<TH1D*>(gDirectory->Get("../max_dose_planAll")))->Fill(paziente.second.max_dose_plan);
+    (dynamic_cast<TH1D*>(gDirectory->Get(paziente.second.tgt_acutegitox>0 ? "../max_dose_planYes" : "../max_dose_planNo")))->Fill(paziente.second.max_dose_plan);
+    (dynamic_cast<TH1D*>(gDirectory->Get("../max_dose_stAll")))->Fill(paziente.second.max_dose_st);
+    (dynamic_cast<TH1D*>(gDirectory->Get(paziente.second.tgt_acutegitox>0 ? "../max_dose_stYes":"../max_dose_stNo")))->Fill(paziente.second.max_dose_st);
+    (dynamic_cast<TH1D*>(gDirectory->Get("../min_dose_stAll")))->Fill(paziente.second.min_dose_st);
+    (dynamic_cast<TH1D*>(gDirectory->Get(paziente.second.tgt_acutegitox>0 ? "../min_dose_stYes":"../min_dose_stNo")))->Fill(paziente.second.min_dose_st);
+    (dynamic_cast<TH1D*>(gDirectory->Get("../mean_dose_stAll")))->Fill(paziente.second.mean_dose_st);
+    (dynamic_cast<TH1D*>(gDirectory->Get(paziente.second.tgt_acutegitox>0 ? "../mean_dose_stYes" : "../mean_dose_stNo")))->Fill(paziente.second.mean_dose_st);
+    (dynamic_cast<TH1D*>(gDirectory->Get("../dose_ptvAll")))->Fill(paziente.second.dose_ptv);
+    (dynamic_cast<TH1D*>(gDirectory->Get(paziente.second.tgt_acutegitox>0 ? "../dose_ptvYes" : "../dose_ptvNo")))->Fill(paziente.second.dose_ptv);
+    (dynamic_cast<TH1D*>(gDirectory->Get("../nfractionAll")))->Fill(paziente.second.nfraction);
+    (dynamic_cast<TH1D*>(gDirectory->Get(paziente.second.tgt_acutegitox>0 ? "../nfractionYes" : "../nfractionNo")))->Fill(paziente.second.nfraction);
+    (dynamic_cast<TH1D*>(gDirectory->Get("../dose_per_fractionAll")))->Fill(paziente.second.dose_per_fraction);
+    (dynamic_cast<TH1D*>(gDirectory->Get(paziente.second.tgt_acutegitox>0 ? "../dose_per_fractionYes": "../dose_per_fractionNo")))->Fill(paziente.second.dose_per_fraction);
+    (dynamic_cast<TH1D*>(gDirectory->Get("../mean_dose_rectumAll")))->Fill(paziente.second.mean_dose_rectum);
+    (dynamic_cast<TH1D*>(gDirectory->Get(paziente.second.tgt_acutegitox>0 ? "../mean_dose_rectumYes" : "../mean_dose_rectumNo")))->Fill(paziente.second.mean_dose_rectum);
     (dynamic_cast<TH1D*>(gDirectory->Get("../tgt_acutegitox")))->Fill(paziente.second.tgt_acutegitox);
     
     if(paziente.second.tgt_acutegitox>0) tgtyescounter++; else tgtnocounter++;
@@ -113,8 +143,10 @@ void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample, const vector<
         dvhnorm_tgtno[asub].at(i)+=paziente.second.dvhnormmap.at(asub).at(i);
       }
       
-      for(auto const &n:nvalue4eud)
-        (dynamic_cast<TH1D*>(gDirectory->Get(Form("../eud_n_%.3f_asub%.3f",n,asub))))->Fill(paziente.second.eudmap.at(make_pair(n,asub)));
+      for(auto const &n:nvalue4eud){
+        (dynamic_cast<TH1D*>(gDirectory->Get(Form("../eud_n_%.3f_asub%.3f_All",n,asub))))->Fill(paziente.second.eudmap.at(make_pair(n,asub)));
+        (dynamic_cast<TH1D*>(gDirectory->Get(paziente.second.tgt_acutegitox>0 ? Form("../eud_n_%.3f_asub%.3f_Yes",n,asub) : Form("../eud_n_%.3f_asub%.3f_No",n,asub)  )))->Fill(paziente.second.eudmap.at(make_pair(n,asub)));
+      }
 
     }
   }//end of loop on patient
@@ -136,7 +168,38 @@ void fillHisto(TFile *outrootfile,  map<int, PatientData> &sample, const vector<
   return;
 }
 
-double fitSigmoidal(TGraph* graph, int parnum, TFitResultPtr &fitresults){
+void PostLoopAnalysis(map<int, PatientData> &sample, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth){
+//tentative to fit the peak at "high" dose in dvhnorm_tgt_%.3f_Diff ...and try to do stuff...
+  TF1 mygaus=TF1("mygaus","gaus", 0., 100);
+  for(auto const &asub:alfabeta){
+    mygaus.SetParameter(0,(dynamic_cast<TH1D*>(gDirectory->Get(Form("dvhnorm_tgt_%.3f_Diff",asub))))->GetBinContent((dynamic_cast<TH1D*>(gDirectory->Get(Form("dvhnorm_tgt_%.3f_Diff",asub))))->FindBin(20)));
+    mygaus.SetParameter(1,20);
+    (dynamic_cast<TH1D*>(gDirectory->Get(Form("dvhnorm_tgt_%.3f_Diff",asub))))->Fit("mygaus","QBM+","",15,30);
+    if(mygaus.GetParameter(1)<30 && mygaus.GetParameter(1)>10){
+      TH1D* hAll=new TH1D(Form("dvhnorm_maxdiff_%.3f_All",asub), "Volume for dvhnorm maxdiff dose value;Volume;Number of patients",100, 0., 1000);
+      TH1D* hYes=new TH1D(Form("dvhnorm_maxdiff_%.3f_Yes",asub), "Volume for dvhnorm maxdiff dose value;Volume;Number of patients",100, 0., 1000);
+      TH1D* hNo=new TH1D(Form("dvhnorm_maxdiff_%.3f_No",asub), "Volume for dvhnorm maxdiff dose value;Volume;Number of patients",100, 0., 1000);
+      TVectorD xv(sample.size()), yv(sample.size());
+      int counter=0;
+      for(auto const &paziente:sample){
+        xv(counter)=paziente.second.dvhnormmap.at(asub).at( (dynamic_cast<TH1D*>(gDirectory->Get(Form("dvhnorm_tgt_%.3f_Diff",asub))))->FindBin(mygaus.GetParameter(1)));
+        yv(counter)=paziente.second.tgt_acutegitox;
+        hAll->Fill(xv(counter));
+        if(yv(counter)>0)
+          hYes->Fill(xv(counter));
+          else
+          hNo->Fill(xv(counter));
+        counter++;
+      }
+      CreateNtcpSigmoidalSingle(Form("ntcp_linear_maxdiff_dvhnorm_%.3f_",asub),xv,yv);     
+    }else{
+      cout<<"PostLoopAnalysis: fit on "<<Form("dvhnorm_tgt_%.3f_Diff",asub)<<" failed, skip the postloop analysis on this case"<<endl;
+    }
+  }
+return;
+}
+
+double fitSigmoidal(TGraph* graph, int parnum, int functype){
 
   if(debug)
     cout<<"start fitSigmoidal"<<endl;
@@ -145,79 +208,168 @@ double fitSigmoidal(TGraph* graph, int parnum, TFitResultPtr &fitresults){
     throw std::runtime_error("fitSigmoidal: parnum too small" + parnum);
     
     TF1 *sigmoid;
-  if(parnum==2)
-    sigmoid=new TF1("sigmoid", "1./(1.+exp(-[0]-[1]*x))", 0, 100);
+  if(parnum==2){
+    if(functype==0)
+      sigmoid=new TF1("sigmoid", "1./(1.+exp(-[0]-[1]*x))", 0, 100);
+    else if(functype==1)
+      sigmoid=new TF1("signoexp", "1./(1.+[0]/(x^[1]))", 0, 500);
+  }
   else //per ora solo caso semplice con due parametri liberi ed una sola variabile X=EUD
     throw std::runtime_error("fitSigmoidal: parnum too large" + parnum);
 
-  fitresults=graph->Fit(sigmoid, "EMQ+","",0,100);
-
-  if(debug)
-    cout<<"fitSigmoidal done"<<endl;
-
-  // return fitresults.Chi2();
-  return 2;
+  return graph->Fit(sigmoid, "EMSQ+","",0,100)->Chi2();
 }
 
+int CreateNtcpSigmoidalSingle(TString pltname, const TVectorD &vx, const TVectorD &vy){
+  
+  TDirectory *dir=gDirectory->GetDirectory("ntpc_linear");
+  if(dir){
+    gDirectory->cd("ntpc_linear");
+  }else{
+    cout<<"WARNING in CreateNtcpSigmoidalSingle: ntpc_linear not present... I'll create a new one"<<endl;
+    gDirectory->mkdir("ntpc_linear");
+    gDirectory->cd("ntpc_linear");
+  }
+  
+  TGraph *gr=new TGraph(vx, vy);
+  TH1D* h;
+  gr->SetName(pltname);
+  double chi2=fitSigmoidal(gr,2,0);
+  (dynamic_cast<TH1D*>(gDirectory->Get("fittedchi2")))->Fill(chi2);
+  gr->SetMarkerStyle(20);
+  gr->SetMarkerColor(2);
+  gr->SetLineWidth(0);
+  gr->SetLineColor(0);
+  gr->SetDrawOption("AP*");
+  gr->Write();
+  CreateHistoFromTgraph(gr,h);
 
-int CreateNtcpSigmoidal(map<int, PatientData> &sample, TString tgtname, const vector<double> &alfabeta, const vector<double> &nvalue4eud){
+  gDirectory->cd("..");
+  
+  return 0;
+}
+
+int CreateNtcpSigmoidalPredefined(map<int, PatientData> &sample, TString tgtname, const vector<double> &alfabeta, const vector<double> &nvalue4eud){
 
   gDirectory->mkdir("ntpc_linear");
   gDirectory->cd("ntpc_linear");
 
-  map <string, TGraph*> ntcp_linear_models;
+  map <string, pair<TGraph*,TH1D*>> ntcp_linear_models;
   TGraph *gr;
   gr=new TGraph(sample.size());
   gr->SetName("ntcp_linear_volume_"+tgtname);
-  ntcp_linear_models["volume"]=gr;
+  ntcp_linear_models["volume"]=make_pair(gr, nullptr);
   gr=new TGraph(sample.size());
   gr->SetName("ntcp_linear_max_dose_plan_"+tgtname);
-  ntcp_linear_models["max_dose_plan"]=gr;
+  ntcp_linear_models["max_dose_plan"]=make_pair(gr, nullptr);
   gr=new TGraph(sample.size());
   gr->SetName("ntcp_linear_max_dose_st_"+tgtname);
-  ntcp_linear_models["max_dose_st"]=gr;
+  ntcp_linear_models["max_dose_st"]=make_pair(gr, nullptr);
   gr=new TGraph(sample.size());
   gr->SetName("ntcp_linear_min_dose_st_"+tgtname);
-  ntcp_linear_models["min_dose_st"]=gr;
+  ntcp_linear_models["min_dose_st"]=make_pair(gr, nullptr);
   gr=new TGraph(sample.size());
   gr->SetName("ntcp_linear_mean_dose_st_"+tgtname);
-  ntcp_linear_models["mean_dose_st"]=gr;
+  ntcp_linear_models["mean_dose_st"]=make_pair(gr, nullptr);
+  TH1D* h_chi2=new TH1D("fittedchi2", "reduced chi2;Reduced chi2;functions",100, 0., 50);  
   
   for(auto const &paziente:sample){
     for(auto const &comb:paziente.second.eudmap){
       gr=new TGraph(sample.size());
-      gr->SetName(Form("ntcp_linear_eud_n%f_alphabeta%.3f_",comb.first.first, comb.first.second)+tgtname);
-      ntcp_linear_models[Form("ntcp_linear_eud_n%f_alphabeta%.3f_",comb.first.first, comb.first.second)]=gr;
+      gr->SetName(Form("ntcp_linear_eud_n%3f_alphabeta%.3f_",comb.first.first, comb.first.second)+tgtname);
+      ntcp_linear_models[Form("ntcp_linear_eud_n%3f_alphabeta%.3f_",comb.first.first, comb.first.second)]=make_pair(gr, nullptr);
     }
   }
 
   int index=0;
   for(auto &paziente : sample){
-    ntcp_linear_models["volume"]->SetPoint(index, paziente.second.volume, paziente.second.tgt_acutegitox);
-    ntcp_linear_models["max_dose_plan"]->SetPoint(index, paziente.second.max_dose_plan, paziente.second.tgt_acutegitox);
-    ntcp_linear_models["max_dose_st"]->SetPoint(index, paziente.second.max_dose_st, paziente.second.tgt_acutegitox);
-    ntcp_linear_models["min_dose_st"]->SetPoint(index, paziente.second.min_dose_st, paziente.second.tgt_acutegitox);
-    ntcp_linear_models["mean_dose_st"]->SetPoint(index, paziente.second.mean_dose_st, paziente.second.tgt_acutegitox);
+    ntcp_linear_models["volume"].first->SetPoint(index, paziente.second.volume, paziente.second.tgt_acutegitox);
+    ntcp_linear_models["max_dose_plan"].first->SetPoint(index, paziente.second.max_dose_plan, paziente.second.tgt_acutegitox);
+    ntcp_linear_models["max_dose_st"].first->SetPoint(index, paziente.second.max_dose_st, paziente.second.tgt_acutegitox);
+    ntcp_linear_models["min_dose_st"].first->SetPoint(index, paziente.second.min_dose_st, paziente.second.tgt_acutegitox);
+    ntcp_linear_models["mean_dose_st"].first->SetPoint(index, paziente.second.mean_dose_st, paziente.second.tgt_acutegitox);
     for(auto const &comb:paziente.second.eudmap)
-      ntcp_linear_models[Form("ntcp_linear_eud_n%f_alphabeta%.3f_",comb.first.first, comb.first.second)]->SetPoint(index, comb.second,paziente.second.tgt_acutegitox);
+      ntcp_linear_models[Form("ntcp_linear_eud_n%f_alphabeta%.3f_",comb.first.first, comb.first.second)].first->SetPoint(index, comb.second,paziente.second.tgt_acutegitox);
     index++;
   }
 
   for(auto &graph:ntcp_linear_models){
-    graph.second->Sort();
-    TFitResultPtr fitresults;
-    fitSigmoidal(graph.second,2,fitresults);
-    graph.second->SetMarkerStyle(20);
-    graph.second->SetMarkerColor(2);
-    graph.second->SetLineWidth(0);
-    graph.second->SetLineColor(0);
-    graph.second->SetDrawOption("AP*");
-    graph.second->Write();
+    graph.second.first->Sort();
+    double chi2=fitSigmoidal(graph.second.first,2,0);
+    h_chi2->Fill(chi2);
+    graph.second.first->SetMarkerStyle(20);
+    graph.second.first->SetMarkerColor(2);
+    graph.second.first->SetLineWidth(0);
+    graph.second.first->SetLineColor(0);
+    graph.second.first->SetDrawOption("AP*");
+    graph.second.first->Write();
+    CreateHistoFromTgraph(graph.second.first,graph.second.second);
   }
 
   gDirectory->cd("..");
 
   return 0;
+}
+
+
+void CreateHistoFromTgraph(TGraph *gr, TH1D *h){
+
+  if(debug)
+    cout<<"start CreateHistoFromTgraph on "<<gr->GetName()<<endl;    
+
+  double grxmin, grxmax, grymin, grymax;
+  gr->ComputeRange(grxmin, grymin, grxmax, grymax);
+  if(grymax!=1 || grymin!=0){
+    cout<<"Error in CreateHistoFromTgraph: grymax or grymin are not 1 or 0, probably no target case!  grymax="<<grymax<<"  grymin="<<grymin<<endl;
+    cout<<"gr->GetName()="<<gr->GetName()<<endl;
+  }
+  // int hbinnum=(int)((grxmax-grxmin)/2);
+  int hbinnum=20;
+  TString histtitle(gr->GetName());
+  histtitle+="_hist";
+  h=new TH1D(histtitle,gr->GetTitle(),hbinnum,grxmin, grxmax);
+  vector<pair<double, int>> valuenum(hbinnum,make_pair(0,0)); //first=bin value, second=counter
+  for(int i=0;i<gr->GetN();i++){
+    int bin=(int)((gr->GetPointX(i)-grxmin)/hbinnum);
+    if(bin<hbinnum){
+      valuenum.at(bin).first+= gr->GetPointY(i);
+      valuenum.at(bin).second++;
+    }
+  }
+  //set the histo
+  double valbefore=0;
+  int indexbefore=0;
+  for(int i=0;i<valuenum.size();i++){
+    if(valuenum.at(i).second==0){
+      double valafter=valbefore;
+      int indexafter=i+1;
+      for(int k=i+1;k<valuenum.size();k++){
+        if(valuenum.at(k).second!=0){
+          valafter=valuenum.at(k).first/valuenum.at(k).second;
+          indexafter=k;
+          break;
+        }
+      }
+      double weightedvalue=(valbefore/(i-indexbefore)+valafter/(indexafter-i))/(indexafter-indexbefore);
+      valuenum.at(i).first=weightedvalue;
+      for(int k=i+1;k<valuenum.size() && k<=indexafter;k++){
+        valuenum.at(i).first=weightedvalue;
+        i=k;
+      }
+     }else{
+      valuenum.at(i).first=valuenum.at(i).first/valuenum.at(i).second;
+      valbefore=valuenum.at(i).first;
+      indexbefore=i;
+    }
+  }
+  //fill the histo
+  for(int i=0;i<hbinnum;i++)
+    h->SetBinContent(i+1,valuenum.at(i).first);
+
+  if(debug)
+    cout<<"CreateHistoFromTgraph done"<<endl;    
+
+  return;
 }
 
 void PrintSampleLine(int idx, const   map<int, PatientData> &sample){
