@@ -267,7 +267,7 @@ int CreateNtcpSigmoidalSingle(TString pltname, const TVectorD &vx, const TVector
   TGraph *gr=new TGraph(vx, vy);
   TH1D* h;
   gr->SetName(pltname);
-  double chi2=fitSigmoidal(gr,2,0);
+  double chi2=fitSigmoidal(gr,2,1);
   (dynamic_cast<TH1D*>(gDirectory->Get("fittedchi2")))->Fill(chi2);
   gr->SetMarkerStyle(20);
   gr->SetMarkerColor(2);
@@ -331,7 +331,7 @@ int CreateNtcpSigmoidalPredefined(map<int, PatientData> &sample, TString tgtname
 
   for(auto &graph:ntcp_linear_models){
     graph.second.first->Sort();
-    double chi2=fitSigmoidal(graph.second.first,2,0);
+    double chi2=fitSigmoidal(graph.second.first,2,1);
     h_chi2->Fill(chi2);
     graph.second.first->SetMarkerStyle(20);
     graph.second.first->SetMarkerColor(2);
