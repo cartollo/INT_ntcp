@@ -9,9 +9,9 @@ int main(int argc, char* argv[]) {
   TString outrootname("ntcp_outputs.root");
   TString txtappended(".txt");
   TString tgtname("acute GI toxicity");
-  double eqd2binwidth=0.5; //binwidth in gy di eqd2 normalizzato
-  vector<double> alfabeta={1.,1.25,1.5,1.75,2.,2.5,3};
-  vector<double> nvalue4eud={1,5,10,100}; //1->eud=mean dose, +inf->eud=max dose
+  double eqd2binwidth=1.; //binwidth in gy di eqd2 normalizzato
+  vector<double> alfabeta={1.,1.25,1.5,1.75,2.,2.5,3,10, 100, 1000};
+  vector<double> nvalue4eud={ 0.01,0.1,1,5,10,100}; //1->eud=mean dose, +inf->eud=max dose
 
   for (int i = 0; i < argc; i++) {
     if (strcmp(argv[i], "-d") == 0)         debug = atoi(argv[++i]);
