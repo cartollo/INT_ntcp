@@ -267,8 +267,7 @@ int CreateNtcpSigmoidalSingle(TString pltname, const TVectorD &vx, const TVector
   TGraph *gr=new TGraph(vx, vy);
   TH1D* h;
   gr->SetName(pltname);
-  double chi2=fitSigmoidal(gr,2,1);
-  (dynamic_cast<TH1D*>(gDirectory->Get("fittedchi2")))->Fill(chi2);
+  fitSigmoidal(gr,2,1);
   gr->SetMarkerStyle(20);
   gr->SetMarkerColor(2);
   gr->SetLineWidth(0);
@@ -514,7 +513,82 @@ string trim(const string& s) {
 //   return;
 // }
 
-double functorSimpleModel(map<int, PatientData> &sample, double eqd2binwidth, double alfabeta, double nvalue){
+void optimizeLikehood(const map<int, PatientData> &sample){
+  
+  //lambda
+  auto lamdalikehood = [&](const double* par) {
+      return functorLikehood(sample, par);
+  };
+  ROOT::Math::Functor fpFunctor(lamdalikehood,4);
+
+  ROOT::Math::Minimizer* fpMinimizer = ROOT::Math::Factory::CreateMinimizer("Minuit2", "Combined");
+
+  fpMinimizer->SetFunction(fpFunctor);
+  fpMinimizer->SetMaxFunctionCalls(1000000);
+  fpMinimizer->SetMaxIterations(100000);
+  fpMinimizer->SetTolerance(1e-2);
+  fpMinimizer->SetStrategy(2);
+  // fpMinimizer->SetPrintLevel(2);
+  
+  // fpMinimizer->SetMaxFunctionCalls(p_bmcon->GetNumIte());
+  // fpMinimizer->SetMaxIterations(p_bmcon->GetNumIte());
+  // fpMinimizer->SetTolerance(p_bmcon->GetParToll());
+  // fpMinimizer->SetPrintLevel(0);
+  // fpMinimizer->SetVariable(0,"beta_zero",-3.,0.1);
+  // fpMinimizer->SetVariable(1,"beta_eud",0.05,0.01);
+  // fpMinimizer->SetVariable(2,"alfabeta",0.1,3);
+  // fpMinimizer->SetVariable(3,"nvalue",0.1,100);
+
+  fpMinimizer->SetLimitedVariable(0, "beta_zero", -2.0, 0.01, -50.0, 50.0);
+  fpMinimizer->SetLimitedVariable(1, "beta_eud",  0.05, 0.01, -5.0, 5.0);
+  fpMinimizer->SetLimitedVariable(2, "alfabeta",  2.0, 0.01, 0.01, 5.0);
+  fpMinimizer->SetLimitedVariable(3, "nvalue",    1.0, 0.01, 0.01, 100.0);  
+
+  fpMinimizer->SetVariableValue(0,-10);
+  fpMinimizer->SetVariableValue(1,0.05);
+  fpMinimizer->SetVariableValue(2,2);
+  fpMinimizer->SetVariableValue(3,1);
+
+  fpMinimizer->Minimize();
+  Int_t status=fpMinimizer->Status();
+  if(status==0){
+    double beta_zero=fpMinimizer->X()[0];
+    double beta_eud=fpMinimizer->X()[1];
+    double alfabeta=fpMinimizer->X()[2];
+    double nvalue=fpMinimizer->X()[3];
+    cout<<"minimization done: beta_zero="<<beta_zero<<"  beta_eud="<<beta_eud<<"  alfabeta="<<alfabeta<<"  nvalue"<<nvalue<<endl;
+  }else{
+    cout<<"minimization failed status="<<status<<endl;
+  }
+
+
+  return;
+}
+
+//likehood: 
+//par: 0=[0] firstfitted value in tf1, 1=secondfitted value in tf1, 2=alfabeta, 3=nvalue
+double functorLikehood(const map<int, PatientData> &sample, const double* par){
+  // TF1 like_sigmoid("like_sigmoid", "1./(1.+exp(-[0]-[1]*x))", 0, 1000);
+  // TF1 like_negsigmoid("like_negsigmoid", "1.-1./(1.+exp(-[0]-[1]*x))", 0, 1000);
+  // like_sigmoid.SetParameters(par[0], par[1]);
+  // like_negsigmoid.SetParameters(par[0],par[1]);
+  // double eval=1;
+  // for(const auto &paziente : sample){
+  //   double eud=CalculateEudFromScratch(paziente.second, par[2], par[3])
+  //   if(paziente.second.tgt_acutegitox>0)
+  //     eval*=like_sigmoid.Eval(eud);
+  //   else
+  //     eval*=like_negsigmoid.Eval(eud);
+  // }
+  double eval=0.;
+  for(const auto &paziente : sample)
+    eval-= std::log((paziente.second.tgt_acutegitox<0.5 ? 1.-1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente.second, par[2], par[3]))) : 1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente.second, par[2], par[3])))));
+  
+  return eval;
+}
+
+//TODO: minimization functor
+double functorMinimzation(map<int, PatientData> &sample, double eqd2binwidth, double alfabeta, double nvalue){
 
   if(debug)
     cout<<"start functorSimpleEud alfabeta="<<alfabeta<<"  nvalue"<<nvalue<<endl;
@@ -522,7 +596,7 @@ double functorSimpleModel(map<int, PatientData> &sample, double eqd2binwidth, do
   TH1D tmpplotno("tmpplotyes","dummy;dummy;dummy",50,0,0);
   TH1D tmpplotyes("tmpplotno","dummy;dummy;dummy",50,0,0);
   for(auto &paziente : sample){
-    double eud=CalculateEudFromScratch(paziente.second, eqd2binwidth, alfabeta, nvalue);
+    double eud=CalculateEudFromScratch(paziente.second, alfabeta, nvalue);
     if(paziente.second.tgt_acutegitox>0)
       tmpplotyes.Fill(eud);
     else
@@ -539,10 +613,10 @@ double functorSimpleModel(map<int, PatientData> &sample, double eqd2binwidth, do
 
 
 //evaluate eud given an alfabeta and an nvalue
-double CalculateEudFromScratch(PatientData &paziente, double eqd2binwidth, double alfabeta, double nvalue){
+double CalculateEudFromScratch(const PatientData &paziente, double alfabeta, double nvalue){
 
   if(debug)
-    cout<<"start CalculateEudFromScratch with paziente.id="<<paziente.id<<" eqd2binwidth="<<eqd2binwidth<<endl;
+    cout<<"start CalculateEudFromScratch with paziente.id="<<paziente.id<<endl;
 
     double eud=0;
     for(int i=0;i<paziente.dvhmapdiff.size();i++)

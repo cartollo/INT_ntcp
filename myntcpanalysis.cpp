@@ -41,6 +41,7 @@ int main(int argc, char* argv[]) {
   fillHisto(sample, alfabeta, nvalue4eud, eqd2binwidth);
   CreateNtcpSigmoidalPredefined(sample, tgtname, alfabeta, nvalue4eud);
   PostLoopAnalysis(sample, alfabeta, nvalue4eud, eqd2binwidth);
+  optimizeLikehood(sample);
 
   outrootfile->Write();
   outrootfile->Close();

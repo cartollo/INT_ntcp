@@ -76,10 +76,12 @@ void PrintSampleLine(int idx, const   map<int, PatientData> &sample);
 int loadDvhFile(const string& filename,   map<int, PatientData> &sample, const vector<double> &alfabeta);
 int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname);
 int evaluateEqdEud(map<int, PatientData> &sample, const vector<double> &alfabeta,const vector<double> &nvalue4eud, double eqd2binwidth);
-double CalculateEudFromScratch(PatientData &paziente, double eqd2binwidth, double alfabeta, double nvalue);
+double CalculateEudFromScratch(const PatientData &paziente, double alfabeta, double nvalue);
+double functorLikehood(const map<int, PatientData> &sample, const double* par);
 double fitSigmoidal(TGraph* graph, int parnum, int functype);
 string trim(const string& s);
 vector<string> splitCsvLine(const string& line, const TString delimiter);
 void CreateHistoFromTgraph(TGraph *gr, TH1D *h);
+void optimizeLikehood(const map<int, PatientData> &sample);
 
 inline double EqdDose(PatientData &paziente, double alfabeta, double dose){return dose*(alfabeta+dose/paziente.nfraction)/(alfabeta+2.);};
