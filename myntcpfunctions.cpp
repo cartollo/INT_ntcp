@@ -1,18 +1,19 @@
 #include "myntcpfunctions.h"
 
 extern int debug;
-
-void bookHisto(TFile *outrootfile, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth){
+void bookHisto(TFile *outrootfile,  const globalstuff &glbstuff, const bool multivariate){
 
   if(debug)
     cout<<"start bookHisto"<<endl;
+  
+  // if(multivariate)
 
   TDirectory* dvhdir = outrootfile->GetDirectory("dvhplots");
   if (!dvhdir) dvhdir = outrootfile->mkdir("dvhplots");
   TH1D* h;
   TH2D* h2;
 
-  //map properties
+  //map properties 
   h=new TH1D("sample_volumesAll", "sample volumes;Volume;Number of patients",300, 0., 3000);
   h=new TH1D("sample_volumesYes", "sample volumes;Volume;Number of patients",300, 0., 3000);
   h=new TH1D("sample_volumesNo", "sample volumes;Volume;Number of patients",300, 0., 3000);
@@ -43,22 +44,27 @@ void bookHisto(TFile *outrootfile, const vector<double> &alfabeta, const vector<
   h=new TH1D("tgt_acutegitox", "tgt_acutegitox;tgt_acutegitox dose st [gymax_dose_st];Number of patients",2, -0.5, 1.5);
   
   //normalized dvh fofr targets:
-  for(auto const &asub:alfabeta){
-    h=new TH1D(Form("dvhdiffnorm_tgt_%.3f_Yes",asub), "mean dvh plot for patients with tox;normalized dose [gy];mean volume",100/eqd2binwidth, 0., 100);
-    h=new TH1D(Form("dvhdiffnorm_tgt_%.3f_No",asub), "mean dvh plot for patients without tox;normalized dose [gy];mean volume",100/eqd2binwidth, 0., 100);
-    h=new TH1D(Form("dvhdiffnorm_tgt_%.3f_Diff",asub), "mean dvh plot for difference between patients w/o tox;normalized dose [gy];mean volume",100/eqd2binwidth, 0., 100);
-    h=new TH1D(Form("dvhdiffnorm_tgt_%.3f_All",asub), "mean dvh plot for difference between patients w/o tox;normalized dose [gy];mean volume",100/eqd2binwidth, 0., 100);
-    h=new TH1D(Form("dvhcumnorm_tgt_%.3f_Yes",asub), "mean dvh plot for patients with tox;normalized dose [gy];mean volume",100/eqd2binwidth, 0., 100);
-    h=new TH1D(Form("dvhcumnorm_tgt_%.3f_No",asub), "mean dvh plot for patients without tox;normalized dose [gy];mean volume",100/eqd2binwidth, 0., 100);
-    h=new TH1D(Form("dvhcumnorm_tgt_%.3f_Diff",asub), "mean dvh plot for difference between patients w/o tox;normalized dose [gy];mean volume",100/eqd2binwidth, 0., 100);
-    h=new TH1D(Form("dvhcumnorm_tgt_%.3f_All",asub), "mean dvh plot for difference between patients w/o tox;normalized dose [gy];mean volume",100/eqd2binwidth, 0., 100);
+  for(auto const &asub:glbstuff.alfabeta){
+    h=new TH1D(Form("dvhdiffnorm_tgt_%.3f_Yes",asub), "mean dvh plot for patients with tox;normalized dose [gy];mean volume",100/glbstuff.eqd2binwidth, 0., 100);
+    h=new TH1D(Form("dvhdiffnorm_tgt_%.3f_No",asub), "mean dvh plot for patients without tox;normalized dose [gy];mean volume",100/glbstuff.eqd2binwidth, 0., 100);
+    h=new TH1D(Form("dvhdiffnorm_tgt_%.3f_Diff",asub), "mean dvh plot for difference between patients w/o tox;normalized dose [gy];mean volume",100/glbstuff.eqd2binwidth, 0., 100);
+    h=new TH1D(Form("dvhdiffnorm_tgt_%.3f_All",asub), "mean dvh plot for difference between patients w/o tox;normalized dose [gy];mean volume",100/glbstuff.eqd2binwidth, 0., 100);
+    h=new TH1D(Form("dvhcumnorm_tgt_%.3f_Yes",asub), "mean dvh plot for patients with tox;normalized dose [gy];mean volume",100/glbstuff.eqd2binwidth, 0., 100);
+    h=new TH1D(Form("dvhcumnorm_tgt_%.3f_No",asub), "mean dvh plot for patients without tox;normalized dose [gy];mean volume",100/glbstuff.eqd2binwidth, 0., 100);
+    h=new TH1D(Form("dvhcumnorm_tgt_%.3f_Diff",asub), "mean dvh plot for difference between patients w/o tox;normalized dose [gy];mean volume",100/glbstuff.eqd2binwidth, 0., 100);
+    h=new TH1D(Form("dvhcumnorm_tgt_%.3f_All",asub), "mean dvh plot for difference between patients w/o tox;normalized dose [gy];mean volume",100/glbstuff.eqd2binwidth, 0., 100);
     
-    for(auto const &n:nvalue4eud){
+    for(auto const &n:glbstuff.nvalue4eud){
       h=new TH1D(Form("eud_n_%.3f_asub%.3f_All",n,asub), "eud value;eud;Number of patients",100, 0., 100);    
       h=new TH1D(Form("eud_n_%.3f_asub%.3f_Yes",n,asub), "eud value;eud;Number of patients",100, 0., 100);    
       h=new TH1D(Form("eud_n_%.3f_asub%.3f_No",n,asub), "eud value;eud;Number of patients",100, 0., 100);    
     }
   }
+
+  h=new TH1D("dctdiffnorm_tgt_Yes", "mean dct plot for patients with tox;index;value",100, 0., 100);
+  h=new TH1D("dctdiffnorm_tgt_No", "mean dct plot for patients without tox;index;value",100, 0., 100);
+  h=new TH1D("dctdiffnorm_tgt_Diff", "mean dct plot for difference between patients w/o tox;index;value",100, 0., 100);
+  h=new TH1D("dctdiffnorm_tgt_All", "mean dct plot for difference between patients w/o tox;index;value",100, 0., 100);
     
   if(debug)
     cout<<"bookHisto done"<<endl;
@@ -67,7 +73,23 @@ void bookHisto(TFile *outrootfile, const vector<double> &alfabeta, const vector<
 }
 
 
-void fillHisto(map<int, PatientData> &sample, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth){
+
+void computeDCT(const vector<double>& x, vector<double>& c){
+  c.clear();
+  c.resize(x.size());
+  for (int k = 0; k < x.size(); k++) {
+      double sum = 0.0;
+      for (int n = 0; n < x.size(); ++n)
+          sum += x[n] * cos(M_PI / x.size() * (n + 0.5) * k);
+      // normalizzazione ortonormale
+      c[k] = ((k == 0) ? sqrt(1.0 / x.size()) : sqrt(2.0 / x.size())) * sum;
+  }
+
+    return;
+}
+
+// const vector<double> &glbstuff.alfabeta, const vector<double> &glbstuff.nvalue4eud, double glbstuff.eqd2binwidth
+void fillHisto(map<int, PatientData> &sample,const globalstuff &glbstuff){
 
   if(debug)
     cout<<"start fillHisto"<<endl;
@@ -75,18 +97,20 @@ void fillHisto(map<int, PatientData> &sample, const vector<double> &alfabeta, co
   gDirectory->cd("dvhplots");
   map<double,vector<double>> dvhdiffnorm_tgtyes, dvhdiffnorm_tgtno, dvhcumnorm_tgtyes, dvhcumnorm_tgtno;
   int tgtyescounter=0, tgtnocounter=0;
-  for(auto const &asub:alfabeta){
-    dvhdiffnorm_tgtyes[asub].resize(100/eqd2binwidth,0); //ensure that this length is the same of Form("dvhdiffnorm_tgt_%.3f_Yes",asub)
-    dvhdiffnorm_tgtno[asub].resize(100/eqd2binwidth,0);
-    dvhcumnorm_tgtyes[asub].resize(100/eqd2binwidth,0); //ensure that this length is the same of Form("dvhcumnorm_tgt_%.3f_Yes",asub)
-    dvhcumnorm_tgtno[asub].resize(100/eqd2binwidth,0);
+  for(auto const &asub:glbstuff.alfabeta){
+    dvhdiffnorm_tgtyes[asub].resize(100/glbstuff.eqd2binwidth,0); //ensure that this length is the same of Form("dvhdiffnorm_tgt_%.3f_Yes",asub)
+    dvhdiffnorm_tgtno[asub].resize(100/glbstuff.eqd2binwidth,0);
+    dvhcumnorm_tgtyes[asub].resize(100/glbstuff.eqd2binwidth,0); //ensure that this length is the same of Form("dvhcumnorm_tgt_%.3f_Yes",asub)
+    dvhcumnorm_tgtno[asub].resize(100/glbstuff.eqd2binwidth,0);
   }
+  vector<double> dctdiff_tgtyes(100,0), dctdiff_tgtno(100,0);
   for(auto &paziente : sample){
     //dvh plots
     gDirectory->mkdir(Form("pz_%i",paziente.second.id));
     gDirectory->cd(Form("pz_%i",paziente.second.id));
     TH1D* hdvhcum=new TH1D(Form("pzdvhcum_%i",paziente.second.id), "DVH cumulative plot;Dose [gy];Volume",paziente.second.dvhmapcum.size(), 0., paziente.second.dvhmapcum.size());
     TH1D* hdvhdiff=new TH1D(Form("pzdvhdiff_%i",paziente.second.id), "DVH differential plot;Dose [gy];Volume",paziente.second.dvhmapdiff.size(), 0., paziente.second.dvhmapdiff.size());
+    TH1D* hdctdiff=new TH1D(Form("pzdctdiff_%i",paziente.second.id), "DCT of DVH differential plot;index;value",paziente.second.dvhdctdiff.size(), 0., paziente.second.dvhdctdiff.size());
     bool isboring=true; //si dice vingardium monotonic
     for(int i=0;i<paziente.second.dvhmapcum.size();i++){
       hdvhcum->SetBinContent(i+1,paziente.second.dvhmapcum.at(i));
@@ -101,21 +125,22 @@ void fillHisto(map<int, PatientData> &sample, const vector<double> &alfabeta, co
     }
     for(int i=0;i<paziente.second.dvhmapdiff.size();i++)
       hdvhdiff->SetBinContent(i+1,paziente.second.dvhmapdiff.at(i));
+    for(int i=0;i<paziente.second.dvhdctdiff.size();i++)
+      hdctdiff->SetBinContent(i+1,paziente.second.dvhdctdiff.at(i));
     if(!isboring){
       hdvhcum->SetName(Form("pzdvhcum_%i_notmonotonous",paziente.second.id));
       paziente.second.status=1;
     }    
 
     //scaled dose plots
-    for(auto const &asub:alfabeta){
-      TH1D* hdvhdiffnorm=new TH1D(Form("pzdvhdiffnorm_%i_%.2f",paziente.second.id, asub), "Normalized DVH differential plot;Equivalent Dose [gy];Volume",paziente.second.dvhdiffnormmap.at(asub).size(), 0., paziente.second.dvhdiffnormmap.at(asub).size()*eqd2binwidth);
-      for(int i=0;i<paziente.second.dvhdiffnormmap.at(asub).size();i++){
-        hdvhdiffnorm->SetBinContent(i+1,paziente.second.dvhdiffnormmap.at(asub).at(i));
-      }
-      TH1D* hdvhcumnorm=new TH1D(Form("pzdvhcumnorm_%i_%.2f",paziente.second.id, asub), "Normalized DVH cumulative plot;Equivalent Dose [gy];Volume",paziente.second.dvhcumnormmap.at(asub).size(), 0., paziente.second.dvhcumnormmap.at(asub).size()*eqd2binwidth);
-      for(int i=0;i<paziente.second.dvhcumnormmap.at(asub).size();i++){
+    for(auto const &asub:glbstuff.alfabeta){
+      TH1D* hdvhcumnorm=new TH1D(Form("pzdvhcumnorm_%i_%.2f",paziente.second.id, asub), "Normalized DVH cumulative plot;Equivalent Dose [gy];Volume",paziente.second.dvhcumnormmap.at(asub).size(), 0., paziente.second.dvhcumnormmap.at(asub).size()*glbstuff.eqd2binwidth);
+      for(int i=0;i<paziente.second.dvhcumnormmap.at(asub).size();i++)
         hdvhcumnorm->SetBinContent(i+1,paziente.second.dvhcumnormmap.at(asub).at(i));
-      }
+      
+      TH1D* hdvhdiffnorm=new TH1D(Form("pzdvhdiffnorm_%i_%.2f",paziente.second.id, asub), "Normalized DVH differential plot;Equivalent Dose [gy];Volume",paziente.second.dvhdiffnormmap.at(asub).size(), 0., paziente.second.dvhdiffnormmap.at(asub).size()*glbstuff.eqd2binwidth);
+      for(int i=0;i<paziente.second.dvhdiffnormmap.at(asub).size();i++)
+        hdvhdiffnorm->SetBinContent(i+1,paziente.second.dvhdiffnormmap.at(asub).at(i));      
     }
     
     gDirectory->cd(".."); 
@@ -142,7 +167,7 @@ void fillHisto(map<int, PatientData> &sample, const vector<double> &alfabeta, co
     
     if(paziente.second.tgt_acutegitox>0) tgtyescounter++; else tgtnocounter++;
     
-    for(auto const &asub:alfabeta){
+    for(auto const &asub:glbstuff.alfabeta){
       for(int i=0;i<paziente.second.dvhdiffnormmap.at(asub).size();i++){
         if(paziente.second.tgt_acutegitox>0)
           dvhdiffnorm_tgtyes[asub].at(i)+=paziente.second.dvhdiffnormmap.at(asub).at(i);
@@ -156,15 +181,28 @@ void fillHisto(map<int, PatientData> &sample, const vector<double> &alfabeta, co
           dvhcumnorm_tgtno[asub].at(i)+=paziente.second.dvhcumnormmap.at(asub).at(i);
       }
       
-      for(auto const &n:nvalue4eud){
+      for(auto const &n:glbstuff.nvalue4eud){
         (dynamic_cast<TH1D*>(gDirectory->Get(Form("../eud_n_%.3f_asub%.3f_All",n,asub))))->Fill(paziente.second.eudmap.at(make_pair(n,asub)));
         (dynamic_cast<TH1D*>(gDirectory->Get(paziente.second.tgt_acutegitox>0 ? Form("../eud_n_%.3f_asub%.3f_Yes",n,asub) : Form("../eud_n_%.3f_asub%.3f_No",n,asub)  )))->Fill(paziente.second.eudmap.at(make_pair(n,asub)));
       }
-
     }
+
+    if(paziente.second.tgt_acutegitox>0)
+      for(int i=0;i<paziente.second.dvhdctdiff.size();i++)
+        dctdiff_tgtyes.at(i)+=paziente.second.dvhdctdiff.at(i);
+    else
+      for(int i=0;i<paziente.second.dvhdctdiff.size();i++)
+        dctdiff_tgtno.at(i)+=paziente.second.dvhdctdiff.at(i);
   }//end of loop on patient
 
-  for(auto const &asub:alfabeta){
+  for(int i=0;i<100;i++){
+    (dynamic_cast<TH1D*>(gDirectory->Get("../dctdiffnorm_tgt_All")))->SetBinContent(i+1,(dctdiff_tgtyes.at(i)+dctdiff_tgtno.at(i))/(tgtnocounter+tgtyescounter));
+    (dynamic_cast<TH1D*>(gDirectory->Get("../dctdiffnorm_tgt_Yes")))->SetBinContent(i+1,dctdiff_tgtyes.at(i)/tgtyescounter);
+    (dynamic_cast<TH1D*>(gDirectory->Get("../dctdiffnorm_tgt_No")))->SetBinContent(i+1,dctdiff_tgtno.at(i)/tgtnocounter);
+    (dynamic_cast<TH1D*>(gDirectory->Get("../dctdiffnorm_tgt_Diff")))->SetBinContent(i+1,dctdiff_tgtyes.at(i)/tgtyescounter-dctdiff_tgtno.at(i)/tgtnocounter);
+  }
+
+  for(auto const &asub:glbstuff.alfabeta){
     for(int i=0;i<dvhdiffnorm_tgtyes.at(asub).size();i++){
       // cout<<"suba="<<asub<<" i="<<i<<" dvhdiffnorm_tgtyes.at(asub).at(i)/sample.size()="<<dvhdiffnorm_tgtyes.at(asub).at(i)/sample.size()<<endl;
       (dynamic_cast<TH1D*>(gDirectory->Get(Form("../dvhdiffnorm_tgt_%.3f_All",asub))))->SetBinContent(i+1,(dvhdiffnorm_tgtyes.at(asub).at(i)+dvhdiffnorm_tgtno.at(asub).at(i))/(tgtnocounter+tgtyescounter));
@@ -186,17 +224,17 @@ void fillHisto(map<int, PatientData> &sample, const vector<double> &alfabeta, co
   return;
 }
 
-void PostLoopAnalysis(map<int, PatientData> &sample, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth){
+void PostLoopAnalysis(map<int, PatientData> &sample, const globalstuff &glbstuff){
 
   if(debug)
     cout<<"start PostLoopAnalysis"<<endl;
 
   //tentative to fit the peak at "high" dose in dvhcumnorm_tgt_%.3f_Diff ...and try to do stuff...
-  TF1 mygaus=TF1("mygaus","gaus", 0., 100);
-  for(auto const &asub:alfabeta){
-    mygaus.SetParameter(0,(dynamic_cast<TH1D*>(gDirectory->Get(Form("dvhcumnorm_tgt_%.3f_Diff",asub))))->GetBinContent((dynamic_cast<TH1D*>(gDirectory->Get(Form("dvhcumnorm_tgt_%.3f_Diff",asub))))->FindBin(20)));
+  TF1 mygaus=TF1("mygaus","-gaus", 0., 100);
+  for(auto const &asub:glbstuff.alfabeta){
+    mygaus.SetParameter(0,-(dynamic_cast<TH1D*>(gDirectory->Get(Form("dvhcumnorm_tgt_%.3f_Diff",asub))))->GetBinContent((dynamic_cast<TH1D*>(gDirectory->Get(Form("dvhcumnorm_tgt_%.3f_Diff",asub))))->FindBin(30)));
     mygaus.SetParameter(1,20);
-    (dynamic_cast<TH1D*>(gDirectory->Get(Form("dvhcumnorm_tgt_%.3f_Diff",asub))))->Fit("mygaus","QBM+","",15,30);
+    (dynamic_cast<TH1D*>(gDirectory->Get(Form("dvhcumnorm_tgt_%.3f_Diff",asub))))->Fit("mygaus","QBM+","",20,40);
     if(mygaus.GetParameter(1)<30 && mygaus.GetParameter(1)>10){
       TH1D* hAll=new TH1D(Form("dvhcumnorm_maxdiff_%.3f_All",asub), "Volume for dvhcumnnorm maxdiff dose value;Volume;Number of patients",100, 0., 1000);
       TH1D* hYes=new TH1D(Form("dvhcumnorm_maxdiff_%.3f_Yes",asub), "Volume for dvhcumnorm maxdiff dose value;Volume;Number of patients",100, 0., 1000);
@@ -281,7 +319,7 @@ int CreateNtcpSigmoidalSingle(TString pltname, const TVectorD &vx, const TVector
   return 0;
 }
 
-int CreateNtcpSigmoidalPredefined(map<int, PatientData> &sample, TString tgtname, const vector<double> &alfabeta, const vector<double> &nvalue4eud){
+int CreateNtcpSigmoidalPredefined(map<int, PatientData> &sample, TString tgtname){
 
   if(debug)
     cout<<"start CreateNtcpSigmoidalPredefined"<<endl;
@@ -442,15 +480,19 @@ string trim(const string& s) {
   return s.substr(start, end - start);
 }
 
- int loadDvhFile(const string& filename,   map<int, PatientData> &sample, const vector<double> &alfabeta) {
+ int loadDvhFile(const string& filename,   map<int, PatientData> &sample) {
+
+  if(debug)
+    cout<<"start loadDvhFile on "<<filename<<endl;
+
   std::ifstream in(filename);
   if (!in) {
-    throw std::runtime_error("loadDvhCsv: cannot open file " + filename);
+    throw std::runtime_error("loadDvhFile: cannot open file " + filename);
   }
   string line;
   // ---------- prima riga: header ----------
   if (!std::getline(in, line)){
-    throw std::runtime_error("loadDvhCsv: empty file " + filename);
+    throw std::runtime_error("loadDvhFile: empty file " + filename);
     return 1;
   }
 
@@ -458,13 +500,21 @@ string trim(const string& s) {
   std::regex id_pattern(R"(ML-\d{4})");
   // ---------- righe dati ----------
   while (std::getline(in, line)) {
-    PatientData patient;
+
+    if(debug>5)
+      cout<<"readed new line: "<<line<<endl;
+
+      PatientData patient;
     if (line.empty())
       continue;
     TString delimiter(" ");
     vector<string> parts = splitCsvLine(line, delimiter);
+
+    if(debug>5)
+      cout<<"parts.size()= "<<parts.size()<<endl;
+
     if (parts.size() < 8){
-      // throw std::runtime_error("loadDvhCsv: check your dvh file, there is a line with less than 8 elements: " + filename);
+      // throw std::runtime_error("loadDvhFile: check your dvh file, there is a line with less than 8 elements: " + filename);
       continue;
     }
 
@@ -492,125 +542,196 @@ string trim(const string& s) {
       readed = trim(parts[i]);
       patient.dvhmapcum.push_back(std::stod(readed)/patient.volume);
     }
-  patient.status=-1;
-  patient.dvhmapdiff.push_back(0);
-  for(int i=1; i<patient.dvhmapcum.size();i++)
-    patient.dvhmapdiff.push_back(patient.dvhmapcum.at(i-1)-patient.dvhmapcum.at(i));
-  sample.insert(std::pair{id,patient});
+    patient.status=-1;
+    patient.dvhmapdiff.push_back(0);
+    for(int i=1; i<patient.dvhmapcum.size();i++)
+      patient.dvhmapdiff.push_back(patient.dvhmapcum.at(i-1)-patient.dvhmapcum.at(i));
+    computeDCT(patient.dvhmapdiff, patient.dvhdctdiff);
+    sample.insert(std::pair{id,patient});
 }
 
-
   if(debug)
-    cout<<"loadDvhCsv done, read from "<<filename<<" "<<sample.size()<<" elements"<<endl;
+    cout<<"loadDvhFile done, read from "<<filename<<" "<<sample.size()<<" elements"<<endl;
   
     return 0;
 }
 
-// void OptimizeAlfaBeta(map<int, PatientData> &sample, double eqd2binwidth){
-//   ROOT::Math::Minimizer* fpFunctor= new ROOT::Math::Functor(this,&TABMactNtuTrack::EvaluateChi2,2);
-//   ROOT::Math::Functor* fpMinimizer = ROOT::Math::Factory::CreateMinimizer("", "");
 
-//   return;
-// }
-
-void optimizeLikehood(const map<int, PatientData> &sample){
+int optimizeLikehood(const map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex){
   
   //lambda
-  auto lamdalikehood = [&](const double* par) {
-      return functorLikehood(sample, par);
+  auto lamdalikehoodFull = [&](const double* par) {
+      return functorLikehoodFull(sample, par);
   };
-  ROOT::Math::Functor fpFunctor(lamdalikehood,4);
+  auto lamdalikehoodAlfabdone = [&](const double* par) {
+      return functorLikehoodAlfabdone(sample, par);
+  };
+  
+  ROOT::Math::Functor fpFunctor;
+  if (glbstuff.alfabdone < 0) 
+      fpFunctor = ROOT::Math::Functor(lamdalikehoodFull, 4);
+  else
+      fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdone, 3);
 
-  ROOT::Math::Minimizer* fpMinimizer = ROOT::Math::Factory::CreateMinimizer("Minuit2", "Combined");
+  std::unique_ptr<ROOT::Math::Minimizer> fpMinimizer(ROOT::Math::Factory::CreateMinimizer("Minuit2","Combined"));
+  // ROOT::Math::Minimizer* fpMinimizer = ROOT::Math::Factory::CreateMinimizer(glbstuff.fitalgo.at(fitalgindex).first, glbstuff.fitalgo.at(fitalgindex).second);
 
   fpMinimizer->SetFunction(fpFunctor);
   fpMinimizer->SetMaxFunctionCalls(1000000);
   fpMinimizer->SetMaxIterations(100000);
   fpMinimizer->SetTolerance(1e-2);
   fpMinimizer->SetStrategy(2);
-  // fpMinimizer->SetPrintLevel(2);
+  if(debug)
+    fpMinimizer->SetPrintLevel(2);
   
-  // fpMinimizer->SetMaxFunctionCalls(p_bmcon->GetNumIte());
-  // fpMinimizer->SetMaxIterations(p_bmcon->GetNumIte());
-  // fpMinimizer->SetTolerance(p_bmcon->GetParToll());
-  // fpMinimizer->SetPrintLevel(0);
-  // fpMinimizer->SetVariable(0,"beta_zero",-3.,0.1);
-  // fpMinimizer->SetVariable(1,"beta_eud",0.05,0.01);
-  // fpMinimizer->SetVariable(2,"alfabeta",0.1,3);
-  // fpMinimizer->SetVariable(3,"nvalue",0.1,100);
-
-  fpMinimizer->SetLimitedVariable(0, "beta_zero", -2.0, 0.01, -50.0, 50.0);
-  fpMinimizer->SetLimitedVariable(1, "beta_eud",  0.05, 0.01, -5.0, 5.0);
-  fpMinimizer->SetLimitedVariable(2, "alfabeta",  2.0, 0.01, 0.01, 5.0);
-  fpMinimizer->SetLimitedVariable(3, "nvalue",    1.0, 0.01, 0.01, 100.0);  
-
-  fpMinimizer->SetVariableValue(0,-10);
-  fpMinimizer->SetVariableValue(1,0.05);
-  fpMinimizer->SetVariableValue(2,2);
-  fpMinimizer->SetVariableValue(3,1);
+  for(const auto &v:glbstuff.fitpars)
+    fpMinimizer->SetLimitedVariable(v.first, v.second.first, v.second.second.at(0), v.second.second.at(1), v.second.second.at(2), v.second.second.at(3));
 
   fpMinimizer->Minimize();
   Int_t status=fpMinimizer->Status();
+  cout<<"optimizeLikehood: minimization done with "<<glbstuff.fitalgo.at(fitalgindex).first<<"/"<<glbstuff.fitalgo.at(fitalgindex).second<<endl;
   if(status==0){
-    double beta_zero=fpMinimizer->X()[0];
-    double beta_eud=fpMinimizer->X()[1];
-    double alfabeta=fpMinimizer->X()[2];
-    double nvalue=fpMinimizer->X()[3];
-    cout<<"minimization done: beta_zero="<<beta_zero<<"  beta_eud="<<beta_eud<<"  alfabeta="<<alfabeta<<"  nvalue"<<nvalue<<endl;
+    cout<<"status=0; CovMatrixStatus="<<fpMinimizer->CovMatrixStatus()<<"  Edm="<<fpMinimizer->Edm()<<"  degree of freedom:"<<fpMinimizer->NFree()<<"   -loglikehood minimum value:"<<fpMinimizer->MinValue()<<"  AIC="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()<<"  deviance/dof="<<2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())<<endl;
+    for(int i=0;i<fpMinimizer->NDim();i++){
+      glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)]=make_pair(fpMinimizer->X()[i], fpMinimizer->Errors()[i]);
+      cout<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<endl;
+    }
+    glbstuff.fitresults[fitalgindex].insert(glbstuff.fitresults[fitalgindex].end(), {(double)status, (double)fpMinimizer->CovMatrixStatus(), fpMinimizer->Edm(), (double)fpMinimizer->NFree(), fpMinimizer->MinValue(), 2*fpMinimizer->NFree()+2*fpMinimizer->MinValue(), 2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())});  
   }else{
     cout<<"minimization failed status="<<status<<endl;
+    glbstuff.fitresults[fitalgindex].insert(glbstuff.fitresults[fitalgindex].end(),{(double)status, -1.,-1.,-1.,-1.,-1.,-1.});  
   }
 
+  return status;
+}
+
+//likehood: 
+//par: 0=[0] firstfitted value in tf1, 1=secondfitted value in tf1, 2=nvalue, 3=alfabeta
+double functorLikehoodFull(const map<int, PatientData> &sample, const double* par){
+  double eval=0.;
+  for(const auto &paziente : sample)
+    eval-= std::log((paziente.second.tgt_acutegitox<0.5 ? 1.-1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente.second, par[3], par[2]))) : 1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente.second, par[3], par[2])))));
+  return eval;
+}
+
+//likehood: 
+//par: 0=[0] firstfitted value in tf1, 1=secondfitted value in tf1, 2=nvalue, 3=alfabeta
+double functorLikehoodAlfabdone(const map<int, PatientData> &sample, const double* par){
+  double eval=0.;
+  for(const auto &paziente : sample)
+    eval-= std::log(paziente.second.tgt_acutegitox<0.5 ? 1.-1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente.second, par[2]))) : 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente.second, par[2]))));
+  return eval;
+}
+
+void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex){
+
+  if(debug)
+    cout<<"start optlike_fill"<<endl;
+  TString name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_eud_optlike_All";
+  TH1D *hall=new TH1D(name, "eud value;eud;Number of patients",100, 0., 100);        
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"eud_optlike_No";
+  TH1D *hno=new TH1D(name, "eud value;eud;Number of patients",100, 0., 100);        
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"eud_optlike_Yes";
+  TH1D *hyes=new TH1D(name, "eud value;eud;Number of patients",100, 0., 100);        
+  
+  gDirectory->cd("ntpc_linear");
+  TGraph* gr_eud_vs_tox=new TGraph(sample.size());
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_eud_vs_tox";
+  gr_eud_vs_tox->SetName(name);
+  TGraph* gr_score_vs_tox=new TGraph(sample.size());
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_score_vs_tox";
+  gr_score_vs_tox->SetName(name);
+  int index=0;
+  for(auto &paziente : sample){
+    paziente.second.optlike_eud= (glbstuff.alfabdone<0) ? CalculateEudFromScratch(paziente.second,glbstuff.fittedpar.at(fitalgindex).at("alfabeta").first , glbstuff.fittedpar.at(fitalgindex).at("nvalue").first) : CalculateEudEqdAlreadyDone(paziente.second, glbstuff.fittedpar.at(fitalgindex).at("nvalue").first);
+    paziente.second.optlike_ntcpscore[fitalgindex] = 1./(1.+exp(-glbstuff.fittedpar.at(fitalgindex).at("beta_zero").first-glbstuff.fittedpar.at(fitalgindex).at("beta_eud").first*paziente.second.optlike_eud )); 
+    hall->Fill(paziente.second.optlike_eud);
+    if(paziente.second.tgt_acutegitox>0.5)
+      hyes->Fill(paziente.second.optlike_eud);
+    else
+      hno->Fill(paziente.second.optlike_eud);
+    gr_eud_vs_tox->SetPoint(index, paziente.second.optlike_eud, paziente.second.tgt_acutegitox);
+    gr_score_vs_tox->SetPoint(index, paziente.second.optlike_ntcpscore.at(fitalgindex), paziente.second.tgt_acutegitox);
+    index++;
+  }
+  gr_eud_vs_tox->Sort();
+
+  TF1* sigmoidbest=new TF1("sigmoidbest", "1./(1.+exp(-[0]-[1]*x))", 0, 1000);
+  sigmoidbest->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").first);
+  sigmoidbest->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud").first);
+  gr_eud_vs_tox->Fit(sigmoidbest, "BS+","",0,100);
+  gr_eud_vs_tox->SetMarkerStyle(20);
+  gr_eud_vs_tox->SetMarkerColor(2);
+  gr_eud_vs_tox->SetLineWidth(0);
+  gr_eud_vs_tox->SetLineColor(0);
+  gr_eud_vs_tox->SetDrawOption("AP*");
+  gr_eud_vs_tox->Write();
+  gr_score_vs_tox->SetMarkerStyle(20);
+  gr_score_vs_tox->SetMarkerColor(2);
+  gr_score_vs_tox->SetLineWidth(0);
+  gr_score_vs_tox->SetLineColor(0);
+  gr_score_vs_tox->SetDrawOption("AP*");
+  gr_score_vs_tox->Write();
+  gDirectory->cd("..");
+
+  if(debug)
+    cout<<"optlike_fill done"<<endl;
 
   return;
 }
 
-//likehood: 
-//par: 0=[0] firstfitted value in tf1, 1=secondfitted value in tf1, 2=alfabeta, 3=nvalue
-double functorLikehood(const map<int, PatientData> &sample, const double* par){
-  // TF1 like_sigmoid("like_sigmoid", "1./(1.+exp(-[0]-[1]*x))", 0, 1000);
-  // TF1 like_negsigmoid("like_negsigmoid", "1.-1./(1.+exp(-[0]-[1]*x))", 0, 1000);
-  // like_sigmoid.SetParameters(par[0], par[1]);
-  // like_negsigmoid.SetParameters(par[0],par[1]);
-  // double eval=1;
-  // for(const auto &paziente : sample){
-  //   double eud=CalculateEudFromScratch(paziente.second, par[2], par[3])
-  //   if(paziente.second.tgt_acutegitox>0)
-  //     eval*=like_sigmoid.Eval(eud);
-  //   else
-  //     eval*=like_negsigmoid.Eval(eud);
-  // }
-  double eval=0.;
-  for(const auto &paziente : sample)
-    eval-= std::log((paziente.second.tgt_acutegitox<0.5 ? 1.-1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente.second, par[2], par[3]))) : 1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente.second, par[2], par[3])))));
-  
-  return eval;
-}
 
-//TODO: minimization functor
-double functorMinimzation(map<int, PatientData> &sample, double eqd2binwidth, double alfabeta, double nvalue){
 
-  if(debug)
-    cout<<"start functorSimpleEud alfabeta="<<alfabeta<<"  nvalue"<<nvalue<<endl;
+double optlike_aucROC(const map<int, PatientData> &sample, const int fitalgindex)
+{
+  map<double, vector<int>, std::greater<double>> data;
 
-  TH1D tmpplotno("tmpplotyes","dummy;dummy;dummy",50,0,0);
-  TH1D tmpplotyes("tmpplotno","dummy;dummy;dummy",50,0,0);
-  for(auto &paziente : sample){
-    double eud=CalculateEudFromScratch(paziente.second, alfabeta, nvalue);
-    if(paziente.second.tgt_acutegitox>0)
-      tmpplotyes.Fill(eud);
+  int nPos = 0;
+  int nNeg = 0;
+
+  for(const auto &paziente:sample){
+    if(paziente.second.tgt_acutegitox>0.5)
+      nPos++;
     else
-      tmpplotno.Fill(eud);
+      nNeg++;     
+    data[paziente.second.optlike_ntcpscore.at(fitalgindex)].push_back(paziente.second.tgt_acutegitox);
   }
-  double chi2;
-  
 
-  if(debug)
-    cout<<"functorSimpleEud done"<<endl;
+  if (nPos == 0 || nNeg == 0)
+      return -1;
 
-  return chi2;
+  double tp = 0.0;
+  double fp = 0.0;
+  double prevTPR = 0.0;
+  double prevFPR = 0.0;
+  double auc = 0.0;
+  int ip=0;
+  TGraph* grROC = new TGraph();
+  grROC->SetName("optlike_roc_curve");
+  grROC->SetPoint(ip++, 0.0, 0.0);
+  for (const auto& kv : data) {
+    for (int label : kv.second) {
+      if (label == 1) 
+        tp++;
+      else 
+        fp++;
+  }
+    double TPR = tp /nPos;
+    double FPR = fp /nNeg;
+    // cout<<"score= "<<kv.first<<"  label="<<kv.second.at(0)<<" FPR="<<FPR<<" TPR="<<TPR<<" auc="<<auc<<endl;
+    auc += (FPR - prevFPR) * (TPR + prevTPR) / 2.0;
+    grROC->SetPoint(ip++, FPR, TPR);
+    prevTPR = TPR;
+    prevFPR = FPR;
+  }
+  grROC->SetTitle(Form("ROC curve for likehood optmized simple NTCP model with AUC=%f;False Positive Rate;True Positive Rate",auc));
+  grROC->SetLineWidth(2);
+  grROC->SetMarkerStyle(20);
+  grROC->Draw("ALP");
+  grROC->Write();
+
+  return auc;
 }
-
 
 //evaluate eud given an alfabeta and an nvalue
 double CalculateEudFromScratch(const PatientData &paziente, double alfabeta, double nvalue){
@@ -629,19 +750,36 @@ double CalculateEudFromScratch(const PatientData &paziente, double alfabeta, dou
     return eud;
 }
 
-int evaluateEqdEud(map<int, PatientData> &sample, const vector<double> &alfabeta, const vector<double> &nvalue4eud, double eqd2binwidth){
+double CalculateEudEqdAlreadyDone(const PatientData &paziente, double nvalue){
+
+  if(debug)
+    cout<<"start CalculateEudEqdAlreadyDone with paziente.id="<<paziente.id<<endl;
+
+    double eud=0;
+    for(int i=0;i<paziente.dvhmapdiff.size();i++)
+      eud+=  pow((double)i,1./nvalue)*paziente.dvhmapdiff.at(i);
+    eud=pow(eud,nvalue);
+    
+  if(debug)
+    cout<<"CalculateEudEqdAlreadyDone done; eud="<<eud<<endl;
+
+    return eud;
+}
+
+//fill paziente.second.dvhdiffnormmap, paziente.second.dvhcumnormmap, paziente.second.eudmap if alfabdone==false
+void evaluateEqdEud(map<int, PatientData> &sample, const globalstuff &glbstuff){
   
   if(debug)
   cout<<"start evaluateEqdEud"<<endl;
   
   for(auto &paziente : sample){
-    for(auto const &asub:alfabeta){      
+    for(auto const &asub:glbstuff.alfabeta){      
 
       //calculate dvhdiffnormmap
       paziente.second.dvhdiffnormmap[asub].clear();
-      paziente.second.dvhdiffnormmap[asub].resize(paziente.second.dvhmapdiff.size()/eqd2binwidth+0.5);
+      paziente.second.dvhdiffnormmap[asub].resize(paziente.second.dvhmapdiff.size()/glbstuff.eqd2binwidth+0.5);
       paziente.second.dvhcumnormmap[asub].clear();
-      paziente.second.dvhcumnormmap[asub].resize(paziente.second.dvhmapcum.size()/eqd2binwidth+0.5);
+      paziente.second.dvhcumnormmap[asub].resize(paziente.second.dvhmapcum.size()/glbstuff.eqd2binwidth+0.5);
       
       vector<pair<double, double>> tmpdiffvec; //eqd dose, volume
       for(int i=0;i<paziente.second.dvhmapdiff.size();i++)
@@ -649,7 +787,7 @@ int evaluateEqdEud(map<int, PatientData> &sample, const vector<double> &alfabeta
         
         int afterdiffidx=0;
         for(int i=0;i<paziente.second.dvhdiffnormmap[asub].size();i++){ 
-          double dose=eqd2binwidth*(i);
+          double dose=glbstuff.eqd2binwidth*(i);
           for(int k=afterdiffidx;k<tmpdiffvec.size();k++){
             if(tmpdiffvec.at(k).first>dose)
             break;
@@ -660,7 +798,7 @@ int evaluateEqdEud(map<int, PatientData> &sample, const vector<double> &alfabeta
           else
             paziente.second.dvhdiffnormmap[asub].at(i)=tmpdiffvec.at(afterdiffidx).second;
           
-          for(auto const &n:nvalue4eud)
+          for(auto const &n:glbstuff.nvalue4eud)
             paziente.second.eudmap[make_pair(n,asub)]+=pow(EqdDose(paziente.second, asub, dose),1./n)*paziente.second.dvhdiffnormmap[asub].at(i);
         }
         
@@ -669,7 +807,7 @@ int evaluateEqdEud(map<int, PatientData> &sample, const vector<double> &alfabeta
           tmpcumvec.push_back(make_pair(EqdDose(paziente.second, asub, (double)i),paziente.second.dvhmapcum.at(i)));//eqd
         int aftercumidx=0;
         for(int i=0;i<paziente.second.dvhcumnormmap[asub].size();i++){ 
-          double dose=eqd2binwidth*(i);
+          double dose=glbstuff.eqd2binwidth*(i);
           for(int k=aftercumidx;k<tmpcumvec.size();k++){
             if(tmpcumvec.at(k).first>dose)
               break;
@@ -681,7 +819,7 @@ int evaluateEqdEud(map<int, PatientData> &sample, const vector<double> &alfabeta
             paziente.second.dvhcumnormmap[asub].at(i)=tmpcumvec.at(aftercumidx).second;
         }
 
-      for(auto const &n:nvalue4eud)
+      for(auto const &n:glbstuff.nvalue4eud)
         paziente.second.eudmap.at(make_pair(n,asub))=pow(paziente.second.eudmap.at(make_pair(n,asub)),n);
     } //end of loop on alfabeta
   }//end of loop on patients
@@ -689,8 +827,64 @@ int evaluateEqdEud(map<int, PatientData> &sample, const vector<double> &alfabeta
   if(debug)
     cout<<"evaluateEqdEud done"<<endl;
   
-  return 0;
+  return;
 }
+
+//fill paziente.second.dvhdiffnormmap, paziente.second.dvhcumnormmap, paziente.second.eudmap if alfabdone==false
+void FillEqdEud(map<int, PatientData> &sample, const globalstuff &glbstuff){
+  
+  if(debug)
+  cout<<"start FillEqdEud"<<endl;
+  
+  for(auto &paziente : sample){
+
+    //calculate dvhdiffnormmap
+    paziente.second.dvhdiffnormmap[glbstuff.alfabdone].clear();
+    paziente.second.dvhdiffnormmap[glbstuff.alfabdone].resize(paziente.second.dvhmapdiff.size()/glbstuff.eqd2binwidth+0.5);
+    paziente.second.dvhcumnormmap[glbstuff.alfabdone].clear();
+    paziente.second.dvhcumnormmap[glbstuff.alfabdone].resize(paziente.second.dvhmapcum.size()/glbstuff.eqd2binwidth+0.5);
+          
+      int afterdiffidx=0;
+      for(int i=0;i<paziente.second.dvhdiffnormmap[glbstuff.alfabdone].size();i++){ 
+        double dose=glbstuff.eqd2binwidth*(i);
+        for(int k=afterdiffidx;k<paziente.second.dvhmapdiff.size();k++){
+          if(k>dose)
+          break;
+          afterdiffidx=k;
+        }
+        if(afterdiffidx>0)
+          paziente.second.dvhdiffnormmap[glbstuff.alfabdone].at(i)=(paziente.second.dvhmapdiff.at(afterdiffidx)+paziente.second.dvhmapdiff.at(afterdiffidx-1))/2.;
+        else
+          paziente.second.dvhdiffnormmap[glbstuff.alfabdone].at(i)=paziente.second.dvhmapdiff.at(afterdiffidx);
+        
+        for(auto const &n:glbstuff.nvalue4eud)
+          paziente.second.eudmap[make_pair(n,glbstuff.alfabdone)]+=pow(dose,1./n)*paziente.second.dvhdiffnormmap[glbstuff.alfabdone].at(i);
+      }
+      
+      int aftercumidx=0;
+      for(int i=0;i<paziente.second.dvhcumnormmap[glbstuff.alfabdone].size();i++){ 
+        double dose=glbstuff.eqd2binwidth*(i);
+        for(int k=aftercumidx;k<paziente.second.dvhmapcum.size();k++){
+          if(k>dose)
+            break;
+          aftercumidx=k;
+        }
+        if(aftercumidx>0)
+          paziente.second.dvhcumnormmap[glbstuff.alfabdone].at(i)=(paziente.second.dvhmapcum.at(aftercumidx)+paziente.second.dvhmapcum.at(aftercumidx-1))/2.;
+        else
+          paziente.second.dvhcumnormmap[glbstuff.alfabdone].at(i)=paziente.second.dvhmapcum.at(aftercumidx);
+      }
+
+    for(auto const &n:glbstuff.nvalue4eud)
+      paziente.second.eudmap.at(make_pair(n,glbstuff.alfabdone))=pow(paziente.second.eudmap.at(make_pair(n,glbstuff.alfabdone)),n);
+  }//end of loop on patients
+
+  if(debug)
+    cout<<"FillEqdEud done"<<endl;
+  
+  return;
+}
+
 
 int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname){
 
@@ -765,4 +959,40 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
     cout<<"loadMetaFile done, target aquired target="<<tgtname<<"  overall sample size="<<sample.size()<<endl;
 
   return 0;
+}
+
+
+// ********************************* useless stuff ******************************
+//INCOMPLETE: minimization functor
+double functorMinimzation(map<int, PatientData> &sample, double eqd2binwidth, double alfabeta, double nvalue){
+
+  if(debug)
+    cout<<"start functorSimpleEud alfabeta="<<alfabeta<<"  nvalue"<<nvalue<<endl;
+
+  TH1D tmpplotno("tmpplotyes","dummy;dummy;dummy",50,0,0);
+  TH1D tmpplotyes("tmpplotno","dummy;dummy;dummy",50,0,0);
+  for(auto &paziente : sample){
+    double eud=CalculateEudFromScratch(paziente.second, alfabeta, nvalue);
+    if(paziente.second.tgt_acutegitox>0)
+      tmpplotyes.Fill(eud);
+    else
+      tmpplotno.Fill(eud);
+  }
+  double chi2;
+  
+
+  if(debug)
+    cout<<"functorSimpleEud done"<<endl;
+
+  return chi2;
+}
+
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<int, pair<string,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo){
+  glbstuff.alfabdone=alfabdone;
+  glbstuff.eqd2binwidth=eqd2binwidth;
+  glbstuff.nvalue4eud=nvalue4eud;
+  glbstuff.alfabeta=alfabeta;
+  glbstuff.fitpars=fitpars;
+  glbstuff.fitalgo=fitalgo;
+  return;
 }
