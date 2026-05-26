@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
   double eqd2binwidth=1.; //binwidth in gy di eqd2 normalizzato
   vector<double> alfabeta={10};
   vector<double> nvalue4eud={ 0.01,0.1,1,5,10,100}; //1->eud=mean dose, +inf->eud=max dose
-  map<int, pair<string,vector<double>>> fitpars;
+  map<string, pair<int,vector<double>>> fitpars;
   vector<pair<string,string>> fitalgo;
   fitalgo.push_back(make_pair("Minuit2","Simplex"));
   fitalgo.push_back(make_pair("Minuit2","Migrad"));
@@ -26,14 +26,14 @@ int main(int argc, char* argv[]) {
   // fitalgo.push_back(make_pair("Generic",""));
   // fitalgo.push_back(make_pair("GSLSimAn",""));
   vector parlimits = {-2.0, 0.01, -50.0, 50.0};
-  fitpars[0]=make_pair("beta_zero", parlimits);
+  fitpars["beta_zero"]=make_pair(0, parlimits);
   parlimits={0.05, 0.01, -5.0, 5.0};
-  fitpars[1]=make_pair("beta_eud", parlimits);
+  fitpars["beta_eud"]=make_pair(1, parlimits);
   parlimits={1.0, 0.01, 0.01, 100.0};
-  fitpars[2]=make_pair("nvalue", parlimits);
+  fitpars["nvalue"]=make_pair(2, parlimits);
   if(alfabdone<0){
     parlimits={2.0, 0.01, 0.01, 5.0};
-    fitpars[3]=make_pair("alfabeta", parlimits);
+    fitpars["alfabeta"]=make_pair(3, parlimits);
   }
 
   for (int i = 0; i < argc; i++) {
@@ -90,6 +90,8 @@ int main(int argc, char* argv[]) {
       cout<<"fitalgo with "<<fitalgo.at(i).first<<" and "<<fitalgo.at(i).second<<" done. AUC="<<optauc<<endl;
     }
   }
+
+  DrawLikeHood(sample, glbstuff);
 
   outrootfile->Write();
   outrootfile->Close();

@@ -81,7 +81,7 @@ struct globalstuff{
 
   //fitted stuff
   vector<pair<string,string>> fitalgo; //algorithm used by tminimizer for fitting
-  map<int, pair<string,vector<double>>> fitpars; //ntcp model parameters key: number of parameters, value: name, value, step, lower, upper (for setlimitedvariable)
+  map<string, pair<int,vector<double>>> fitpars; //ntcp model parameters key: name, value: 0:number of parameter index, 1=initial value, 2=step, 3=lower, 4=upper (for setlimitedvariable)
   map<int, vector<double>> fitresults; //key: fitalgo index, value: 0=status, 1=CovMatrixStatus, 2=edm, 3=dof, 4=likehood->minvalue, 5=aic, 6=dev/dof
   map<int, map<string,pair<double,double>>> fittedpar; //key: fitalgo index, value: fitted parameter name, value and error
   int bestvalue; //index of the best fit 
@@ -110,6 +110,7 @@ int optimizeLikehood(const map<int, PatientData> &sample, globalstuff &glbstuff,
 void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex);
 double optlike_aucROC(const map<int, PatientData> &sample, const int fitalgindex);
 void computeDCT(const vector<double>& x, vector<double>& c);
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<int, pair<string,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo);
+void  DrawLikeHood(map<int, PatientData> &sample, const globalstuff &glbstuff);
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo);
 
 inline double EqdDose(PatientData &paziente, double alfabeta, double dose){return dose*(alfabeta+dose/paziente.nfraction)/(alfabeta+2.);};

@@ -585,7 +585,7 @@ int optimizeLikehood(const map<int, PatientData> &sample, globalstuff &glbstuff,
     fpMinimizer->SetPrintLevel(2);
   
   for(const auto &v:glbstuff.fitpars)
-    fpMinimizer->SetLimitedVariable(v.first, v.second.first, v.second.second.at(0), v.second.second.at(1), v.second.second.at(2), v.second.second.at(3));
+    fpMinimizer->SetLimitedVariable(v.second.first, v.first, v.second.second.at(0), v.second.second.at(1), v.second.second.at(2), v.second.second.at(3));
 
   fpMinimizer->Minimize();
   Int_t status=fpMinimizer->Status();
@@ -731,6 +731,33 @@ double optlike_aucROC(const map<int, PatientData> &sample, const int fitalgindex
   grROC->Write();
 
   return auc;
+}
+
+void  DrawLikeHood(map<int, PatientData> &sample, const globalstuff &glbstuff){
+  
+  if(debug)
+    cout<<"start DrawLikeHood"<<endl;
+
+  for (auto it1 = glbstuff.fitpars.begin(); it1 != glbstuff.fitpars.end(); ++it1){
+    TH1D* h=new TH1D(("loglikehood_"+it1->first).c_str(), ("loglikehood value varying "+it1->first+"with fixed other parameters;"+it1->first+";loglikehood").c_str(),1000, it1->second.second.at(3) , it1->second.second.at(4));
+    double par[glbstuff.fittedpar.at(bestvalue).size()];
+    for(auto &val:glbstuff.fittedpar.at(bestvalue)){
+      par[glbstuff.fitpars.at(val.first).first]=val.second.first;
+      for(int k=0;k<h->GetXaxis()->GetNbins()k++){
+        par[it1->second.first]=h->GetBinCenter(k);
+      }
+    }
+
+    for (auto it2 = std::next(it1); it2 != glbstuff.fitpars.end(); ++it2){
+      TH2D* h=new TH2D(("loglikehood_"+it1->first+"_"+it2->first).c_str(), ("loglikehood value varying "+it1->first+"and"+it2->first+";"+it1->first+";"+it2->first).c_str(),1000, it1->second.second.at(3) , it1->second.second.at(4), 1000, it2->second.second.at(3) , it2->second.second.at(4));
+    }
+  }
+
+  
+  
+  
+
+  return;
 }
 
 //evaluate eud given an alfabeta and an nvalue
@@ -962,32 +989,7 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
 }
 
 
-// ********************************* useless stuff ******************************
-//INCOMPLETE: minimization functor
-double functorMinimzation(map<int, PatientData> &sample, double eqd2binwidth, double alfabeta, double nvalue){
-
-  if(debug)
-    cout<<"start functorSimpleEud alfabeta="<<alfabeta<<"  nvalue"<<nvalue<<endl;
-
-  TH1D tmpplotno("tmpplotyes","dummy;dummy;dummy",50,0,0);
-  TH1D tmpplotyes("tmpplotno","dummy;dummy;dummy",50,0,0);
-  for(auto &paziente : sample){
-    double eud=CalculateEudFromScratch(paziente.second, alfabeta, nvalue);
-    if(paziente.second.tgt_acutegitox>0)
-      tmpplotyes.Fill(eud);
-    else
-      tmpplotno.Fill(eud);
-  }
-  double chi2;
-  
-
-  if(debug)
-    cout<<"functorSimpleEud done"<<endl;
-
-  return chi2;
-}
-
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<int, pair<string,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo){
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo){
   glbstuff.alfabdone=alfabdone;
   glbstuff.eqd2binwidth=eqd2binwidth;
   glbstuff.nvalue4eud=nvalue4eud;
