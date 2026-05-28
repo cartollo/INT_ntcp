@@ -11,20 +11,23 @@ int main(int argc, char* argv[]) {
   TString outrootname("ntcp_outputs.root");
   TString txtappended(".txt");
   TString tgtname("acute GI toxicity");
-  double alfabdone=10; //if the dose are already normalized for fractions and alfa/beta, otherwise set to -1
+  bool issynthetic=true;
+  double alfabdone=-1; //if the dose are already normalized for fractions and alfa/beta, otherwise set to -1
   double eqd2binwidth=1.; //binwidth in gy di eqd2 normalizzato
-  vector<double> alfabeta={10};
+  vector<double> alfabeta={0.1,0.5,1,2,4,10};
   vector<double> nvalue4eud={ 0.01,0.1,1,5,10,100}; //1->eud=mean dose, +inf->eud=max dose
   map<string, pair<int,vector<double>>> fitpars;
   vector<pair<string,string>> fitalgo;
-  fitalgo.push_back(make_pair("Minuit2","Simplex"));
+  // fitalgo.push_back(make_pair("Minuit2","Simplex"));
   fitalgo.push_back(make_pair("Minuit2","Migrad"));
-  fitalgo.push_back(make_pair("Minuit2","Hesse"));
+  // fitalgo.push_back(make_pair("Minuit2","Hesse"));
   fitalgo.push_back(make_pair("Minuit2","Combined"));
-  fitalgo.push_back(make_pair("Minuit2","Scan"));
-  fitalgo.push_back(make_pair("GSLMultiMin","BFGS2"));
+  // fitalgo.push_back(make_pair("Minuit2","Scan"));
+  // fitalgo.push_back(make_pair("GSLMultiMin","BFGS2"));
   // fitalgo.push_back(make_pair("Generic",""));
   // fitalgo.push_back(make_pair("GSLSimAn",""));
+  
+  //value: 0:number of parameter index, 1=initial value, 2=step, 3=lower, 4=upper (for setlimitedvariable)
   vector parlimits = {-2.0, 0.01, -50.0, 50.0};
   fitpars["beta_zero"]=make_pair(0, parlimits);
   parlimits={0.05, 0.01, -5.0, 5.0};
@@ -32,8 +35,12 @@ int main(int argc, char* argv[]) {
   parlimits={1.0, 0.01, 0.01, 100.0};
   fitpars["nvalue"]=make_pair(2, parlimits);
   if(alfabdone<0){
-    parlimits={2.0, 0.01, 0.01, 5.0};
+    parlimits={0.5, 0.01, 0.01, 5.0};
     fitpars["alfabeta"]=make_pair(3, parlimits);
+  }
+  if(issynthetic){
+    dvhafilename="Synthetic_Data/clinical_nfrac_out_risk.csv";
+    outrootname="ntcp_synthetic_out.root";
   }
 
   for (int i = 0; i < argc; i++) {
@@ -47,17 +54,22 @@ int main(int argc, char* argv[]) {
   }
 
   map<int, PatientData> sample, samrect;
-  if(loadDvhFile(dvhafilename.Data(), sample))
-    return 1;
+  if(issynthetic){
+    if(loadSyntheticFile(dvhafilename.Data(), sample))
+      return 1;
+  }else{
+    if(loadDvhFile(dvhafilename.Data(), sample))
+      return 1;
+    if(loadMetaFile(metafilename.Data(), sample, tgtname))
+      return 1;
+  }
   if(dvhbfilename.Length()>0){
     if(loadDvhFile(dvhbfilename.Data(), samrect))
       return 1;
   }
-  if(loadMetaFile(metafilename.Data(), sample, tgtname))
-    return 1;
 
   globalstuff glbstuff; 
-  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo);
+  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, issynthetic);
 
   if(alfabdone<0){
     evaluateEqdEud(sample, glbstuff);

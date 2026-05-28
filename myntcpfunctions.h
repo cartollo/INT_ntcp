@@ -61,6 +61,8 @@ int nfraction;
 double dose_per_fraction;
 double mean_dose_rectum; 
 int tgt_acutegitox;
+int clinical_factor; //at present, only for synthetic data
+int operation; //at present, =TURP for synthetic data
 
 //calculated stuff
 // map<double, vector<double>> eqd2map; //equivalent dose in 2 gy fraction, each value in this vector is a dose value, key=alfabeta
@@ -78,6 +80,8 @@ struct globalstuff{
   double eqd2binwidth;
   vector<double> alfabeta;
   vector<double> nvalue4eud;
+  int maxbin;
+  int issynthetic;
 
   //fitted stuff
   vector<pair<string,string>> fitalgo; //algorithm used by tminimizer for fitting
@@ -96,6 +100,7 @@ int CreateNtcpSigmoidalPredefined(map<int, PatientData> &sample, TString tgtname
 void PrintSampleLine(int idx, const   map<int, PatientData> &sample);
 int loadDvhFile(const string& filename,   map<int, PatientData> &sample);
 int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname);
+int loadSyntheticFile(const string& filename,   map<int, PatientData> &sample);
 void evaluateEqdEud(map<int, PatientData> &sample, const globalstuff &glbstuff);
 void FillEqdEud(map<int, PatientData> &sample, const globalstuff &glbstuff);
 double CalculateEudFromScratch(const PatientData &paziente, double alfabeta, double nvalue);
@@ -110,7 +115,7 @@ int optimizeLikehood(const map<int, PatientData> &sample, globalstuff &glbstuff,
 void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex);
 double optlike_aucROC(const map<int, PatientData> &sample, const int fitalgindex);
 void computeDCT(const vector<double>& x, vector<double>& c);
-void  DrawLikeHood(map<int, PatientData> &sample, const globalstuff &glbstuff);
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo);
+void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuff);
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int issynthetic);
 
 inline double EqdDose(PatientData &paziente, double alfabeta, double dose){return dose*(alfabeta+dose/paziente.nfraction)/(alfabeta+2.);};
