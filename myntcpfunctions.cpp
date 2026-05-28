@@ -288,6 +288,7 @@ void PostLoopAnalysis(map<int, PatientData> &sample, const globalstuff &glbstuff
 return;
 }
 
+//select the algorithm with the best auc, cosidering only tracking status==0 and covmatrixstatus==3 (accurate)
 void ChooseBestFit(globalstuff &glbstuff){
 
   if(debug)
@@ -926,9 +927,13 @@ void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuf
 
       if(!std::isfinite(ex) || ex<=0.) ex=std::abs(pars[it1->first])*0.2+1.;
       if(!std::isfinite(ey) || ey<=0.) ey=std::abs(pars[it2->first])*0.2+1.;
+      double xmin=std::max(pars[it1->first]-3.*ex, glbstuff.fitpars.at(it1->second).second.at(2));
+      double xmax=std::min(pars[it1->first]+3.*ex, glbstuff.fitpars.at(it1->second).second.at(3));
 
-      TH2D* h2=new TH2D(("hlike_"+it1->second+"_vs_"+it2->second).c_str(),("Likelihood scan "+it1->second+" vs "+it2->second+";"+it1->second+";"+it2->second+";NLL").c_str(),100, pars[it1->first]-3.*ex, pars[it1->first]+3.*ex, 100, pars[it2->first]-3.*ey, pars[it2->first]+3.*ey);
-      cout<<"fatto plot"<<endl;
+      double ymin=std::max(pars[it2->first]-3.*ey, glbstuff.fitpars.at(it2->second).second.at(2));
+      double ymax=std::min(pars[it2->first]+3.*ey, glbstuff.fitpars.at(it2->second).second.at(3));      
+
+      TH2D* h2=new TH2D(("hlike_"+it1->second+"_vs_"+it2->second).c_str(),("Likelihood scan "+it1->second+" vs "+it2->second+";"+it1->second+";"+it2->second+";NLL").c_str(),100,xmin, xmax, 100, ymin, ymax);
       std::vector<double> trial=pars;
 
       for(int ix=1;ix<=h2->GetNbinsX();ix++){
@@ -939,7 +944,7 @@ void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuf
 
           double val=functorLikehoodFull(sample, trial.data());
 
-          if(!std::isfinite(val)) val=1e30;
+          if(!std::isfinite(val)) val=9999;
 
           h2->SetBinContent(ix, iy, val);
         }
