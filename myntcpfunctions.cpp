@@ -284,7 +284,32 @@ void PostLoopAnalysis(map<int, PatientData> &sample, const globalstuff &glbstuff
       cout<<"PostLoopAnalysis: fit on "<<Form("dvhcumnorm_tgt_%.3f_Diff",asub)<<" failed, skip the postloop analysis on this case"<<endl;
     }
   }
+  
 return;
+}
+
+void ChooseBestFit(globalstuff &glbstuff){
+
+  if(debug)
+    cout<<"start ChooseBestFit"<<endl;
+
+  glbstuff.bestvalue=-1;
+  double bestauc=-1;
+  for(const auto &v:glbstuff.fitresults){
+    if(v.second.at(0)==0 && v.second.at(1)==3){ //status==0 and covariance matrix=3: "accurate"
+      if(v.second.at(7)>bestauc){
+        glbstuff.bestvalue=v.first;
+        bestauc=v.second.at(7);
+      }
+    }
+  }
+
+  if(glbstuff.bestvalue>=0)
+    cout<<"ChooseBestFit done, bestvalue="<<glbstuff.bestvalue<<"  best algorithm="<<glbstuff.fitalgo.at(glbstuff.bestvalue).first<<"/"<<glbstuff.fitalgo.at(glbstuff.bestvalue).second<<endl;
+  else
+    cout<<"WARNING: ChooseBestFit: glbstuff.bestvalue cannot be set"<<endl;
+
+  return;
 }
 
 double fitSigmoidal(TGraph* graph, int parnum, int functype){
@@ -870,6 +895,9 @@ double optlike_aucROC(const map<int, PatientData> &sample, const int fitalgindex
 
 void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuff){
 
+  if(debug)
+    cout<<"start DrawLikeHood"<<endl;
+
   if(!glbstuff.fittedpar.count(glbstuff.bestvalue)){
     std::cerr<<"DrawLikeHood: bestvalue not found"<<std::endl;
     return;
@@ -877,7 +905,7 @@ void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuf
 
   std::map<int, std::string> orderedNames;
   for(const auto &p : glbstuff.fitpars)
-    orderedNames[p.second.first]=p.first;
+    orderedNames[p.second.first]=p.first; //key=index, value=fitted parameter name
 
   std::vector<double> pars(orderedNames.size());
   std::vector<double> errs(orderedNames.size());
@@ -899,108 +927,29 @@ void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuf
       if(!std::isfinite(ex) || ex<=0.) ex=std::abs(pars[it1->first])*0.2+1.;
       if(!std::isfinite(ey) || ey<=0.) ey=std::abs(pars[it2->first])*0.2+1.;
 
-      TH2D* h=new TH2D(("hlike_"+it1->second+"_vs_"+it2->second).c_str(),("Likelihood scan "+it1->second+" vs "+it2->second+";"+it1->second+";"+it2->second+";NLL").c_str(),100, pars[it1->first]-3.*ex, pars[it1->first]+3.*ex, 100, pars[it2->first]-3.*ey, pars[it2->first]+3.*ey);
-
+      TH2D* h2=new TH2D(("hlike_"+it1->second+"_vs_"+it2->second).c_str(),("Likelihood scan "+it1->second+" vs "+it2->second+";"+it1->second+";"+it2->second+";NLL").c_str(),100, pars[it1->first]-3.*ex, pars[it1->first]+3.*ex, 100, pars[it2->first]-3.*ey, pars[it2->first]+3.*ey);
+      cout<<"fatto plot"<<endl;
       std::vector<double> trial=pars;
 
-      for(int ix=1;ix<=h->GetNbinsX();ix++){
-        trial[it1->first]=h->GetXaxis()->GetBinCenter(ix);
+      for(int ix=1;ix<=h2->GetNbinsX();ix++){
+        trial[it1->first]=h2->GetXaxis()->GetBinCenter(ix);
 
-        for(int iy=1;iy<=h->GetNbinsY();iy++){
-          trial[it2->first]=h->GetYaxis()->GetBinCenter(iy);
+        for(int iy=1;iy<=h2->GetNbinsY();iy++){
+          trial[it2->first]=h2->GetYaxis()->GetBinCenter(iy);
 
           double val=functorLikehoodFull(sample, trial.data());
 
           if(!std::isfinite(val)) val=1e30;
 
-          h->SetBinContent(ix, iy, val);
+          h2->SetBinContent(ix, iy, val);
         }
       }
     }
   }
+
+return;
 }
 
-TH2D* DrawLikelihood2D(
-    ROOT::Math::Minimizer* minimizer,
-    const std::function<double(const double*)>& fcn,
-    int ipar1,
-    int ipar2,
-    int nbins1 = 100,
-    int nbins2 = 100,
-    double scale1 = 3.0,
-    double scale2 = 3.0
-)
-{
-    const double* best = minimizer->X();
-
-    const int npar = minimizer->NDim();
-
-    std::vector<double> pars(best, best + npar);
-
-    double x0 = best[ipar1];
-    double y0 = best[ipar2];
-
-    double ex =
-        std::sqrt(minimizer->CovMatrix(ipar1, ipar1));
-
-    double ey =
-        std::sqrt(minimizer->CovMatrix(ipar2, ipar2));
-
-    double xmin = x0 - scale1 * ex;
-    double xmax = x0 + scale1 * ex;
-
-    double ymin = y0 - scale2 * ey;
-    double ymax = y0 + scale2 * ey;
-
-    std::string hname =
-        "hlike_"
-        + std::string(minimizer->VariableName(ipar1))
-        + "_vs_"
-        + std::string(minimizer->VariableName(ipar2));
-
-    std::string htitle =
-        "Likelihood scan "
-        + std::string(minimizer->VariableName(ipar1))
-        + " vs "
-        + std::string(minimizer->VariableName(ipar2))
-        + ";"
-        + minimizer->VariableName(ipar1)
-        + ";"
-        + minimizer->VariableName(ipar2);
-
-    TH2D* h = new TH2D(
-        hname.c_str(),
-        htitle.c_str(),
-        nbins1,
-        xmin,
-        xmax,
-        nbins2,
-        ymin,
-        ymax
-    );
-
-    for (int ix = 1; ix <= nbins1; ++ix)
-    {
-        double x = h->GetXaxis()->GetBinCenter(ix);
-
-        for (int iy = 1; iy <= nbins2; ++iy)
-        {
-            double y = h->GetYaxis()->GetBinCenter(iy);
-
-            pars[ipar1] = x;
-            pars[ipar2] = y;
-
-            double val = fcn(pars.data());
-
-            if (!std::isfinite(val))
-                val = 1e30;
-
-            h->SetBinContent(ix, iy, val);
-        }
-    }
-
-    return h;
-}
 
 //evaluate eud given an alfabeta and an nvalue
 double CalculateEudFromScratch(const PatientData &paziente, double alfabeta, double nvalue){
