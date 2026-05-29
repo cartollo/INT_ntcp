@@ -103,9 +103,10 @@ int main(int argc, char* argv[]) {
     int optstatus=optimizeLikehood(sample, glbstuff, i);//0 because it's the first index for fitalgo which has only one enters, for the moment
     if(optstatus==0){
       optlike_fill(sample, glbstuff,i);
-      double optauc=optlike_aucROC(sample, i);
+      double optauc=optlike_aucROC(sample, glbstuff, i);
       cout<<"fitalgo with "<<fitalgo.at(i).first<<" and "<<fitalgo.at(i).second<<" done. AUC="<<optauc<<endl;
       SetAuc(i, optauc, glbstuff); 
+      PlotCalibrationCurveQuantiles(sample, glbstuff, i, 10);    
     }
   }
   

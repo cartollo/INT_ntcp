@@ -796,208 +796,6 @@ double functorLikehoodAlfabdoneClinical_0(const map<int, PatientData> &sample, c
   return eval;
 }
 
-
-void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex){
-
-  if(debug)
-    cout<<"start optlike_fill"<<endl;
-  TString name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_eud_optlike_All";
-  TH1D *hall=new TH1D(name, "eud value;eud;Number of patients",100, 0., 100);        
-  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"eud_optlike_No";
-  TH1D *hno=new TH1D(name, "eud value;eud;Number of patients",100, 0., 100);        
-  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"eud_optlike_Yes";
-  TH1D *hyes=new TH1D(name, "eud value;eud;Number of patients",100, 0., 100);        
-  
-  gDirectory->cd("ntpc_linear");
-  TGraph* gr_eud_vs_tox=new TGraph(sample.size());
-  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_eud_vs_tox";
-  gr_eud_vs_tox->SetName(name);
-  TGraph* gr_score_vs_tox=new TGraph(sample.size());
-  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_score_vs_tox";
-  gr_score_vs_tox->SetName(name);
-  int index=0;
-  for(auto &paziente : sample){
-    paziente.second.optlike_eud[fitalgindex]= (glbstuff.alfabdone<0) ? CalculateEudFromScratch(paziente.second,glbstuff.fittedpar.at(fitalgindex).at("alfabeta").first , glbstuff.fittedpar.at(fitalgindex).at("nvalue").first) : CalculateEudEqdAlreadyDone(paziente.second, glbstuff.fittedpar.at(fitalgindex).at("nvalue").first);
-    
-    hall->Fill(paziente.second.optlike_eud.at(fitalgindex));
-    if(paziente.second.tgt_acutegitox>0.5)
-      hyes->Fill(paziente.second.optlike_eud.at(fitalgindex));
-    else
-      hno->Fill(paziente.second.optlike_eud.at(fitalgindex));
-    gr_eud_vs_tox->SetPoint(index, paziente.second.optlike_eud.at(fitalgindex), paziente.second.tgt_acutegitox);
-    gr_score_vs_tox->SetPoint(index, paziente.second.optlike_ntcpscore.at(fitalgindex), paziente.second.tgt_acutegitox);
-    index++;
-  }
-  gr_eud_vs_tox->Sort();
-
-  TF1* sigmoidbest=new TF1("sigmoidbest", "1./(1.+exp(-[0]-[1]*x))", 0, 1000);
-  sigmoidbest->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").first);
-  sigmoidbest->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud").first);
-  gr_eud_vs_tox->Fit(sigmoidbest, "BS+","",0,100);
-  gr_eud_vs_tox->SetMarkerStyle(20);
-  gr_eud_vs_tox->SetMarkerColor(2);
-  gr_eud_vs_tox->SetLineWidth(0);
-  gr_eud_vs_tox->SetLineColor(0);
-  gr_eud_vs_tox->SetDrawOption("AP*");
-  gr_eud_vs_tox->Write();
-  gr_score_vs_tox->SetMarkerStyle(20);
-  gr_score_vs_tox->SetMarkerColor(2);
-  gr_score_vs_tox->SetLineWidth(0);
-  gr_score_vs_tox->SetLineColor(0);
-  gr_score_vs_tox->SetDrawOption("AP*");
-  gr_score_vs_tox->Write();
-  gDirectory->cd("..");
-
-  if(debug)
-    cout<<"optlike_fill done"<<endl;
-
-  return;
-}
-
-
-
-double optlike_aucROC(const map<int, PatientData> &sample, const int fitalgindex)
-{
-  map<double, vector<int>, std::greater<double>> data;
-
-  int nPos = 0;
-  int nNeg = 0;
-
-  for(const auto &paziente:sample){
-    if(paziente.second.tgt_acutegitox>0.5)
-      nPos++;
-    else
-      nNeg++;     
-    data[paziente.second.optlike_ntcpscore.at(fitalgindex)].push_back(paziente.second.tgt_acutegitox);
-  }
-
-  if (nPos == 0 || nNeg == 0)
-      return -1;
-
-  double tp = 0.0;
-  double fp = 0.0;
-  double prevTPR = 0.0;
-  double prevFPR = 0.0;
-  double auc = 0.0;
-  int ip=0;
-  TGraph* grROC = new TGraph();
-  grROC->SetName("optlike_roc_curve");
-  grROC->SetPoint(ip++, 0.0, 0.0);
-  for (const auto& kv : data) {
-    for (int label : kv.second) {
-      if (label == 1) 
-        tp++;
-      else 
-        fp++;
-  }
-    double TPR = tp /nPos;
-    double FPR = fp /nNeg;
-    // cout<<"score= "<<kv.first<<"  label="<<kv.second.at(0)<<" FPR="<<FPR<<" TPR="<<TPR<<" auc="<<auc<<endl;
-    auc += (FPR - prevFPR) * (TPR + prevTPR) / 2.0;
-    grROC->SetPoint(ip++, FPR, TPR);
-    prevTPR = TPR;
-    prevFPR = FPR;
-  }
-  grROC->SetTitle(Form("ROC curve for likehood optmized simple NTCP model with AUC=%f;False Positive Rate;True Positive Rate",auc));
-  grROC->SetLineWidth(2);
-  grROC->SetMarkerStyle(20);
-  grROC->Draw("ALP");
-  grROC->Write();
-
-  return auc;
-}
-
-
-//TODO: DA FINIRE
-// void  DrawLikeHood(map<int, PatientData> &sample, const globalstuff &glbstuff){
-  
-//   if(debug)
-//     cout<<"start DrawLikeHood"<<endl;
-
-  // for (auto it1 = glbstuff.fitpars.begin(); it1 != glbstuff.fitpars.end(); ++it1){
-  //   TH1D* h=new TH1D(("loglikehood_"+it1->first).c_str(), ("loglikehood value varying "+it1->first+"with fixed other parameters;"+it1->first+";loglikehood").c_str(),1000, it1->second.second.at(3) , it1->second.second.at(4));
-  //   double par[glbstuff.fittedpar.at(bestvalue).size()];
-  //   for(auto &val:glbstuff.fittedpar.at(bestvalue)){
-  //     par[glbstuff.fitpars.at(val.first).first]=val.second.first;
-  //     for(int k=0;k<h->GetXaxis()->GetNbins()k++){
-  //       par[it1->second.first]=h->GetBinCenter(k);
-  //     }
-  //   }
-
-  //   for (auto it2 = std::next(it1); it2 != glbstuff.fitpars.end(); ++it2){
-  //     TH2D* h=new TH2D(("loglikehood_"+it1->first+"_"+it2->first).c_str(), ("loglikehood value varying "+it1->first+"and"+it2->first+";"+it1->first+";"+it2->first).c_str(),1000, it1->second.second.at(3) , it1->second.second.at(4), 1000, it2->second.second.at(3) , it2->second.second.at(4));
-  //   }
-  // }
-
-//   return;
-// }
-
-//TODO: to be checked
-void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuff){
-
-  if(debug)
-    cout<<"start DrawLikeHood"<<endl;
-
-  if(!glbstuff.fittedpar.count(glbstuff.bestvalue)){
-    std::cerr<<"DrawLikeHood: bestvalue not found"<<std::endl;
-    return;
-  }
-
-  std::map<int, std::string> orderedNames;
-  for(const auto &p : glbstuff.fitpars)
-    orderedNames[p.second.first]=p.first; //key=index, value=fitted parameter name
-
-  std::vector<double> pars(orderedNames.size());
-  std::vector<double> errs(orderedNames.size());
-
-  for(const auto &p : orderedNames){
-    auto fitit=glbstuff.fittedpar.at(glbstuff.bestvalue).find(p.second);
-    if(fitit==glbstuff.fittedpar.at(glbstuff.bestvalue).end()){
-      cout<<"ERROR: DrawLikeHood: parameter of glbstuff.fitpars not found in glbstuff.fittedpar: "<<p.second<<endl;
-      continue;  
-    }
-
-    pars[p.first]=fitit->second.first;
-    errs[p.first]=fitit->second.second;
-  }
-
-  for(auto it1=orderedNames.begin();it1!=orderedNames.end();++it1){
-    for(auto it2=std::next(it1);it2!=orderedNames.end();++it2){
-
-      double ex=errs[it1->first];
-      double ey=errs[it2->first];
-
-      if(!std::isfinite(ex) || ex<=0.) ex=std::abs(pars[it1->first])*0.2+1.;
-      if(!std::isfinite(ey) || ey<=0.) ey=std::abs(pars[it2->first])*0.2+1.;
-      double xmin=std::max(pars[it1->first]-3.*ex, glbstuff.fitpars.at(it1->second).second.at(2));
-      double xmax=std::min(pars[it1->first]+3.*ex, glbstuff.fitpars.at(it1->second).second.at(3));
-
-      double ymin=std::max(pars[it2->first]-3.*ey, glbstuff.fitpars.at(it2->second).second.at(2));
-      double ymax=std::min(pars[it2->first]+3.*ey, glbstuff.fitpars.at(it2->second).second.at(3));      
-
-      TH2D* h2=new TH2D(("hlike_"+it1->second+"_vs_"+it2->second).c_str(),("Likelihood scan "+it1->second+" vs "+it2->second+";"+it1->second+";"+it2->second+";NLL").c_str(),100,xmin, xmax, 100, ymin, ymax);
-      std::vector<double> trial=pars;
-
-      for(int ix=1;ix<=h2->GetNbinsX();ix++){
-        trial[it1->first]=h2->GetXaxis()->GetBinCenter(ix);
-
-        for(int iy=1;iy<=h2->GetNbinsY();iy++){
-          trial[it2->first]=h2->GetYaxis()->GetBinCenter(iy);
-
-          double val=functorSelector(glbstuff, sample, trial.data());
-
-          if(!std::isfinite(val)) val=9999;
-
-          h2->SetBinContent(ix, iy, val);
-        }
-      }
-    }
-  }
-
-return;
-}
-
-
 //evaluate eud given an alfabeta and an nvalue
 double CalculateEudFromScratch(const PatientData &paziente, double alfabeta, double nvalue){
 
@@ -1148,6 +946,252 @@ void FillEqdEud(map<int, PatientData> &sample, const globalstuff &glbstuff){
     cout<<"FillEqdEud done"<<endl;
   
   return;
+}
+
+
+void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex){
+
+  if(debug)
+    cout<<"start optlike_fill"<<endl;
+  TString name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_eud_optlike_All";
+  TH1D *hall=new TH1D(name, "eud value;eud;Number of patients",100, 0., 100);        
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"eud_optlike_No";
+  TH1D *hno=new TH1D(name, "eud value;eud;Number of patients",100, 0., 100);        
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"eud_optlike_Yes";
+  TH1D *hyes=new TH1D(name, "eud value;eud;Number of patients",100, 0., 100);        
+  
+  gDirectory->cd("ntpc_linear");
+  TGraph* gr_eud_vs_tox=new TGraph(sample.size());
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_eud_vs_tox";
+  gr_eud_vs_tox->SetName(name);
+  gr_eud_vs_tox->SetTitle("eud vs toxicity;eud;toxicity");
+  TGraph* gr_score_vs_tox=new TGraph(sample.size());
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_score_vs_tox";
+  gr_score_vs_tox->SetName(name);
+  gr_eud_vs_tox->SetTitle("eud vs NTCP score ;eud;NTCP model score");
+  int index=0;
+  for(auto &paziente : sample){
+    paziente.second.optlike_eud[fitalgindex]= (glbstuff.alfabdone<0) ? CalculateEudFromScratch(paziente.second,glbstuff.fittedpar.at(fitalgindex).at("alfabeta").first , glbstuff.fittedpar.at(fitalgindex).at("nvalue").first) : CalculateEudEqdAlreadyDone(paziente.second, glbstuff.fittedpar.at(fitalgindex).at("nvalue").first);
+    
+    hall->Fill(paziente.second.optlike_eud.at(fitalgindex));
+    if(paziente.second.tgt_acutegitox>0.5)
+      hyes->Fill(paziente.second.optlike_eud.at(fitalgindex));
+    else
+      hno->Fill(paziente.second.optlike_eud.at(fitalgindex));
+    gr_eud_vs_tox->SetPoint(index, paziente.second.optlike_eud.at(fitalgindex), paziente.second.tgt_acutegitox);
+    gr_score_vs_tox->SetPoint(index, paziente.second.optlike_ntcpscore.at(fitalgindex), paziente.second.tgt_acutegitox);
+    index++;
+  }
+  gr_eud_vs_tox->Sort();
+
+  TF1* sigmoidbest=new TF1("sigmoidbest", "1./(1.+exp(-[0]-[1]*x))", 0, 1000);
+  sigmoidbest->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").first);
+  sigmoidbest->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud").first);
+  gr_eud_vs_tox->Fit(sigmoidbest, "BS+","",0,100);
+  gr_eud_vs_tox->SetMarkerStyle(20);
+  gr_eud_vs_tox->SetMarkerColor(2);
+  gr_eud_vs_tox->SetLineWidth(0);
+  gr_eud_vs_tox->SetLineColor(0);
+  gr_eud_vs_tox->SetDrawOption("AP*");
+  gr_eud_vs_tox->Write();
+  gr_score_vs_tox->SetMarkerStyle(20);
+  gr_score_vs_tox->SetMarkerColor(2);
+  gr_score_vs_tox->SetLineWidth(0);
+  gr_score_vs_tox->SetLineColor(0);
+  gr_score_vs_tox->SetDrawOption("AP*");
+  gr_score_vs_tox->Write();
+  gDirectory->cd("..");
+
+  if(debug)
+    cout<<"optlike_fill done"<<endl;
+
+  return;
+}
+
+
+
+double optlike_aucROC(const map<int, PatientData> &sample, const globalstuff &glbstuff, const int fitalgindex)
+{
+  map<double, vector<int>, std::greater<double>> data;
+
+  int nPos = 0;
+  int nNeg = 0;
+
+  for(const auto &paziente:sample){
+    if(paziente.second.tgt_acutegitox>0.5)
+      nPos++;
+    else
+      nNeg++;     
+    data[paziente.second.optlike_ntcpscore.at(fitalgindex)].push_back(paziente.second.tgt_acutegitox);
+  }
+
+  if (nPos == 0 || nNeg == 0)
+      return -1;
+
+  double tp = 0.0;
+  double fp = 0.0;
+  double prevTPR = 0.0;
+  double prevFPR = 0.0;
+  double auc = 0.0;
+  int ip=0;
+  TGraph* grROC = new TGraph();
+  TString pltname="roccurve_"+glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second;
+  grROC->SetName(pltname);
+  grROC->SetPoint(ip++, 0.0, 0.0);
+  for (const auto& kv : data) {
+    for (int label : kv.second) {
+      if (label == 1) 
+        tp++;
+      else 
+        fp++;
+  }
+    double TPR = tp /nPos;
+    double FPR = fp /nNeg;
+    // cout<<"score= "<<kv.first<<"  label="<<kv.second.at(0)<<" FPR="<<FPR<<" TPR="<<TPR<<" auc="<<auc<<endl;
+    auc += (FPR - prevFPR) * (TPR + prevTPR) / 2.0;
+    grROC->SetPoint(ip++, FPR, TPR);
+    prevTPR = TPR;
+    prevFPR = FPR;
+  }
+  grROC->SetTitle(Form("ROC curve for likehood optmized simple NTCP model with AUC=%f;False Positive Rate;True Positive Rate",auc));
+  grROC->SetLineWidth(2);
+  grROC->SetMarkerStyle(20);
+  grROC->Draw("ALP");
+  grROC->Write();
+
+  return auc;
+}
+
+
+
+void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuff){
+
+  if(debug)
+    cout<<"start DrawLikeHood"<<endl;
+
+  if(!glbstuff.fittedpar.count(glbstuff.bestvalue)){
+    std::cerr<<"DrawLikeHood: bestvalue not found"<<std::endl;
+    return;
+  }
+
+  std::map<int, std::string> orderedNames;
+  for(const auto &p : glbstuff.fitpars)
+    orderedNames[p.second.first]=p.first; //key=index, value=fitted parameter name
+
+  std::vector<double> pars(orderedNames.size());
+  std::vector<double> errs(orderedNames.size());
+
+  for(const auto &p : orderedNames){
+    auto fitit=glbstuff.fittedpar.at(glbstuff.bestvalue).find(p.second);
+    if(fitit==glbstuff.fittedpar.at(glbstuff.bestvalue).end()){
+      cout<<"ERROR: DrawLikeHood: parameter of glbstuff.fitpars not found in glbstuff.fittedpar: "<<p.second<<endl;
+      continue;  
+    }
+
+    pars[p.first]=fitit->second.first;
+    errs[p.first]=fitit->second.second;
+  }
+
+  for(auto it1=orderedNames.begin();it1!=orderedNames.end();++it1){
+    for(auto it2=std::next(it1);it2!=orderedNames.end();++it2){
+
+      double ex=errs[it1->first];
+      double ey=errs[it2->first];
+
+      if(!std::isfinite(ex) || ex<=0.) ex=std::abs(pars[it1->first])*0.2+1.;
+      if(!std::isfinite(ey) || ey<=0.) ey=std::abs(pars[it2->first])*0.2+1.;
+      double xmin=std::max(pars[it1->first]-3.*ex, glbstuff.fitpars.at(it1->second).second.at(2));
+      double xmax=std::min(pars[it1->first]+3.*ex, glbstuff.fitpars.at(it1->second).second.at(3));
+
+      double ymin=std::max(pars[it2->first]-3.*ey, glbstuff.fitpars.at(it2->second).second.at(2));
+      double ymax=std::min(pars[it2->first]+3.*ey, glbstuff.fitpars.at(it2->second).second.at(3));      
+
+      TH2D* h2=new TH2D(("hlike_"+it1->second+"_vs_"+it2->second).c_str(),("Likelihood scan "+it1->second+" vs "+it2->second+";"+it1->second+";"+it2->second+";NLL").c_str(),100,xmin, xmax, 100, ymin, ymax);
+      std::vector<double> trial=pars;
+
+      for(int ix=1;ix<=h2->GetNbinsX();ix++){
+        trial[it1->first]=h2->GetXaxis()->GetBinCenter(ix);
+
+        for(int iy=1;iy<=h2->GetNbinsY();iy++){
+          trial[it2->first]=h2->GetYaxis()->GetBinCenter(iy);
+
+          double val=functorSelector(glbstuff, sample, trial.data());
+
+          if(!std::isfinite(val)) val=9999;
+
+          h2->SetBinContent(ix, iy, val);
+        }
+      }
+    }
+  }
+
+return;
+}
+
+
+void PlotCalibrationCurveQuantiles(const std::map<int, PatientData>& sample, const globalstuff& glbstuff, int fitalgindex, int nbins = 10){
+
+  if(debug)
+    cout<<"start PlotCalibrationCurveQuantiles"<<endl;
+
+  vector<pair<double,double>> data; // pred, obs
+    for(const auto& paziente : sample){
+        double pred = paziente.second.optlike_ntcpscore.at(fitalgindex);
+        double obs  = paziente.second.tgt_acutegitox;
+
+        if(pred < 0.0 || pred > 1.0){
+          cout<<"ERROR:PlotCalibrationCurveQuantiles: predicted ntcpscore is "<<pred<<endl;
+          continue;
+        }
+        data.push_back({pred, obs});
+    }
+
+    std::sort(data.begin(), data.end(),[](const auto& a, const auto& b){return a.first < b.first;});
+    int n = data.size();
+
+    if(n == 0){
+      cout<<"ERROR:PlotCalibrationCurveQuantiles: number of data is =0"<<endl;
+      return;
+    } 
+    if(nbins > n) 
+      nbins = n;
+    std::vector<double> x, y, ex, ey;
+    for(int b = 0; b < nbins; b++){
+        int start = b * n / nbins;
+        int end   = (b + 1) * n / nbins;
+        double sum_pred = 0.0;
+        double sum_obs  = 0.0;
+        int count = end - start;
+        if(count <= 0) continue;
+        for(int i = start; i < end; i++){
+            sum_pred += data[i].first;
+            sum_obs  += data[i].second;
+        }
+        double obs_rate  = sum_obs  / count;
+        ex.push_back(0.5*(data[end-1].first - data[start].first));
+        x.push_back(sum_pred / count);
+        y.push_back(obs_rate);
+        ey.push_back(std::sqrt(obs_rate * (1.0 - obs_rate) / count));//TODO: errore efficienza si può migliorare usando formula modificagta, da trovare 
+    }
+
+    // TCanvas* c = new TCanvas("c_calib_quant", "Calibration quantiles", 800, 800);
+    TGraphErrors* gr = new TGraphErrors(x.size(), x.data(), y.data(),ex.data(),ey.data());
+    TString pltname="calib_"+glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second;
+    gr->SetName(pltname);
+    gr->SetTitle(";Mean predicted NTCP;Observed toxicity rate");
+    gr->SetMarkerStyle(20);
+    gr->SetMarkerSize(1.2);
+    gr->SetLineWidth(2);
+    gr->GetXaxis()->SetLimits(0.0, 1.0);
+    gr->GetYaxis()->SetRangeUser(0.0, 1.0);
+    gr->Write();
+    // gr->Draw("APLE");
+    // TLine* line = new TLine(0.0, 0.0, 1.0, 1.0);
+    // line->SetLineStyle(2);
+    // line->SetLineWidth(2);
+    // line->Draw("same");
+    // c->SetGrid();
+    // c->SaveAs(outname.c_str());
 }
 
 
