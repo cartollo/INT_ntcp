@@ -765,7 +765,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
 double functorLikehoodFull(const map<int, PatientData> &sample, const double* par){
   double eval=0.;
   for(const auto &paziente : sample)
-    eval-=EvalScoreLikehoodFull(paziente.second, par);
+    eval-=std::log(EvalScoreLikehoodFull(paziente.second, par));
   return eval;
 }
 
@@ -774,7 +774,7 @@ double functorLikehoodFull(const map<int, PatientData> &sample, const double* pa
 double functorLikehoodFullClinical_0(const map<int, PatientData> &sample, const double* par){
   double eval=0.;
   for(const auto &paziente : sample)
-    eval-=EvalScoreLikehoodFullClinical_0(paziente.second, par);
+    eval-=std::log(EvalScoreLikehoodFullClinical_0(paziente.second, par));
     return eval;
 }
 
@@ -783,7 +783,7 @@ double functorLikehoodFullClinical_0(const map<int, PatientData> &sample, const 
 double functorLikehoodAlfabdone(const map<int, PatientData> &sample, const double* par){
   double eval=0.;
   for(const auto &paziente : sample)
-    eval-=EvalScoreLikehoodAlfabdone(paziente.second, par); 
+    eval-=std::log(EvalScoreLikehoodAlfabdone(paziente.second, par)); 
   return eval;
 }
 
@@ -792,7 +792,7 @@ double functorLikehoodAlfabdone(const map<int, PatientData> &sample, const doubl
 double functorLikehoodAlfabdoneClinical_0(const map<int, PatientData> &sample, const double* par){
   double eval=0.;
   for(const auto &paziente : sample)
-    eval-= EvalScoreAlfabdoneClinical_0(paziente.second, par);
+    eval-= std::log(EvalScoreLikehoodAlfabdoneClinical_0(paziente.second, par));
   return eval;
 }
 
