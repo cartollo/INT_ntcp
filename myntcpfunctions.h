@@ -61,7 +61,7 @@ int nfraction;
 double dose_per_fraction;
 double mean_dose_rectum; 
 int tgt_acutegitox;
-int clinical_factor; //at present, only for synthetic data
+vector<int> clinical_factor; //at present, only for synthetic data
 int operation; //at present, =TURP for synthetic data
 
 //calculated stuff
@@ -69,14 +69,15 @@ int operation; //at present, =TURP for synthetic data
 map<double,vector<double>> dvhcumnormmap; //equivalent cumulative dvh normalized for alfabeta and fractions for all the patients with eqd2map, key=alfabeta
 map<double,vector<double>> dvhdiffnormmap; //equivalent differential dvh normalized for alfabeta and fractions for all the patients with eqd2map, key=alfabeta
 map<pair<double,double>, double> eudmap; //eud value (value) for given n and alfa/beta (key=make_pair(n,alfabeta))
-double optlike_eud; //from optimizeLikehood
-map<double,double> optlike_ntcpscore; //key: fitalgo index, value: ntcp score
+map<int,double> optlike_eud; //from optimizeLikehood
+map<int,double> optlike_ntcpscore; //key: fitalgo index, value: ntcp score
 int status; //-1=not set, 0=all ok, 1=not monotonous
 };
 
 struct globalstuff{
   //parameters:
   double alfabdone;
+  vector<int> clinicalfactors; //clinical factor index included
   double eqd2binwidth;
   vector<double> alfabeta;
   vector<double> nvalue4eud;
@@ -105,20 +106,51 @@ void evaluateEqdEud(map<int, PatientData> &sample, const globalstuff &glbstuff);
 void FillEqdEud(map<int, PatientData> &sample, const globalstuff &glbstuff);
 double CalculateEudFromScratch(const PatientData &paziente, double alfabeta, double nvalue);
 double CalculateEudEqdAlreadyDone(const PatientData &paziente, double nvalue);
-double functorLikehoodFull(const map<int, PatientData> &sample, const double* par);
-double functorLikehoodAlfabdone(const map<int, PatientData> &sample, const double* par);
 double fitSigmoidal(TGraph* graph, int parnum, int functype);
 string trim(const string& s);
 vector<string> splitCsvLine(const string& line, const TString delimiter);
 void CreateHistoFromTgraph(TGraph *gr, TH1D *h);
-int optimizeLikehood(const map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex);
+int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex);
 void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex);
 double optlike_aucROC(const map<int, PatientData> &sample, const int fitalgindex);
 void computeDCT(const vector<double>& x, vector<double>& c);
 void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuff);
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int issynthetic);
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int issynthetic, const vector<int> &clinicalfactors);
 void ChooseBestFit(globalstuff &glbstuff);
 
-inline void SetAuc(int index, const double aucin, globalstuff& glbstuff){glbstuff.fitresults.at(index).push_back(aucin);};
+double EvalBestLikelihood(std::map<int, PatientData>& sample, const globalstuff& glbstuff, const double* par);
+double functorLikehoodFull(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodAlfabdone(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodFullClinical_0(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodAlfabdoneClinical_0(const map<int, PatientData> &sample, const double* par);
 
+inline void SetAuc(int index, const double aucin, globalstuff& glbstuff){glbstuff.fitresults.at(index).push_back(aucin);};
 inline double EqdDose(PatientData &paziente, double alfabeta, double dose){return dose*(alfabeta+dose/paziente.nfraction)/(alfabeta+2.);};
+
+inline double EvalScoreLikehoodFull(const PatientData& paziente, const double *par){
+  return std::log((paziente.tgt_acutegitox<0.5 ? 1.-1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente, par[3], par[2]))) : 1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente, par[3], par[2])))));};
+  
+inline double EvalScoreLikehoodFullClinical_0(const PatientData& paziente, const double *par){
+  return std::log((paziente.tgt_acutegitox<0.5 ? 1.-1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente, par[3], par[2])-par[4]*paziente.clinical_factor[0])) : 1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente, par[3], par[2])-par[4]*paziente.clinical_factor[0] ))));};
+
+inline double EvalScoreLikehoodAlfabdone(const PatientData& paziente, const double *par){
+  return std::log(paziente.tgt_acutegitox<0.5 ? 1.-1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente, par[2]))) : 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente, par[2]))));};
+
+inline double EvalScoreAlfabdoneClinical_0(const PatientData& paziente, const double *par){
+  return std::log(paziente.tgt_acutegitox<0.5 ? 1.-1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente, par[2])-par[3]*paziente.clinical_factor[0])) : 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente, par[2])-par[3]*paziente.clinical_factor[0]  )));};
+
+inline double EvalScoreSelector(const globalstuff& glbstuff, const PatientData& paziente, const double *par){
+  if(glbstuff.clinicalfactors.size()==0){
+    return (glbstuff.alfabdone < 0) ?  EvalScoreLikehoodFull(paziente, par) : EvalScoreLikehoodAlfabdone(paziente, par);
+  }else if(glbstuff.clinicalfactors.size()==1){
+    return (glbstuff.alfabdone < 0) ? EvalScoreLikehoodFullClinical_0(paziente, par) : EvalScoreAlfabdoneClinical_0(paziente, par);
+  }
+};
+
+inline double functorSelector(const globalstuff& glbstuff, const map<int, PatientData> &sample, const double* par){
+  if(glbstuff.clinicalfactors.size()==0){
+    return (glbstuff.alfabdone < 0) ?  functorLikehoodFull(sample, par) : functorLikehoodAlfabdone(sample, par);
+  }else if(glbstuff.clinicalfactors.size()==1){
+    return (glbstuff.alfabdone < 0) ? functorLikehoodFullClinical_0(sample, par) : functorLikehoodAlfabdoneClinical_0(sample, par);
+  }
+};

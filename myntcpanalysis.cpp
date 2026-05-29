@@ -12,6 +12,7 @@ int main(int argc, char* argv[]) {
   TString txtappended(".txt");
   TString tgtname("acute GI toxicity");
   bool issynthetic=true;
+  vector<int> clinicalfactors{0};
   double alfabdone=-1; //if the dose are already normalized for fractions and alfa/beta, otherwise set to -1
   double eqd2binwidth=1.; //binwidth in gy di eqd2 normalizzato
   vector<double> alfabeta={0.1,0.5,1,2,4,10};
@@ -38,6 +39,10 @@ int main(int argc, char* argv[]) {
     parlimits={0.5, 0.01, 0.01, 5.0};
     fitpars["alfabeta"]=make_pair(3, parlimits);
   }
+
+  parlimits={1.0, 0.01, -5., 5.0};
+  fitpars["clinical_factor_0"]=make_pair(4, parlimits);
+
   if(issynthetic){
     dvhafilename="Synthetic_Data/clinical_nfrac_out_risk.csv";
     outrootname="ntcp_synthetic_out.root";
@@ -69,7 +74,7 @@ int main(int argc, char* argv[]) {
   }
 
   globalstuff glbstuff; 
-  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, issynthetic);
+  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, issynthetic, clinicalfactors);
 
   if(alfabdone<0){
     evaluateEqdEud(sample, glbstuff);

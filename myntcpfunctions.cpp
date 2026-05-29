@@ -366,7 +366,7 @@ int CreateNtcpSigmoidalSingle(TString pltname, const TVectorD &vx, const TVector
   gr->SetLineColor(0);
   gr->SetDrawOption("AP*");
   gr->Write();
-  CreateHistoFromTgraph(gr,h);
+  // CreateHistoFromTgraph(gr,h); //to be fixed
 
   gDirectory->cd("..");
   
@@ -430,7 +430,7 @@ int CreateNtcpSigmoidalPredefined(map<int, PatientData> &sample, TString tgtname
     graph.second.first->SetLineColor(0);
     graph.second.first->SetDrawOption("AP*");
     graph.second.first->Write();
-    CreateHistoFromTgraph(graph.second.first,graph.second.second);
+    // CreateHistoFromTgraph(graph.second.first,graph.second.second); //TODO: to be fixed
   }
 
   gDirectory->cd("..");
@@ -441,7 +441,7 @@ int CreateNtcpSigmoidalPredefined(map<int, PatientData> &sample, TString tgtname
   return 0;
 }
 
-
+//TODO: To be fixed
 void CreateHistoFromTgraph(TGraph *gr, TH1D *h){
 
   if(debug)
@@ -570,7 +570,7 @@ int loadSyntheticFile(const string& filename,   map<int, PatientData> &sample){
     }
 
     patient.id=std::stoi(trim(parts[0]));
-    patient.clinical_factor=std::stoi(trim(parts[1]));
+    patient.clinical_factor.push_back(std::stoi(trim(parts[1])));
     patient.nfraction=std::stoi(trim(parts[2]));
     patient.tgt_acutegitox=std::stoi(trim(parts[3]));
     patient.operation=std::stoi(trim(parts[4]));
@@ -673,7 +673,7 @@ int loadSyntheticFile(const string& filename,   map<int, PatientData> &sample){
 }
 
 
-int optimizeLikehood(const map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex){
+int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex){
   
   //lambda
   auto lamdalikehoodFull = [&](const double* par) {
@@ -683,11 +683,27 @@ int optimizeLikehood(const map<int, PatientData> &sample, globalstuff &glbstuff,
       return functorLikehoodAlfabdone(sample, par);
   };
   
+  auto lamdalikehoodFullClinical_0 = [&](const double* par) {
+    return functorLikehoodFullClinical_0(sample, par);
+  };
+  auto lamdalikehoodAlfabdoneClinical_0 = [&](const double* par) {
+      return functorLikehoodAlfabdoneClinical_0(sample, par);
+  };
+  
+
+
   ROOT::Math::Functor fpFunctor;
-  if (glbstuff.alfabdone < 0) 
-      fpFunctor = ROOT::Math::Functor(lamdalikehoodFull, 4);
-  else
-      fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdone, 3);
+  if(glbstuff.clinicalfactors.size()==0){
+    if (glbstuff.alfabdone < 0) 
+    fpFunctor = ROOT::Math::Functor(lamdalikehoodFull, 4);
+    else
+    fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdone, 3);
+  }else if(glbstuff.clinicalfactors.size()==1){
+    if (glbstuff.alfabdone < 0) 
+        fpFunctor = ROOT::Math::Functor(lamdalikehoodFullClinical_0, 5);
+    else
+        fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_0, 4 );
+  }
 
   std::unique_ptr<ROOT::Math::Minimizer> fpMinimizer(ROOT::Math::Factory::CreateMinimizer("Minuit2","Combined"));
   // ROOT::Math::Minimizer* fpMinimizer = ROOT::Math::Factory::CreateMinimizer(glbstuff.fitalgo.at(fitalgindex).first, glbstuff.fitalgo.at(fitalgindex).second);
@@ -713,23 +729,28 @@ int optimizeLikehood(const map<int, PatientData> &sample, globalstuff &glbstuff,
       fpMinimizer->SetLimitedVariable(p.first, name.c_str(), lim[0], lim[1], lim[2],lim[3]);
   }  
 
-  for(const auto &v:glbstuff.fitpars){
-    fpMinimizer->SetLimitedVariable(v.second.first, v.first.c_str(), v.second.second.at(0), v.second.second.at(1), v.second.second.at(2), v.second.second.at(3));
-  }
+  // for(const auto &v:glbstuff.fitpars){
+  //   fpMinimizer->SetLimitedVariable(v.second.first, v.first.c_str(), v.second.second.at(0), v.second.second.at(1), v.second.second.at(2), v.second.second.at(3));
+  // }
   
   fpMinimizer->Minimize();
   Int_t status=fpMinimizer->Status();
   cout<<"optimizeLikehood: minimization done with "<<glbstuff.fitalgo.at(fitalgindex).first<<"/"<<glbstuff.fitalgo.at(fitalgindex).second<<endl;
   if(status==0){
-    cout<<"status=0;"<<endl;
+    for(auto &paziente : sample){//fill scores
+      double par[10]; //10 per essere sicuri di prendere tutti i parametri
+      for(int i=0;i<fpMinimizer->NDim();i++)
+        par[i]=fpMinimizer->X()[i];
+      paziente.second.optlike_ntcpscore[fitalgindex]=EvalScoreSelector(glbstuff, paziente.second, par);
+    }
   }else{
-    cout<<"minimization failed status="<<status<<"  fpMinimizer->MinValue()="<<fpMinimizer->MinValue()<<endl;  
+    cout<<"minimization failed"<<endl;  
     cout<<"print correlations:"<<endl;
     for(int i=0;i<fpMinimizer->NFree();++i)
-      for(int j=0;j<fpMinimizer->NFree();++j)
-        std::cout << i << " " << j << " " << fpMinimizer->CovMatrix(i,j)/sqrt(fpMinimizer->CovMatrix(i,i)*fpMinimizer->CovMatrix(j,j)) << std::endl;  
+    for(int j=0;j<fpMinimizer->NFree();++j)
+    std::cout << i << " " << j << " " << fpMinimizer->CovMatrix(i,j)/sqrt(fpMinimizer->CovMatrix(i,i)*fpMinimizer->CovMatrix(j,j)) << std::endl;  
   }
-  cout<<"CovMatrixStatus="<<fpMinimizer->CovMatrixStatus()<<"  Edm="<<fpMinimizer->Edm()<<"  degree of freedom:"<<fpMinimizer->NFree()<<"   -loglikehood minimum value:"<<fpMinimizer->MinValue()<<"  AIC="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()<<"  deviance/dof="<<2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())<<endl;
+  cout<<"status="<<status<<"CovMatrixStatus="<<fpMinimizer->CovMatrixStatus()<<"  Edm="<<fpMinimizer->Edm()<<"  degree of freedom:"<<fpMinimizer->NFree()<<"   -loglikehood minimum value:"<<fpMinimizer->MinValue()<<"  AIC="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()<<"  deviance/dof="<<2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())<<endl;
   for(int i=0;i<fpMinimizer->NDim();i++){
     glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)]=make_pair(fpMinimizer->X()[i], fpMinimizer->Errors()[i]);
     cout<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<endl;
@@ -743,10 +764,17 @@ int optimizeLikehood(const map<int, PatientData> &sample, globalstuff &glbstuff,
 //par: 0=[0] firstfitted value in tf1, 1=secondfitted value in tf1, 2=nvalue, 3=alfabeta
 double functorLikehoodFull(const map<int, PatientData> &sample, const double* par){
   double eval=0.;
-  for(const auto &paziente : sample){
-    double tmp=std::log((paziente.second.tgt_acutegitox<0.5 ? 1.-1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente.second, par[3], par[2]))) : 1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente.second, par[3], par[2])))));
-    eval-=tmp;
-  }
+  for(const auto &paziente : sample)
+    eval-=EvalScoreLikehoodFull(paziente.second, par);
+  return eval;
+}
+
+
+//par: 0=[0] firstfitted value in tf1, 1=secondfitted value in tf1, 2=nvalue, 3=alfabeta, 4=clinical factor at 0
+double functorLikehoodFullClinical_0(const map<int, PatientData> &sample, const double* par){
+  double eval=0.;
+  for(const auto &paziente : sample)
+    eval-=EvalScoreLikehoodFullClinical_0(paziente.second, par);
     return eval;
 }
 
@@ -755,9 +783,19 @@ double functorLikehoodFull(const map<int, PatientData> &sample, const double* pa
 double functorLikehoodAlfabdone(const map<int, PatientData> &sample, const double* par){
   double eval=0.;
   for(const auto &paziente : sample)
-    eval-= std::log(paziente.second.tgt_acutegitox<0.5 ? 1.-1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente.second, par[2]))) : 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente.second, par[2]))));
+    eval-=EvalScoreLikehoodAlfabdone(paziente.second, par); 
   return eval;
 }
+
+//likehood: 
+//par: 0=[0] firstfitted value in tf1, 1=secondfitted value in tf1, 2=nvalue, 3=clinical factor at 0
+double functorLikehoodAlfabdoneClinical_0(const map<int, PatientData> &sample, const double* par){
+  double eval=0.;
+  for(const auto &paziente : sample)
+    eval-= EvalScoreAlfabdoneClinical_0(paziente.second, par);
+  return eval;
+}
+
 
 void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex){
 
@@ -779,14 +817,14 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   gr_score_vs_tox->SetName(name);
   int index=0;
   for(auto &paziente : sample){
-    paziente.second.optlike_eud= (glbstuff.alfabdone<0) ? CalculateEudFromScratch(paziente.second,glbstuff.fittedpar.at(fitalgindex).at("alfabeta").first , glbstuff.fittedpar.at(fitalgindex).at("nvalue").first) : CalculateEudEqdAlreadyDone(paziente.second, glbstuff.fittedpar.at(fitalgindex).at("nvalue").first);
-    paziente.second.optlike_ntcpscore[fitalgindex] = 1./(1.+exp(-glbstuff.fittedpar.at(fitalgindex).at("beta_zero").first-glbstuff.fittedpar.at(fitalgindex).at("beta_eud").first*paziente.second.optlike_eud )); 
-    hall->Fill(paziente.second.optlike_eud);
+    paziente.second.optlike_eud[fitalgindex]= (glbstuff.alfabdone<0) ? CalculateEudFromScratch(paziente.second,glbstuff.fittedpar.at(fitalgindex).at("alfabeta").first , glbstuff.fittedpar.at(fitalgindex).at("nvalue").first) : CalculateEudEqdAlreadyDone(paziente.second, glbstuff.fittedpar.at(fitalgindex).at("nvalue").first);
+    
+    hall->Fill(paziente.second.optlike_eud.at(fitalgindex));
     if(paziente.second.tgt_acutegitox>0.5)
-      hyes->Fill(paziente.second.optlike_eud);
+      hyes->Fill(paziente.second.optlike_eud.at(fitalgindex));
     else
-      hno->Fill(paziente.second.optlike_eud);
-    gr_eud_vs_tox->SetPoint(index, paziente.second.optlike_eud, paziente.second.tgt_acutegitox);
+      hno->Fill(paziente.second.optlike_eud.at(fitalgindex));
+    gr_eud_vs_tox->SetPoint(index, paziente.second.optlike_eud.at(fitalgindex), paziente.second.tgt_acutegitox);
     gr_score_vs_tox->SetPoint(index, paziente.second.optlike_ntcpscore.at(fitalgindex), paziente.second.tgt_acutegitox);
     index++;
   }
@@ -894,6 +932,7 @@ double optlike_aucROC(const map<int, PatientData> &sample, const int fitalgindex
 //   return;
 // }
 
+//TODO: to be checked
 void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuff){
 
   if(debug)
@@ -913,7 +952,10 @@ void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuf
 
   for(const auto &p : orderedNames){
     auto fitit=glbstuff.fittedpar.at(glbstuff.bestvalue).find(p.second);
-    if(fitit==glbstuff.fittedpar.at(glbstuff.bestvalue).end()) continue;
+    if(fitit==glbstuff.fittedpar.at(glbstuff.bestvalue).end()){
+      cout<<"ERROR: DrawLikeHood: parameter of glbstuff.fitpars not found in glbstuff.fittedpar: "<<p.second<<endl;
+      continue;  
+    }
 
     pars[p.first]=fitit->second.first;
     errs[p.first]=fitit->second.second;
@@ -942,7 +984,7 @@ void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuf
         for(int iy=1;iy<=h2->GetNbinsY();iy++){
           trial[it2->first]=h2->GetYaxis()->GetBinCenter(iy);
 
-          double val=functorLikehoodFull(sample, trial.data());
+          double val=functorSelector(glbstuff, sample, trial.data());
 
           if(!std::isfinite(val)) val=9999;
 
@@ -1185,7 +1227,7 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
 }
 
 
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int issynthetic){
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int issynthetic, const vector<int> &clinicalfactors){
   glbstuff.alfabdone=alfabdone;
   glbstuff.eqd2binwidth=eqd2binwidth;
   glbstuff.nvalue4eud=nvalue4eud;
@@ -1193,6 +1235,7 @@ void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidt
   glbstuff.fitpars=fitpars;
   glbstuff.fitalgo=fitalgo;
   glbstuff.issynthetic=issynthetic;
+  glbstuff.clinicalfactors=clinicalfactors;
   glbstuff.maxbin= (issynthetic==true) ? 200:100;
 
   return;
