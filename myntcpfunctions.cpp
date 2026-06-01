@@ -1010,7 +1010,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
 
 
 
-double optlike_aucROC(const map<int, PatientData> &sample, const globalstuff &glbstuff, const int fitalgindex)
+pair<double,double> optlike_aucROC(const map<int, PatientData> &sample, const globalstuff &glbstuff, const int fitalgindex)
 {
   map<double, vector<int>, std::greater<double>> data;
 
@@ -1026,13 +1026,13 @@ double optlike_aucROC(const map<int, PatientData> &sample, const globalstuff &gl
   }
 
   if (nPos == 0 || nNeg == 0)
-      return -1;
+      return make_pair(-1,-1);
 
   double tp = 0.0;
   double fp = 0.0;
   double prevTPR = 0.0;
   double prevFPR = 0.0;
-  double auc = 0.0;
+  double auc = 0.0, avg_precision=0.; //AUC is the area under the curve given by the point, avg_precision is the actual area under each point as a step function
   int ip=0;
   TGraph* grROC = new TGraph();
   TString pltname="roccurve_"+glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second;
@@ -1047,8 +1047,8 @@ double optlike_aucROC(const map<int, PatientData> &sample, const globalstuff &gl
   }
     double TPR = tp /nPos;
     double FPR = fp /nNeg;
-    // cout<<"score= "<<kv.first<<"  label="<<kv.second.at(0)<<" FPR="<<FPR<<" TPR="<<TPR<<" auc="<<auc<<endl;
     auc += (FPR - prevFPR) * (TPR + prevTPR) / 2.0;
+    avg_precision+=  tp/(tp+fp)*(TPR-prevTPR);
     grROC->SetPoint(ip++, FPR, TPR);
     prevTPR = TPR;
     prevFPR = FPR;
@@ -1059,7 +1059,7 @@ double optlike_aucROC(const map<int, PatientData> &sample, const globalstuff &gl
   grROC->Draw("ALP");
   grROC->Write();
 
-  return auc;
+  return make_pair(auc,avg_precision);
 }
 
 
@@ -1174,9 +1174,10 @@ void PlotCalibrationCurveQuantiles(const std::map<int, PatientData>& sample, con
         ey.push_back(std::sqrt(obs_rate * (1.0 - obs_rate) / count));//TODO: errore efficienza si può migliorare usando formula modificagta, da trovare 
     }
 
-    // TCanvas* c = new TCanvas("c_calib_quant", "Calibration quantiles", 800, 800);
+    TString pltname="canvascalib_"+glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second;
+    TCanvas* c = new TCanvas("c_calib_quant", "Calibration quantiles", 800, 800);
     TGraphErrors* gr = new TGraphErrors(x.size(), x.data(), y.data(),ex.data(),ey.data());
-    TString pltname="calib_"+glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second;
+    pltname="calib_"+glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second;
     gr->SetName(pltname);
     gr->SetTitle(";Mean predicted NTCP;Observed toxicity rate");
     gr->SetMarkerStyle(20);
@@ -1185,13 +1186,32 @@ void PlotCalibrationCurveQuantiles(const std::map<int, PatientData>& sample, con
     gr->GetXaxis()->SetLimits(0.0, 1.0);
     gr->GetYaxis()->SetRangeUser(0.0, 1.0);
     gr->Write();
-    // gr->Draw("APLE");
-    // TLine* line = new TLine(0.0, 0.0, 1.0, 1.0);
-    // line->SetLineStyle(2);
-    // line->SetLineWidth(2);
-    // line->Draw("same");
+    gr->Draw("APLE");
+    TLine* line = new TLine(0.0, 0.0, 1.0, 1.0);
+    line->SetLineStyle(2);
+    line->SetLineWidth(2);
+    line->Draw("same");
+    c->Write();
     // c->SetGrid();
     // c->SaveAs(outname.c_str());
+}
+
+void SetAucAvgPrec(int index, const pair<double,double> aucavgin, globalstuff& glbstuff){
+  if(glbstuff.fitresults.at(index).size()==7){
+    glbstuff.fitresults.at(index).push_back(aucavgin.first);
+    glbstuff.fitresults.at(index).push_back(aucavgin.second);
+    return;
+  }
+  if(glbstuff.fitresults.at(index).size()==9){
+    cout<<"SetAucAvgPrec: WARNING; I'm overwriting the previous auc and avg values, be aware if this is correct or not... previous auc="<<glbstuff.fitresults.at(index).at(7)<<"  new auc value="<<aucavgin.first<<"  previous avg="<<glbstuff.fitresults.at(index).at(8)<<"  new avg="<<aucavgin.second<<endl;
+    glbstuff.fitresults.at(index).at(7)=aucavgin.first;
+    glbstuff.fitresults.at(index).at(8)=aucavgin.second;
+    return;
+  }
+
+  cout<<"ERROR: SetAucAvgPrec: length of glbstuff.fitresults.at(index) is not correct, I don't know what happened, but I cannot save correctly auc and avg since this vector has a length of "<<glbstuff.fitresults.at(index).size()<<"  in principle if auc/avg are not stored yet it should be of 7, or 9 if they already has been saved"<<endl;
+
+return;
 }
 
 

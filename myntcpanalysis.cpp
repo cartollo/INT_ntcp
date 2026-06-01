@@ -103,15 +103,15 @@ int main(int argc, char* argv[]) {
     int optstatus=optimizeLikehood(sample, glbstuff, i);//0 because it's the first index for fitalgo which has only one enters, for the moment
     if(optstatus==0){
       optlike_fill(sample, glbstuff,i);
-      double optauc=optlike_aucROC(sample, glbstuff, i);
-      cout<<"fitalgo with "<<fitalgo.at(i).first<<" and "<<fitalgo.at(i).second<<" done. AUC="<<optauc<<endl;
-      SetAuc(i, optauc, glbstuff); 
+      pair<double,double>aucprecres=optlike_aucROC(sample, glbstuff, i);
+      cout<<"fitalgo with "<<fitalgo.at(i).first<<" and "<<fitalgo.at(i).second<<" done. AUC="<<aucprecres.first<<"  average_precision="<<aucprecres.second<<endl;
+      SetAucAvgPrec(i, aucprecres, glbstuff); 
       PlotCalibrationCurveQuantiles(sample, glbstuff, i, 10);    
     }
   }
   
   ChooseBestFit(glbstuff);
-  DrawLikeHood(sample, glbstuff);
+  // DrawLikeHood(sample, glbstuff);  //it took time to draw likehood for each point, disable it for code development purpouse
 
   outrootfile->Write();
   outrootfile->Close();
