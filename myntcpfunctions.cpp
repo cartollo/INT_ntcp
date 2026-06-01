@@ -673,8 +673,12 @@ int loadSyntheticFile(const string& filename,   map<int, PatientData> &sample){
 }
 
 
-int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex){
+
+int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex, const pair<int,double> fixedpar){
   
+  if(debug)
+    cout<<"start optimizeLikehood, fitalgindex="<<fitalgindex<<endl;
+
   //lambda
   auto lamdalikehoodFull = [&](const double* par) {
       return functorLikehoodFull(sample, par);
@@ -689,8 +693,6 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
   auto lamdalikehoodAlfabdoneClinical_0 = [&](const double* par) {
       return functorLikehoodAlfabdoneClinical_0(sample, par);
   };
-  
-
 
   ROOT::Math::Functor fpFunctor;
   if(glbstuff.clinicalfactors.size()==0){
@@ -705,8 +707,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
         fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_0, 4 );
   }
 
-  std::unique_ptr<ROOT::Math::Minimizer> fpMinimizer(ROOT::Math::Factory::CreateMinimizer("Minuit2","Combined"));
-  // ROOT::Math::Minimizer* fpMinimizer = ROOT::Math::Factory::CreateMinimizer(glbstuff.fitalgo.at(fitalgindex).first, glbstuff.fitalgo.at(fitalgindex).second);
+  std::unique_ptr<ROOT::Math::Minimizer> fpMinimizer(ROOT::Math::Factory::CreateMinimizer(glbstuff.fitalgo.at(fitalgindex).first, glbstuff.fitalgo.at(fitalgindex).second));
 
   fpMinimizer->SetFunction(fpFunctor);
   fpMinimizer->SetMaxFunctionCalls(1000000);
@@ -718,6 +719,9 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
   
   std::map<int, decltype(glbstuff.fitpars.begin())> ordered;
 
+  if(debug)
+    cout<<"optimizeLikehood: set variables"<<endl;
+
   // ROOT/Minuit2 uses the variable registration order as the FCN par[] order.
   // Therefore variables must be registered sorted by index.
   for (auto it = glbstuff.fitpars.begin(); it != glbstuff.fitpars.end();++it)
@@ -726,36 +730,66 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
   for (const auto& p : ordered){
       const auto& name = p.second->first;
       const auto& lim  = p.second->second.second;
-      fpMinimizer->SetLimitedVariable(p.first, name.c_str(), lim[0], lim[1], lim[2],lim[3]);
+      if(fixedpar.first!=p.first)
+        fpMinimizer->SetLimitedVariable(p.first, name.c_str(), lim[0], lim[1], lim[2],lim[3]);
+      else
+        fpMinimizer->SetFixedVariable(p.first, name.c_str(), fixedpar.second);
+
   }  
 
-  // for(const auto &v:glbstuff.fitpars){
-  //   fpMinimizer->SetLimitedVariable(v.second.first, v.first.c_str(), v.second.second.at(0), v.second.second.at(1), v.second.second.at(2), v.second.second.at(3));
-  // }
-  
+  if(debug)
+    cout<<"optimizeLikehood: before minimization"<<endl;  
+
   fpMinimizer->Minimize();
+  if(debug)
+    cout<<"optimizeLikehood: minimization odne"<<endl;    
   Int_t status=fpMinimizer->Status();
-  cout<<"optimizeLikehood: minimization done with "<<glbstuff.fitalgo.at(fitalgindex).first<<"/"<<glbstuff.fitalgo.at(fitalgindex).second<<endl;
-  if(status==0){
-    for(auto &paziente : sample){//fill scores
-      double par[10]; //10 per essere sicuri di prendere tutti i parametri
-      for(int i=0;i<fpMinimizer->NDim();i++)
-        par[i]=fpMinimizer->X()[i];
-      paziente.second.optlike_ntcpscore[fitalgindex]=EvalScoreSelector(glbstuff, paziente.second, par);
+  if(fixedpar.first<0){ //no paramter was fixed, this is a minimization of the full model
+    cout<<endl<<endl<<"optimizeLikehood: minimization done with "<<glbstuff.fitalgo.at(fitalgindex).first<<"/"<<glbstuff.fitalgo.at(fitalgindex).second<<endl;
+    if(status==0){
+      for(auto &paziente : sample){//fill scores
+        double par[10]; //10 per essere sicuri di prendere tutti i parametri
+        for(int i=0;i<fpMinimizer->NDim();i++)
+          par[i]=fpMinimizer->X()[i];
+        paziente.second.optlike_ntcpscore[fitalgindex]=EvalScoreSelector(glbstuff, paziente.second, par);
+      }
+    }else{
+      cout<<"minimization failed"<<endl;  
+      cout<<"print correlations:"<<endl;
+      for(int i=0;i<fpMinimizer->NFree();++i)
+        for(int j=0;j<fpMinimizer->NFree();++j)
+          std::cout << i << " " << j << " " << fpMinimizer->CovMatrix(i,j)/sqrt(fpMinimizer->CovMatrix(i,i)*fpMinimizer->CovMatrix(j,j)) << std::endl;  
     }
-  }else{
-    cout<<"minimization failed"<<endl;  
-    cout<<"print correlations:"<<endl;
-    for(int i=0;i<fpMinimizer->NFree();++i)
-    for(int j=0;j<fpMinimizer->NFree();++j)
-    std::cout << i << " " << j << " " << fpMinimizer->CovMatrix(i,j)/sqrt(fpMinimizer->CovMatrix(i,i)*fpMinimizer->CovMatrix(j,j)) << std::endl;  
+    cout<<"status="<<status<<"CovMatrixStatus="<<fpMinimizer->CovMatrixStatus()<<"  Edm="<<fpMinimizer->Edm()<<"  degree of freedom:"<<fpMinimizer->NFree()<<"   -loglikehood minimum value:"<<fpMinimizer->MinValue()<<"  AIC="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()<<"  deviance/dof="<<2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())<<endl;
+    for(int i=0;i<fpMinimizer->NDim();i++){
+      if(glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].size()==0){
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].push_back(fpMinimizer->X()[i]);
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].push_back(fpMinimizer->Errors()[i]);
+      }else{
+        cout<<"WARNING:optimizeLikehood: glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].size() not =0, the fitted values has already filled... this is strange, please take a look; fitalgindex="<<fitalgindex<<"  size="<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].size()<<endl;
+        cout<<"I'll overwrite the new values:"<<endl;
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].at(0)=fpMinimizer->X()[i];
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].at(1)=fpMinimizer->Errors()[i];
+      }
+      cout<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<endl;
+    }
+    glbstuff.fitresults[fitalgindex].insert(glbstuff.fitresults[fitalgindex].end(), {(double)status, (double)fpMinimizer->CovMatrixStatus(), fpMinimizer->Edm(), (double)fpMinimizer->NFree(), fpMinimizer->MinValue(), 2*fpMinimizer->NFree()+2*fpMinimizer->MinValue(), 2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())});    
+  }else{ //fixed par just for the calculation of Likehood Ratio Test (LRT)
+    if(status==0){
+      if(glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].size()==2){
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].push_back(fpMinimizer->MinValue()); //append -loglikehood value for fixed par
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].push_back( ROOT::Math::chisquared_cdf_c(2.* (fpMinimizer->MinValue()-glbstuff.fitresults[fitalgindex].at(4)),1) ); //append pvalue
+        cout<<"LRT for "<<fpMinimizer->VariableName(fixedpar.first)<<"  H_reduced w/o variable likehood minimum="<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(2)<<" H_full likehood minimum="<<glbstuff.fitresults[fitalgindex].at(4)<<", pvalue from LRT="<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(3)<<endl;
+      }else{
+        cout<<"WARNING:optimizeLikehood:something wrong happend, I'm trying to do the LR test, but glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)] has a wrong size: "<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].size()<<"  fitalgindex="<<fitalgindex<<"  fpMinimizer->VariableName(fixedpar.first)="<<fpMinimizer->VariableName(fixedpar.first)<<" I'll overwrite everything, but be aware that I don't know what is happening"<<endl;
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(2)=fpMinimizer->MinValue(); //append -loglikehood value for fixed par
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(3)= ROOT::Math::chisquared_cdf_c(2.* (fpMinimizer->MinValue()-glbstuff.fitresults[fitalgindex].at(4)),1); //append pvalue        
+      }
+    }
   }
-  cout<<"status="<<status<<"CovMatrixStatus="<<fpMinimizer->CovMatrixStatus()<<"  Edm="<<fpMinimizer->Edm()<<"  degree of freedom:"<<fpMinimizer->NFree()<<"   -loglikehood minimum value:"<<fpMinimizer->MinValue()<<"  AIC="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()<<"  deviance/dof="<<2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())<<endl;
-  for(int i=0;i<fpMinimizer->NDim();i++){
-    glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)]=make_pair(fpMinimizer->X()[i], fpMinimizer->Errors()[i]);
-    cout<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<endl;
-  }
-  glbstuff.fitresults[fitalgindex].insert(glbstuff.fitresults[fitalgindex].end(), {(double)status, (double)fpMinimizer->CovMatrixStatus(), fpMinimizer->Edm(), (double)fpMinimizer->NFree(), fpMinimizer->MinValue(), 2*fpMinimizer->NFree()+2*fpMinimizer->MinValue(), 2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())});    
+
+  if(debug)
+    cout<<"optimizeLikehood done, fitalgindex="<<fitalgindex<<endl;
 
   return status;
 }
@@ -971,7 +1005,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   gr_eud_vs_tox->SetTitle("eud vs NTCP score ;eud;NTCP model score");
   int index=0;
   for(auto &paziente : sample){
-    paziente.second.optlike_eud[fitalgindex]= (glbstuff.alfabdone<0) ? CalculateEudFromScratch(paziente.second,glbstuff.fittedpar.at(fitalgindex).at("alfabeta").first , glbstuff.fittedpar.at(fitalgindex).at("nvalue").first) : CalculateEudEqdAlreadyDone(paziente.second, glbstuff.fittedpar.at(fitalgindex).at("nvalue").first);
+    paziente.second.optlike_eud[fitalgindex]= (glbstuff.alfabdone<0) ? CalculateEudFromScratch(paziente.second,glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0) , glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) : CalculateEudEqdAlreadyDone(paziente.second, glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0));
     
     hall->Fill(paziente.second.optlike_eud.at(fitalgindex));
     if(paziente.second.tgt_acutegitox>0.5)
@@ -985,8 +1019,8 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   gr_eud_vs_tox->Sort();
 
   TF1* sigmoidbest=new TF1("sigmoidbest", "1./(1.+exp(-[0]-[1]*x))", 0, 1000);
-  sigmoidbest->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").first);
-  sigmoidbest->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud").first);
+  sigmoidbest->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
+  sigmoidbest->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud").at(0));
   gr_eud_vs_tox->Fit(sigmoidbest, "BS+","",0,100);
   gr_eud_vs_tox->SetMarkerStyle(20);
   gr_eud_vs_tox->SetMarkerColor(2);
@@ -1088,8 +1122,8 @@ void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuf
       continue;  
     }
 
-    pars[p.first]=fitit->second.first;
-    errs[p.first]=fitit->second.second;
+    pars[p.first]=fitit->second.at(0);
+    errs[p.first]=fitit->second.at(1);
   }
 
   for(auto it1=orderedNames.begin();it1!=orderedNames.end();++it1){

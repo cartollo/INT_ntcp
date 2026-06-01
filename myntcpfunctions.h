@@ -92,7 +92,7 @@ struct globalstuff{
   vector<pair<string,string>> fitalgo; //algorithm used by tminimizer for fitting
   map<string, pair<int,vector<double>>> fitpars; //ntcp model parameters key: name, value: 0:number of parameter index, 1=initial value, 2=step, 3=lower, 4=upper (for setlimitedvariable)
   map<int, vector<double>> fitresults; //key: fitalgo index, value: 0=status, 1=CovMatrixStatus, 2=edm, 3=dof, 4=likehood->minvalue, 5=aic, 6=dev/dof, 7=auc, 8=avg_precision
-  map<int, map<string,pair<double,double>>> fittedpar; //key: fitalgo index, value: fitted parameter name, value and error
+  map<int, map<string,vector<double>>> fittedpar; //key: fitalgo index, value: fitted parameter name, second. 0=value 1=error, 2=likehoodH0->minvalue(H0=LH value w/o the parameter), 3=pvalue
   int bestvalue; //index of the best fit 
 };
 
@@ -114,7 +114,7 @@ double fitSigmoidal(TGraph* graph, int parnum, int functype);
 string trim(const string& s);
 vector<string> splitCsvLine(const string& line, const TString delimiter);
 void CreateHistoFromTgraph(TGraph *gr, TH1D *h);
-int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex);
+int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex, const pair<int,double> fixedpar=make_pair(-1,-1));
 void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex);
 pair<double,double> optlike_aucROC(const map<int, PatientData> &sample,const globalstuff &glbstuff, const int fitalgindex);
 void computeDCT(const vector<double>& x, vector<double>& c);

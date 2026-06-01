@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
   vector<pair<string,string>> fitalgo;
   // fitalgo.push_back(make_pair("Minuit2","Simplex"));
   fitalgo.push_back(make_pair("Minuit2","Migrad"));
-  // fitalgo.push_back(make_pair("Minuit2","Hesse"));
+  fitalgo.push_back(make_pair("Minuit2","Hesse"));
   fitalgo.push_back(make_pair("Minuit2","Combined"));
   // fitalgo.push_back(make_pair("Minuit2","Scan"));
   // fitalgo.push_back(make_pair("GSLMultiMin","BFGS2"));
@@ -107,6 +107,8 @@ int main(int argc, char* argv[]) {
       cout<<"fitalgo with "<<fitalgo.at(i).first<<" and "<<fitalgo.at(i).second<<" done. AUC="<<aucprecres.first<<"  average_precision="<<aucprecres.second<<endl;
       SetAucAvgPrec(i, aucprecres, glbstuff); 
       PlotCalibrationCurveQuantilesAndHLtest(sample, glbstuff, i, 10);    
+      for(auto &par:fitpars)
+        optimizeLikehood(sample, glbstuff, i, make_pair(par.second.first,0.));
     }
   }
   
