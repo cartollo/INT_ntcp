@@ -1129,71 +1129,86 @@ return;
 }
 
 
-void PlotCalibrationCurveQuantiles(const std::map<int, PatientData>& sample, const globalstuff& glbstuff, int fitalgindex, int nbins = 10){
+void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sample, const globalstuff& glbstuff, int fitalgindex, int nbins = 10){
 
   if(debug)
     cout<<"start PlotCalibrationCurveQuantiles"<<endl;
 
   vector<pair<double,double>> data; // pred, obs
-    for(const auto& paziente : sample){
-        double pred = paziente.second.optlike_ntcpscore.at(fitalgindex);
-        double obs  = paziente.second.tgt_acutegitox;
+  for(const auto& paziente : sample){
+      double pred = paziente.second.optlike_ntcpscore.at(fitalgindex);
+      double obs  = paziente.second.tgt_acutegitox;
 
-        if(pred < 0.0 || pred > 1.0){
-          cout<<"ERROR:PlotCalibrationCurveQuantiles: predicted ntcpscore is "<<pred<<endl;
-          continue;
-        }
-        data.push_back({pred, obs});
-    }
+      if(pred < 0.0 || pred > 1.0){
+        cout<<"ERROR:PlotCalibrationCurveQuantiles: predicted ntcpscore is "<<pred<<endl;
+        continue;
+      }
+      data.push_back({pred, obs});
+  }
 
-    std::sort(data.begin(), data.end(),[](const auto& a, const auto& b){return a.first < b.first;});
-    int n = data.size();
+  std::sort(data.begin(), data.end(),[](const auto& a, const auto& b){return a.first < b.first;});
+  int n = data.size();
 
-    if(n == 0){
-      cout<<"ERROR:PlotCalibrationCurveQuantiles: number of data is =0"<<endl;
-      return;
-    } 
-    if(nbins > n) 
-      nbins = n;
-    std::vector<double> x, y, ex, ey;
-    for(int b = 0; b < nbins; b++){
-        int start = b * n / nbins;
-        int end   = (b + 1) * n / nbins;
-        double sum_pred = 0.0;
-        double sum_obs  = 0.0;
-        int count = end - start;
-        if(count <= 0) continue;
-        for(int i = start; i < end; i++){
-            sum_pred += data[i].first;
-            sum_obs  += data[i].second;
-        }
-        double obs_rate  = sum_obs  / count;
-        ex.push_back(0.5*(data[end-1].first - data[start].first));
-        x.push_back(sum_pred / count);
-        y.push_back(obs_rate);
-        ey.push_back(std::sqrt(obs_rate * (1.0 - obs_rate) / count));//TODO: errore efficienza si può migliorare usando formula modificagta, da trovare 
-    }
+  if(n == 0){
+    cout<<"ERROR:PlotCalibrationCurveQuantiles: number of data is =0"<<endl;
+    return;
+  } 
+  if(nbins > n) 
+    nbins = n;
+  double hosmerlemeshow_test=0.;
+  std::vector<double> x, y, ex, ey;
+  for(int b = 0; b < nbins; b++){
+      int start = b * n / nbins;
+      int end   = (b + 1) * n / nbins;
+      double sum_pred = 0.0;
+      double sum_obs  = 0.0;
+      int count = end - start;
+      if(count <= 0) continue;
+      for(int i = start; i < end; i++){
+          sum_pred += data[i].first;
+          sum_obs  += data[i].second;
+      }
+      double obs_rate  = sum_obs  / count;
+      ex.push_back(0.5*(data[end-1].first - data[start].first));
+      x.push_back(sum_pred / count);
+      y.push_back(obs_rate);
+      ey.push_back(std::sqrt(obs_rate * (1.0 - obs_rate) / count));//TODO: errore efficienza si può migliorare usando formula modificagta, da trovare 
 
-    TString pltname="canvascalib_"+glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second;
-    TCanvas* c = new TCanvas("c_calib_quant", "Calibration quantiles", 800, 800);
-    TGraphErrors* gr = new TGraphErrors(x.size(), x.data(), y.data(),ex.data(),ey.data());
-    pltname="calib_"+glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second;
-    gr->SetName(pltname);
-    gr->SetTitle(";Mean predicted NTCP;Observed toxicity rate");
-    gr->SetMarkerStyle(20);
-    gr->SetMarkerSize(1.2);
-    gr->SetLineWidth(2);
-    gr->GetXaxis()->SetLimits(0.0, 1.0);
-    gr->GetYaxis()->SetRangeUser(0.0, 1.0);
-    gr->Write();
-    gr->Draw("APLE");
-    TLine* line = new TLine(0.0, 0.0, 1.0, 1.0);
-    line->SetLineStyle(2);
-    line->SetLineWidth(2);
-    line->Draw("same");
-    c->Write();
-    // c->SetGrid();
-    // c->SaveAs(outname.c_str());
+      double term_events= (sum_pred>0) ? (sum_obs-sum_pred)*(sum_obs-sum_pred)/sum_pred : 0.;
+      double term_noevents= ((count-sum_pred) > 0 ) ? (sum_pred-sum_obs)*(sum_pred-sum_obs)/(count-sum_pred) : 0.;
+      hosmerlemeshow_test+=term_events+term_noevents;
+  }
+
+  int ndof=nbins-2;
+  if(ndof<=0){
+    cout<<"ERROR:PlotCalibrationCurveQuantilesAndHLtest: cannot calculate Hosmer-Lemeshow test since ndof="<<ndof<<", please change the number of bins"<<endl;
+  }else{
+    double pvalue=ROOT::Math::chisquared_cdf_c(hosmerlemeshow_test, ndof);
+    cout<<"Hosmer-Lemeshow test="<<hosmerlemeshow_test<<",  ndof="<<ndof<<",  pvalue="<<pvalue<<endl;
+    if(pvalue<0.05)
+      cout<<"WARNING:PlotCalibrationCurveQuantilesAndHLtest: Hosmer-Lemeshow test pvalue is suspiciously low, check the fit"<<endl;
+  }
+
+  TString pltname="canvascalib_"+glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second;
+  TCanvas* c = new TCanvas("c_calib_quant", "Calibration quantiles", 800, 800);
+  TGraphErrors* gr = new TGraphErrors(x.size(), x.data(), y.data(),ex.data(),ey.data());
+  pltname="calib_"+glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second;
+  gr->SetName(pltname);
+  gr->SetTitle(";Mean predicted NTCP;Observed toxicity rate");
+  gr->SetMarkerStyle(20);
+  gr->SetMarkerSize(1.2);
+  gr->SetLineWidth(2);
+  gr->GetXaxis()->SetLimits(0.0, 1.0);
+  gr->GetYaxis()->SetRangeUser(0.0, 1.0);
+  gr->Write();
+  gr->Draw("APLE");
+  TLine* line = new TLine(0.0, 0.0, 1.0, 1.0);
+  line->SetLineStyle(2);
+  line->SetLineWidth(2);
+  line->Draw("same");
+  c->Write();
+  // c->SetGrid();
+  // c->SaveAs(outname.c_str());
 }
 
 void SetAucAvgPrec(int index, const pair<double,double> aucavgin, globalstuff& glbstuff){

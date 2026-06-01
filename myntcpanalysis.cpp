@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
       pair<double,double>aucprecres=optlike_aucROC(sample, glbstuff, i);
       cout<<"fitalgo with "<<fitalgo.at(i).first<<" and "<<fitalgo.at(i).second<<" done. AUC="<<aucprecres.first<<"  average_precision="<<aucprecres.second<<endl;
       SetAucAvgPrec(i, aucprecres, glbstuff); 
-      PlotCalibrationCurveQuantiles(sample, glbstuff, i, 10);    
+      PlotCalibrationCurveQuantilesAndHLtest(sample, glbstuff, i, 10);    
     }
   }
   

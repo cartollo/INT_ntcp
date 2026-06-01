@@ -32,6 +32,8 @@
 #include "Math/Minimizer.h"
 #include "Math/Factory.h"
 #include "Math/Functor.h"
+#include <Math/DistFunc.h>
+#include <Math/ProbFuncMathCore.h>
 
 
 using std::vector;
@@ -119,7 +121,7 @@ void computeDCT(const vector<double>& x, vector<double>& c);
 void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuff);
 void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int issynthetic, const vector<int> &clinicalfactors);
 void ChooseBestFit(globalstuff &glbstuff);
-void PlotCalibrationCurveQuantiles(const std::map<int, PatientData>& sample, const globalstuff& glbstuff,int fitalgindex, int nbins);
+void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sample, const globalstuff& glbstuff,int fitalgindex, int nbins);
 
 
 double functorLikehoodFull(const map<int, PatientData> &sample, const double* par);
