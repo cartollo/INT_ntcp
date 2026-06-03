@@ -67,6 +67,22 @@ double mean_dose_rectum;
 int tgt_acutegitox;
 vector<int> clinical_factor; //at present, only for synthetic data
 int operation; //at present, =TURP for synthetic data
+int prostatectomy;
+int appendectomy;
+int age;
+double bmi;
+int smoke;
+int alcohol;
+int diabetes;
+int diverticulitis;
+double psa;
+int tumour_risk;
+int lymph_irr;
+int semivesicle_irr;
+int mb_risk;
+int cluster; //microbiota cluster classification
+
+
 
 //calculated stuff
 // map<double, vector<double>> eqd2map; //equivalent dose in 2 gy fraction, each value in this vector is a dose value, key=alfabeta
@@ -86,7 +102,7 @@ struct globalstuff{
   vector<double> alfabeta;
   vector<double> nvalue4eud;
   int maxbin;
-  int issynthetic;
+  int datatype;
 
   //fitted stuff
   vector<pair<string,string>> fitalgo; //algorithm used by tminimizer for fitting
@@ -104,7 +120,7 @@ int CreateNtcpSigmoidalSingle(TString pltname, const TVectorD &vx, const TVector
 int CreateNtcpSigmoidalPredefined(map<int, PatientData> &sample, TString tgtname);
 void PrintSampleLine(int idx, const   map<int, PatientData> &sample);
 int loadDvhFile(const string& filename,   map<int, PatientData> &sample);
-int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname);
+int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname, const int datatype);
 int loadSyntheticFile(const string& filename,   map<int, PatientData> &sample);
 void evaluateEqdEud(map<int, PatientData> &sample, const globalstuff &glbstuff);
 void FillEqdEud(map<int, PatientData> &sample, const globalstuff &glbstuff);
@@ -119,7 +135,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
 pair<double,double> optlike_aucROC(const map<int, PatientData> &sample,const globalstuff &glbstuff, const int fitalgindex);
 void computeDCT(const vector<double>& x, vector<double>& c);
 void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuff);
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int issynthetic, const vector<int> &clinicalfactors);
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, const vector<int> &clinicalfactors);
 void ChooseBestFit(globalstuff &glbstuff);
 void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sample, const globalstuff& glbstuff,int fitalgindex, int nbins);
 

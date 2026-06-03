@@ -5,8 +5,6 @@ void bookHisto(TFile *outrootfile,  const globalstuff &glbstuff, const bool mult
 
   if(debug)
     cout<<"start bookHisto"<<endl;
-  
-  // if(multivariate)
 
   TDirectory* dvhdir = outrootfile->GetDirectory("dvhplots");
   if (!dvhdir) dvhdir = outrootfile->mkdir("dvhplots");
@@ -663,12 +661,33 @@ int loadSyntheticFile(const string& filename,   map<int, PatientData> &sample){
     for(int i=1; i<patient.dvhmapcum.size();i++)
       patient.dvhmapdiff.push_back(patient.dvhmapcum.at(i-1)-patient.dvhmapcum.at(i));
     computeDCT(patient.dvhmapdiff, patient.dvhdctdiff);
+
+    patient.dose_ptv=-1;
+    patient.nfraction=-1;
+    patient.dose_per_fraction=-1;
+    patient.mean_dose_rectum=-1; 
+    patient.tgt_acutegitox=-1;
+    patient.operation=-1; 
+    patient.prostatectomy=-1;
+    patient.appendectomy=-1;
+    patient.age=-1;
+    patient.bmi=-1;
+    patient.smoke=-1;
+    patient.alcohol=-1;
+    patient.diabetes=-1;
+    patient.diverticulitis=-1;
+    patient.psa=-1;
+    patient.tumour_risk=-1;
+    patient.lymph_irr=-1;
+    patient.semivesicle_irr=-1;
+    patient.mb_risk=-1;
+    patient.cluster=-99;
     sample.insert(std::pair{id,patient});
 }
 
   if(debug)
     cout<<"loadDvhFile done, read from "<<filename<<" "<<sample.size()<<" elements"<<endl;
-  
+
     return 0;
 }
 
@@ -1264,7 +1283,7 @@ return;
 }
 
 
-int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname){
+int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname, const int datatype){
 
   if(debug)
     cout<<"start loadMetaFile"<<endl;
@@ -1280,11 +1299,25 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
     TString delimiter(",");
     vector<string> parts = splitCsvLine(line, delimiter);
     
-    int tgtpos=-1, doseptv_pos=-1, nfrac_pos=-1, meandoserectum_pos=-1, doseperfraction_pos=-1;
+    int tgtpos=-1, doseptv_pos=-1, nfrac_pos=-1, meandoserectum_pos=-1, doseperfraction_pos=-1, prostatectomy_pos=-1, appendectomy_pos=-1, age_pos=-1,bmi_pos=-1,smoke_pos=-1,alcohol_pos=-1,diabetes_pos=-1,diverticulitis_pos=-1, psa_pos=-1, tumour_risk_pos=-1, lymph_irr_pos=-1, semivesicle_irr_pos=-1,mb_risk_pos=-1, cluster_pos=-1;
     TString doseptv_name("dose to the prostate PTV (Gy)");
     TString nfrac_name("fraction number");
     TString meandoserectum_name("mean dose to the rectum (Gy)");
     TString doseperfraction_name("dose/fraction");
+    TString prostatectomy_name("Prostatectomy");
+    TString appendectomy_name("Appendectomy");
+    TString age_name("Age");
+    TString bmi_name("BMI");
+    TString smoke_name("Smoke");
+    TString alcohol_name("Alcohol");
+    TString diabetes_name("Diabetes");
+    TString diverticulitis_name("Diverticulitis");
+    TString psa_name("PSA at diagnosis (ng/ml)");
+    TString tumour_risk_name("tumour risk class");
+    TString lymph_irr_name("lymph node irradiation");
+    TString semivesicle_irr_name("semil vesicle irradiation");
+    TString mb_risk_name("MB risk class");
+    TString cluster_name("cluster");
     for(int i=0;i<parts.size();i++){
       if(tgtname.CompareTo(parts[i])==0)
         tgtpos=i;
@@ -1296,9 +1329,37 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
         meandoserectum_pos=i;
       if(doseperfraction_name.CompareTo(parts[i])==0)
         doseperfraction_pos=i;
+      if(prostatectomy_name.CompareTo(parts[i])==0)
+        prostatectomy_pos=i;
+      if(appendectomy_name.CompareTo(parts[i])==0)
+        appendectomy_pos=i;
+      if(age_name.CompareTo(parts[i])==0)
+        age_pos=i;
+      if(bmi_name.CompareTo(parts[i])==0)
+        bmi_pos=i;
+      if(smoke_name.CompareTo(parts[i])==0)
+        smoke_pos=i;
+      if(alcohol_name.CompareTo(parts[i])==0)
+        alcohol_pos=i;
+      if(diabetes_name.CompareTo(parts[i])==0)
+        diabetes_pos=i;
+      if(diverticulitis_name.CompareTo(parts[i])==0)
+        diverticulitis_pos=i;
+      if(psa_name.CompareTo(parts[i])==0)
+        psa_pos=i;
+      if(tumour_risk_name.CompareTo(parts[i])==0)
+        tumour_risk_pos=i;
+      if(lymph_irr_name.CompareTo(parts[i])==0)
+        lymph_irr_pos=i;
+      if(semivesicle_irr_name.CompareTo(parts[i])==0)
+        semivesicle_irr_pos=i;
+      if(mb_risk_name.CompareTo(parts[i])==0)
+        mb_risk_pos=i;
+      if(cluster_name.CompareTo(parts[i])==0)
+        cluster_pos=i;
     }
-    if(tgtpos==-1 || doseptv_pos==-1 || nfrac_pos==-1 || meandoserectum_pos==-1 || doseperfraction_pos==-1) {
-      throw std::runtime_error(Form("loadMetaFile: error, some variable not found: tgtpos=%i  doseptv_pos=%i  nfrac_pos=%i  meandoserectum_pos=%i  doseperfraction_pos=%i", tgtpos, doseptv_pos,  nfrac_pos,  meandoserectum_pos, doseperfraction_pos));
+    if(tgtpos==-1 || doseptv_pos==-1 || nfrac_pos==-1 || meandoserectum_pos==-1 || doseperfraction_pos==-1 || prostatectomy_pos==-1 ||appendectomy_pos==-1 || age_pos==-1 ||bmi_pos==-1 ||smoke_pos==-1 ||alcohol_pos==-1 ||diabetes_pos==-1 ||diverticulitis_pos==-1 || psa_pos==-1 || tumour_risk_pos==-1 || lymph_irr_pos==-1 || semivesicle_irr_pos==-1 ||mb_risk_pos==-1 || cluster_pos==-1) {
+      throw std::runtime_error(Form("loadMetaFile: error, some variable not found: tgtpos=%i  doseptv_pos=%i  nfrac_pos=%i  meandoserectum_pos=%i  doseperfraction_pos=%i , prostatectomy_pos=%i, appendectomy_pos=%i, age_pos=%i,bmi_pos=%i,smoke_pos=%i,alcohol_pos=%i,diabetes_pos=%i,diverticulitis_pos=%i, psa_pos=%i, tumour_risk_pos=%i, lymph_irr_pos=%i, semivesicle_irr_pos=%i,mb_risk_pos=%i, cluster_pos=%i", tgtpos, doseptv_pos,  nfrac_pos,  meandoserectum_pos, doseperfraction_pos, prostatectomy_pos, appendectomy_pos, age_pos,bmi_pos,smoke_pos,alcohol_pos,diabetes_pos,diverticulitis_pos, psa_pos, tumour_risk_pos, lymph_irr_pos, semivesicle_irr_pos,mb_risk_pos, cluster_pos));
       return 1;
     }
 
@@ -1320,6 +1381,7 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
       throw std::runtime_error("loadDvhCsv: check your dvh file, there is a non valid id: " +readed+ " " +filename);
       continue;
     }
+    //stoi->int, stod->float
     auto it=sample.find(std::stoi(readed.substr(readed.size() - 4)));//trovo il paziente in mappa
     if(it!=sample.end()){
       it->second.tgt_acutegitox=std::stoi(trim(parts[tgtpos]));
@@ -1327,8 +1389,33 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
       it->second.nfraction=std::stoi(trim(parts[nfrac_pos]));
       it->second.dose_per_fraction=std::stod(trim(parts[doseperfraction_pos]));
       it->second.mean_dose_rectum=std::stod(trim(parts[meandoserectum_pos]));
+      
+      it->second.prostatectomy= trim(parts[prostatectomy_pos]) == "Prostatectomy" ? 1 : 0;
+      it->second.appendectomy= trim(parts[appendectomy_pos]) == "Appendectomy" ? 1:0;
+      it->second.age=std::stoi(trim(parts[age_pos]));
+      it->second.bmi=std::stod(trim(parts[bmi_pos]));
+      it->second.smoke= (trim(parts[bmi_pos])=="Smoker");
+      it->second.alcohol= (trim(parts[bmi_pos])=="Alcohol use");
+      it->second.diabetes= (trim(parts[diabetes_pos])=="Diabetes");
+      it->second.diverticulitis= (trim(parts[diverticulitis_pos])=="Diverticulitis");
+      it->second.psa= std::stod(trim(parts[psa_pos]));
+      it->second.tumour_risk= trim(parts[tumour_risk_pos])=="oligometastatic" ? 4: trim(parts[tumour_risk_pos])=="high" ? 3 : trim(parts[tumour_risk_pos])=="intermediate" ? 2 : trim(parts[tumour_risk_pos])=="low" ? 1 : -1;
+      it->second.lymph_irr=std::stoi(trim(parts[lymph_irr_pos]));
+      it->second.semivesicle_irr=std::stoi(trim(parts[semivesicle_irr_pos]));
+      it->second.mb_risk= trim(parts[mb_risk_pos])=="high.risk" ? 3: trim(parts[mb_risk_pos])=="moderate.risk" ? 2 : trim(parts[mb_risk_pos])=="low.risk" ? 1 : -1;
+      it->second.cluster=std::stoi(trim(parts[cluster_pos]));
       addedinmap++;
     }
+  }
+  in.close();
+
+  if(datatype==2){//nanoport data, remove non nanoport patients
+  for(auto it = sample.begin(); it != sample.end();){
+    if(it->second.cluster <0 )
+      it = sample.erase(it);
+    else
+      ++it;
+}
   }
   
   if(addedinmap!=sample.size())
@@ -1340,16 +1427,16 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
 }
 
 
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int issynthetic, const vector<int> &clinicalfactors){
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, const vector<int> &clinicalfactors){
   glbstuff.alfabdone=alfabdone;
   glbstuff.eqd2binwidth=eqd2binwidth;
   glbstuff.nvalue4eud=nvalue4eud;
   glbstuff.alfabeta=alfabeta;
   glbstuff.fitpars=fitpars;
   glbstuff.fitalgo=fitalgo;
-  glbstuff.issynthetic=issynthetic;
+  glbstuff.datatype=datatype;
   glbstuff.clinicalfactors=clinicalfactors;
-  glbstuff.maxbin= (issynthetic==true) ? 200:100;
+  glbstuff.maxbin= (datatype==1) ? 200:100;
 
   return;
 }

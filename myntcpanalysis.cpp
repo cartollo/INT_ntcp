@@ -7,11 +7,11 @@ int main(int argc, char* argv[]) {
   TString dvhbfilename("");
   // dvhbfilename="DVH_Rectum_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv";
   TString dvhafilename("DVH_PRIME_bowel_by_Boris_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv");
-  TString metafilename("metadata_paper_release_JI_COMBINED_metadata_microlearner_prostate_base_05_24.csv");
+  TString metafilename("metadata_paper_release_JI_COMBINED_metadata_microlearner_prostate_base_05_24_MODIFIEDYUNWITHCLUSTER.csv");
   TString outrootname("ntcp_outputs.root");
   TString txtappended(".txt");
   TString tgtname("acute GI toxicity");
-  bool issynthetic=true;
+  int datatype=2; //0=not specified, 1=hiroc synthetic, 2=nanoport
   vector<int> clinicalfactors{0};
   double alfabdone=-1; //if the dose are already normalized for fractions and alfa/beta, otherwise set to -1
   double eqd2binwidth=1.; //binwidth in gy di eqd2 normalizzato
@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
   parlimits={1.0, 0.01, -5., 5.0};
   fitpars["clinical_factor_0"]=make_pair(4, parlimits);
 
-  if(issynthetic){
+  if(datatype==1){
     dvhafilename="Synthetic_Data/clinical_nfrac_out_risk.csv";
     outrootname="ntcp_synthetic_out.root";
   }
@@ -59,22 +59,22 @@ int main(int argc, char* argv[]) {
   }
 
   map<int, PatientData> sample, samrect;
-  if(issynthetic){
+  if(datatype==1){
     if(loadSyntheticFile(dvhafilename.Data(), sample))
       return 1;
-  }else{
+  }else{ 
     if(loadDvhFile(dvhafilename.Data(), sample))
       return 1;
-    if(loadMetaFile(metafilename.Data(), sample, tgtname))
+    if(loadMetaFile(metafilename.Data(), sample, tgtname, datatype))
       return 1;
-  }
-  if(dvhbfilename.Length()>0){
-    if(loadDvhFile(dvhbfilename.Data(), samrect))
-      return 1;
+    if(dvhbfilename.Length()>0){
+      if(loadDvhFile(dvhbfilename.Data(), samrect))
+        return 1;
+    }
   }
 
   globalstuff glbstuff; 
-  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, issynthetic, clinicalfactors);
+  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, datatype, clinicalfactors);
 
   if(alfabdone<0){
     evaluateEqdEud(sample, glbstuff);
