@@ -12,10 +12,15 @@ int main(int argc, char* argv[]) {
   TString txtappended(".txt");
   TString tgtname("acute GI toxicity");
   int datatype=2; //0=not specified, 1=hiroc synthetic, 2=nanoport
-  vector<int> clinicalfactors{0};
-  double alfabdone=-1; //if the dose are already normalized for fractions and alfa/beta, otherwise set to -1
+  int clinicalfactors=1;
+  // vector<int> clinicalfactors;
+  double alfabdone=10; //if the dose are already normalized for fractions and alfa/beta, otherwise set to -1
   double eqd2binwidth=1.; //binwidth in gy di eqd2 normalizzato
   vector<double> alfabeta={0.1,0.5,1,2,4,10};
+  if(alfabdone>0){
+    alfabeta.clear();
+    alfabeta.push_back(alfabdone);
+  }
   vector<double> nvalue4eud={ 0.01,0.1,1,5,10,100}; //1->eud=mean dose, +inf->eud=max dose
   map<string, pair<int,vector<double>>> fitpars;
   vector<pair<string,string>> fitalgo;
@@ -30,18 +35,20 @@ int main(int argc, char* argv[]) {
   
   //value: 0:number of parameter index, 1=initial value, 2=step, 3=lower, 4=upper (for setlimitedvariable)
   vector parlimits = {-2.0, 0.01, -50.0, 50.0};
-  fitpars["beta_zero"]=make_pair(0, parlimits);
+  int parnum=0;
+  fitpars["beta_zero"]=make_pair(parnum++, parlimits);
   parlimits={0.05, 0.01, -5.0, 5.0};
-  fitpars["beta_eud"]=make_pair(1, parlimits);
+  fitpars["beta_eud"]=make_pair(parnum++, parlimits);
   parlimits={1.0, 0.01, 0.01, 100.0};
-  fitpars["nvalue"]=make_pair(2, parlimits);
+  fitpars["nvalue"]=make_pair(parnum++, parlimits);
   if(alfabdone<0){
     parlimits={0.5, 0.01, 0.01, 5.0};
-    fitpars["alfabeta"]=make_pair(3, parlimits);
+    fitpars["alfabeta"]=make_pair(parnum++, parlimits);
   }
-
-  parlimits={1.0, 0.01, -5., 5.0};
-  fitpars["clinical_factor_0"]=make_pair(4, parlimits);
+  if(clinicalfactors==1){
+    parlimits={1.0, 0.01, -5., 5.0};
+    fitpars["clinical_factor_0"]=make_pair(parnum++, parlimits);
+  }
 
   if(datatype==1){
     dvhafilename="Synthetic_Data/clinical_nfrac_out_risk.csv";
@@ -76,6 +83,8 @@ int main(int argc, char* argv[]) {
   globalstuff glbstuff; 
   fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, datatype, clinicalfactors);
 
+  SetClusterAsClinicalFactor(sample, glbstuff);
+
   if(alfabdone<0){
     evaluateEqdEud(sample, glbstuff);
     if(samrect.size()>0)
@@ -107,8 +116,9 @@ int main(int argc, char* argv[]) {
       cout<<"fitalgo with "<<fitalgo.at(i).first<<" and "<<fitalgo.at(i).second<<" done. AUC="<<aucprecres.first<<"  average_precision="<<aucprecres.second<<endl;
       SetAucAvgPrec(i, aucprecres, glbstuff); 
       PlotCalibrationCurveQuantilesAndHLtest(sample, glbstuff, i, 10);    
-      for(auto &par:fitpars)
+      for(auto &par:fitpars){
         optimizeLikehood(sample, glbstuff, i, make_pair(par.second.first,0.));
+      }
     }
   }
   

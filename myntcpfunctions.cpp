@@ -127,7 +127,7 @@ void fillHisto(map<int, PatientData> &sample,const globalstuff &glbstuff){
     }
     
     if(debug>5)
-    cout<<"fillHisto; first sample loop: loop on paziente.second.dvhmapcum.size() done"<<endl;
+      cout<<"fillHisto; first sample loop: loop on paziente.second.dvhmapcum.size() done"<<endl;
     
     for(int i=0;i<paziente.second.dvhmapdiff.size();i++)
     hdvhdiff->SetBinContent(i+1,paziente.second.dvhmapdiff.at(i));
@@ -701,29 +701,33 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
   //lambda
   auto lamdalikehoodFull = [&](const double* par) {
       return functorLikehoodFull(sample, par);
-  };
-  auto lamdalikehoodAlfabdone = [&](const double* par) {
+    };
+    auto lamdalikehoodAlfabdone = [&](const double* par) {
       return functorLikehoodAlfabdone(sample, par);
-  };
-  
-  auto lamdalikehoodFullClinical_0 = [&](const double* par) {
+    };
+    
+    auto lamdalikehoodFullClinical_0 = [&](const double* par) {
     return functorLikehoodFullClinical_0(sample, par);
   };
   auto lamdalikehoodAlfabdoneClinical_0 = [&](const double* par) {
       return functorLikehoodAlfabdoneClinical_0(sample, par);
   };
 
+  // ROOT::Math::Functor fpFunctor= (glbstuff.clinicalfactors.size()==0) ? ((glbstuff.alfabdone < 0) ?  ROOT::Math::Functor(lamdalikehoodFull, 4) : ROOT::Math::Functor(lamdalikehoodAlfabdone, 3)) : ((glbstuff.alfabdone < 0) ? ROOT::Math::Functor(lamdalikehoodFullClinical_0, 5) : ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_0, 4 ));
   ROOT::Math::Functor fpFunctor;
-  if(glbstuff.clinicalfactors.size()==0){
-    if (glbstuff.alfabdone < 0) 
+
+  if(glbstuff.clinicalfactors == 0 && glbstuff.alfabdone<0){
+    cout<<"optimizeLikehood: functor=lamdalikehoodFull"<<endl;
     fpFunctor = ROOT::Math::Functor(lamdalikehoodFull, 4);
-    else
+  }else if(glbstuff.clinicalfactors==0 && glbstuff.alfabdone>=0){
+    cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdone"<<endl;
     fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdone, 3);
-  }else if(glbstuff.clinicalfactors.size()==1){
-    if (glbstuff.alfabdone < 0) 
-        fpFunctor = ROOT::Math::Functor(lamdalikehoodFullClinical_0, 5);
-    else
-        fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_0, 4 );
+  }else if(glbstuff.clinicalfactors==1 && glbstuff.alfabdone<0){
+    cout<<"optimizeLikehood: functor=lamdalikehoodFullClinical_0"<<endl;
+    fpFunctor = ROOT::Math::Functor(lamdalikehoodFullClinical_0, 5);
+  }else if(glbstuff.clinicalfactors==1 && glbstuff.alfabdone>=0){
+    cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdoneClinical_0"<<endl;
+    fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_0, 4);
   }
 
   std::unique_ptr<ROOT::Math::Minimizer> fpMinimizer(ROOT::Math::Factory::CreateMinimizer(glbstuff.fitalgo.at(fitalgindex).first, glbstuff.fitalgo.at(fitalgindex).second));
@@ -761,9 +765,15 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
 
   fpMinimizer->Minimize();
   if(debug)
-    cout<<"optimizeLikehood: minimization odne"<<endl;    
+    cout<<"optimizeLikehood: minimization done"<<endl; 
+// using Minuit2 you have as status: (https://root-forum.cern.ch/t/is-fit-validity-or-minimizer-status-more-important/30637)
+// status = 1 : Covariance was made pos defined
+// status = 2 : Hesse is invalid
+// status = 3 : Edm is above max
+// status = 4 : Reached call limit
+// status = 5 : Covariance is not positive defined   
   Int_t status=fpMinimizer->Status();
-  if(fixedpar.first<0){ //no paramter was fixed, this is a minimization of the full model
+  if(fixedpar.first<0){ //no parameter was fixed, this is a minimization of the full model
     cout<<endl<<endl<<"optimizeLikehood: minimization done with "<<glbstuff.fitalgo.at(fitalgindex).first<<"/"<<glbstuff.fitalgo.at(fitalgindex).second<<endl;
     if(status==0){
       for(auto &paziente : sample){//fill scores
@@ -869,12 +879,12 @@ double CalculateEudFromScratch(const PatientData &paziente, double alfabeta, dou
 double CalculateEudEqdAlreadyDone(const PatientData &paziente, double nvalue){
 
   if(debug)
-    cout<<"start CalculateEudEqdAlreadyDone with paziente.id="<<paziente.id<<endl;
+    cout<<"start  CalculateEudEqdAlreadyDone with paziente.id="<<paziente.id<<endl;
 
-    double eud=0;
-    for(int i=0;i<paziente.dvhmapdiff.size();i++)
-      eud+=  pow((double)i,1./nvalue)*paziente.dvhmapdiff.at(i);
-    eud=pow(eud,nvalue);
+  double eud=0;
+  for(int i=0;i<paziente.dvhmapdiff.size();i++)
+    eud+=  pow((double)i,1./nvalue)*paziente.dvhmapdiff.at(i);
+  eud=pow(eud,nvalue);
     
   if(debug)
     cout<<"CalculateEudEqdAlreadyDone done; eud="<<eud<<endl;
@@ -1426,8 +1436,21 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
   return 0;
 }
 
+int SetClusterAsClinicalFactor(map<int, PatientData> &sample, globalstuff &glbstuff){
+  for(auto &paziente : sample){
+    if(paziente.second.cluster>=0 && paziente.second.clinical_factor.size()==0){
+      paziente.second.clinical_factor.push_back(paziente.second.cluster);
+      glbstuff.clinicalfactors=paziente.second.clinical_factor.size();
+     }else{
+      cout<<"ERROR in SetClusterAsClinicalFactor: paziente.cluster="<<paziente.second.cluster<<" paziente.clinical_factor.size()="<<paziente.second.clinical_factor.size()<<endl;
+      return 1;
+    }
+  }
+  
+  return 0;
+}
 
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, const vector<int> &clinicalfactors){
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors){
   glbstuff.alfabdone=alfabdone;
   glbstuff.eqd2binwidth=eqd2binwidth;
   glbstuff.nvalue4eud=nvalue4eud;

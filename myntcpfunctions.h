@@ -65,10 +65,11 @@ int nfraction;
 double dose_per_fraction;
 double mean_dose_rectum; 
 int tgt_acutegitox;
-vector<int> clinical_factor; //at present, only for synthetic data
 int operation; //at present, =TURP for synthetic data
+vector<int> clinical_factor; //at present, only for synthetic data
 int prostatectomy;
 int appendectomy;
+
 int age;
 double bmi;
 int smoke;
@@ -97,7 +98,7 @@ int status; //-1=not set, 0=all ok, 1=not monotonous
 struct globalstuff{
   //parameters:
   double alfabdone;
-  vector<int> clinicalfactors; //clinical factor index included
+  int clinicalfactors; //clinical factor index included
   double eqd2binwidth;
   vector<double> alfabeta;
   vector<double> nvalue4eud;
@@ -135,9 +136,10 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
 pair<double,double> optlike_aucROC(const map<int, PatientData> &sample,const globalstuff &glbstuff, const int fitalgindex);
 void computeDCT(const vector<double>& x, vector<double>& c);
 void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuff);
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, const vector<int> &clinicalfactors);
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors);
 void ChooseBestFit(globalstuff &glbstuff);
 void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sample, const globalstuff& glbstuff,int fitalgindex, int nbins);
+int SetClusterAsClinicalFactor(map<int, PatientData> &sample, globalstuff &glbstuff);
 
 
 double functorLikehoodFull(const map<int, PatientData> &sample, const double* par);
@@ -167,17 +169,17 @@ inline double EvalScoreLikehoodAlfabdoneClinical_0(const PatientData& paziente, 
   return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdoneClinical_0(paziente, par):EvalScoreAlfabdoneClinical_0(paziente, par) ;};
 
 inline double EvalScoreSelector(const globalstuff& glbstuff, const PatientData& paziente, const double *par){
-  if(glbstuff.clinicalfactors.size()==0){
+  if(glbstuff.clinicalfactors==0){
     return (glbstuff.alfabdone < 0) ?  EvalScoreFull(paziente, par) : EvalScoreAlfabdone(paziente, par);
-  }else if(glbstuff.clinicalfactors.size()==1){
+  }else if(glbstuff.clinicalfactors==1){
     return (glbstuff.alfabdone < 0) ? EvalScoreFullClinical_0(paziente, par) : EvalScoreAlfabdoneClinical_0(paziente, par);
   }
 };
 
 inline double functorSelector(const globalstuff& glbstuff, const map<int, PatientData> &sample, const double* par){
-  if(glbstuff.clinicalfactors.size()==0){
+  if(glbstuff.clinicalfactors==0){
     return (glbstuff.alfabdone < 0) ?  functorLikehoodFull(sample, par) : functorLikehoodAlfabdone(sample, par);
-  }else if(glbstuff.clinicalfactors.size()==1){
+  }else if(glbstuff.clinicalfactors==1){
     return (glbstuff.alfabdone < 0) ? functorLikehoodFullClinical_0(sample, par) : functorLikehoodAlfabdoneClinical_0(sample, par);
   }
 };

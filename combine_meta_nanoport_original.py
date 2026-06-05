@@ -4,7 +4,9 @@ import numpy as np
 
 filea = "metadata_paper_release_JI_COMBINED_metadata_microlearner_prostate_base_05_24_MODIFIEDYUN.csv"
 fileb = "metadata_cluster_nanoport_michele1june26.csv"
-output = "metadata_paper_release_JI_COMBINED_metadata_microlearner_prostate_base_05_24_MODIFIEDYUNWITHCLUSTER.csv"
+# filec = "DVH_Rectum_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv"
+filec = "DVH_Rectum_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv"
+output = "dacanc.csv"
 
 col_id = None  # usa la prima colonna di entrambi i file
 col_dose_a = "mean dose to the rectum (Gy)"
@@ -86,7 +88,34 @@ cluster_map = dict(zip(b[id_b], b[col_cluster]))
 # Aggiunge cluster ad a
 a[col_cluster] = a[id_a].map(cluster_map).fillna(-1).astype(int)
 
+c = pd.read_csv(filec, delimiter=" ")
+
+id_c = c.columns[0]
+c[id_c] = c[id_c].astype(str).str.strip()
+
+ids_c = set(c[id_c])
+
+# ID che compaiono sia nel primo che nel secondo
+ids_ab = ids_a & ids_b
+
+# Tra questi, quali mancano nel terzo?
+missing_in_c = ids_ab - ids_c
+
+print(f"ID comuni tra primo e secondo file: {len(ids_ab)}")
+print(f"Di questi, presenti anche nel terzo file: {len(ids_ab & ids_c)}")
+print(f"Di questi, mancanti nel terzo file: {len(missing_in_c)}")
+
+if missing_in_c:
+    print("\nID presenti in primo e secondo ma assenti nel terzo:")
+    for x in sorted(missing_in_c):
+        print(x)
+        
+
 # Salva output
 a.to_csv(output, index=False)
-
+print(f"ID nel primo file: {len(ids_a)}")
+print(f"ID nel secondo file: {len(ids_b)}")
+print(f"ID comuni: {len(ids_a & ids_b)}")
+print(f"ID presenti solo nel primo: {len(ids_a - ids_b)}")
+print(f"ID presenti solo nel secondo: {len(ids_b - ids_a)}")
 print(f"File salvato: {output}")
