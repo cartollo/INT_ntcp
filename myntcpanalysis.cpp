@@ -5,11 +5,12 @@ int debug = 0;
 int main(int argc, char* argv[]) {
   
   TString dvhbfilename("");
-  // dvhbfilename="DVH_Rectum_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv";
-  TString dvhafilename("DVH_PRIME_bowel_by_Boris_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv");
+  TString dvhafilename("");
+  dvhafilename="DVH_Rectum_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv";
+  // dvhafilename="DVH_PRIME_bowel_by_Boris_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv";
   TString metafilename("metadata_paper_release_JI_COMBINED_metadata_microlearner_prostate_base_05_24_MODIFIEDYUNWITHCLUSTER.csv");
   TString outrootname("ntcp_outputs.root");
-  TString txtappended(".txt");
+  TString txtappended("");
   TString tgtname("acute GI toxicity");
   int datatype=2; //0=not specified, 1=hiroc synthetic, 2=nanoport
   int clinicalfactors=1;
@@ -63,6 +64,26 @@ int main(int argc, char* argv[]) {
     if (strcmp(argv[i], "-out") == 0)       outrootname = TString(argv[++i]);
     if (strcmp(argv[i], "-txt") == 0)       txtappended = TString(argv[++i]);
     if (strcmp(argv[i], "-tgt") == 0)       tgtname = TString(argv[++i]);
+  }
+
+  if(txtappended.Length()>0){
+    freopen(txtappended.Data(),"w",stdout);
+    cout<<"dvha="<<dvhafilename.Data()<<"  dvhbfilename="<<dvhbfilename.Data()<<"  metafilename="<<metafilename.Data()<<"  outrootname="<<outrootname.Data()<<"  tgtname="<<tgtname.Data()<<endl;
+    cout<<"datatype="<<datatype<<"  clinicalfactors="<<clinicalfactors<<"  alfabdone="<<alfabdone<<"  eqd2binwidth="<<eqd2binwidth<<endl;
+    cout<<"alfabeta=(";
+    for(int i=0;i<alfabeta.size();i++)
+      cout<<alfabeta.at(i)<<", ";
+    cout<<")"<<endl;
+    cout<<"nvalue4eud=(";
+    for(int i=0;i<nvalue4eud.size();i++)
+      cout<<nvalue4eud.at(i)<<", ";
+    cout<<")"<<endl;
+    for(const auto &p : fitpars){
+        cout<<p.first<<" "<< p.second.first;
+        for (double x : p.second.second)
+            cout<<", "<<x;
+        cout << endl;
+    }    
   }
 
   map<int, PatientData> sample, samrect;
