@@ -1,7 +1,7 @@
 #include "myntcpfunctions.h"
 
 extern int debug;
-void bookHisto(TFile *outrootfile,  const globalstuff &glbstuff, const bool multivariate){
+void bookHisto(TFile *outrootfile, const map<int, PatientData> &sample, const globalstuff &glbstuff, const bool multivariate){
 
   if(debug)
     cout<<"start bookHisto"<<endl;
@@ -63,7 +63,11 @@ void bookHisto(TFile *outrootfile,  const globalstuff &glbstuff, const bool mult
   h=new TH1D("dctdiffnorm_tgt_No", "mean dct plot for patients without tox;index;value",glbstuff.maxbin, 0., glbstuff.maxbin);
   h=new TH1D("dctdiffnorm_tgt_Diff", "mean dct plot for difference between patients w/o tox;index;value",glbstuff.maxbin, 0., glbstuff.maxbin);
   h=new TH1D("dctdiffnorm_tgt_All", "mean dct plot for difference between patients w/o tox;index;value",glbstuff.maxbin, 0., glbstuff.maxbin);
-    
+  
+  auto paziente=sample.begin();
+  for(int i=0;i<paziente->second.clinical_factor.size();i++)
+    h2=new TH2D(Form("clinicalfactor_%i_vs_tox",i), "clinical factors vs toxicity;clinical factor;toxycity",6, -1.5, 4.5, 2,-0.5,1.5);
+
   if(debug)
     cout<<"bookHisto done"<<endl;
 
@@ -176,6 +180,8 @@ void fillHisto(map<int, PatientData> &sample,const globalstuff &glbstuff){
     (dynamic_cast<TH1D*>(gDirectory->Get("../mean_dose_rectumAll")))->Fill(paziente.second.mean_dose_rectum);
     (dynamic_cast<TH1D*>(gDirectory->Get(paziente.second.tgt_acutegitox>0 ? "../mean_dose_rectumYes" : "../mean_dose_rectumNo")))->Fill(paziente.second.mean_dose_rectum);
     (dynamic_cast<TH1D*>(gDirectory->Get("../tgt_acutegitox")))->Fill(paziente.second.tgt_acutegitox);
+    for(int i=0;i<paziente.second.clinical_factor.size();i++)
+      (dynamic_cast<TH2D*>(gDirectory->Get(Form("../clinicalfactor_%i_vs_tox",i))))->Fill(paziente.second.clinical_factor.at(i),paziente.second.tgt_acutegitox);
     
     if(debug>5)
       cout<<"fillHisto; first sample loop: fill sample_volumes etc plots done"<<endl;
@@ -254,7 +260,7 @@ void PostLoopAnalysis(map<int, PatientData> &sample, const globalstuff &glbstuff
 
   if(debug)
     cout<<"start PostLoopAnalysis"<<endl;
-
+  //WARNING: THE PEAK POSITION IS SET BY HAND!!!!!!!!!!!!!! HERE
   //tentative to fit the peak at "high" dose in dvhcumnorm_tgt_%.3f_Diff ...and try to do stuff...
   TF1 mygaus=TF1("mygaus","-gaus", 0., glbstuff.maxbin);
   for(auto const &asub:glbstuff.alfabeta){
@@ -268,12 +274,15 @@ void PostLoopAnalysis(map<int, PatientData> &sample, const globalstuff &glbstuff
       TVectorD xv(sample.size()), yv(sample.size());
       int counter=0;
       for(auto const &paziente:sample){
-        xv(counter)=paziente.second.dvhcumnormmap.at(asub).at( (dynamic_cast<TH1D*>(gDirectory->Get(Form("dvhcumnorm_tgt_%.3f_Diff",asub))))->FindBin(mygaus.GetParameter(1)));
+        int binpos=(dynamic_cast<TH1D*>(gDirectory->Get(Form("dvhcumnorm_tgt_%.3f_Diff",asub))))->FindBin(mygaus.GetParameter(1));
+        if(paziente.second.dvhcumnormmap.at(asub).size()<=binpos)
+          continue;
+        xv(counter)=paziente.second.dvhcumnormmap.at(asub).at(binpos);
         yv(counter)=paziente.second.tgt_acutegitox;
         hAll->Fill(xv(counter));
         if(yv(counter)>0)
           hYes->Fill(xv(counter));
-          else
+        else
           hNo->Fill(xv(counter));
         counter++;
       }

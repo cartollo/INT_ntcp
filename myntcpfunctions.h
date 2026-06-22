@@ -66,7 +66,7 @@ double dose_per_fraction;
 double mean_dose_rectum; 
 int tgt_acutegitox;
 int operation; //at present, =TURP for synthetic data
-vector<int> clinical_factor; //at present, only for synthetic data
+vector<int> clinical_factor; 
 int prostatectomy;
 int appendectomy;
 
@@ -98,7 +98,7 @@ int status; //-1=not set, 0=all ok, 1=not monotonous
 struct globalstuff{
   //parameters:
   double alfabdone;
-  int clinicalfactors; //clinical factor index included
+  int clinicalfactors; //number of clinical factor index 
   double eqd2binwidth;
   vector<double> alfabeta;
   vector<double> nvalue4eud;
@@ -116,7 +116,7 @@ struct globalstuff{
 
 void fillHisto(map<int, PatientData> &sample,const globalstuff &glbstuff);
 void PostLoopAnalysis(map<int, PatientData> &sample, const globalstuff &glbstuff);
-void bookHisto(TFile *outrootfile, const globalstuff &glbstuff, const bool multivariate);
+void bookHisto(TFile *outrootfile, const map<int, PatientData> &sample, const globalstuff &glbstuff, const bool multivariate);
 int CreateNtcpSigmoidalSingle(TString pltname, const TVectorD &vx, const TVectorD &vy);
 int CreateNtcpSigmoidalPredefined(map<int, PatientData> &sample, TString tgtname);
 void PrintSampleLine(int idx, const   map<int, PatientData> &sample);

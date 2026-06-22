@@ -6,8 +6,10 @@ int main(int argc, char* argv[]) {
   
   TString dvhbfilename("");
   TString dvhafilename("");
-  dvhafilename="DVH_Rectum_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv";
+  // dvhafilename="DVH_Rectum_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv";
+  dvhafilename="DVH_Rectum_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT_plus_mbprofile_pts.csv";
   // dvhafilename="DVH_PRIME_bowel_by_Boris_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv";
+  // dvhafilename="DVH_Bowel_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT_plus_mbprofile_pts.csv";
   TString metafilename("metadata_paper_release_JI_COMBINED_metadata_microlearner_prostate_base_05_24_MODIFIEDYUNWITHCLUSTER.csv");
   TString outrootname("ntcp_outputs.root");
   TString txtappended("");
@@ -123,7 +125,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
  
-  bookHisto(outrootfile, glbstuff, samrect.size());
+  bookHisto(outrootfile, sample, glbstuff, samrect.size());
   fillHisto(sample,glbstuff);
   CreateNtcpSigmoidalPredefined(sample, tgtname);
   PostLoopAnalysis(sample, glbstuff);
