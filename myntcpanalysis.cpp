@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
   TString txtappended("");
   TString tgtname("acute GI toxicity");
   int datatype=2; //0=not specified, 1=hiroc synthetic, 2=nanoport
-  int clinicalfactors=1;
+  int clinicalfactors=2; //0=no clinical factors, 1=only one value as clinical factor, 2= three values of cluster that actually are normalized
   // vector<int> clinicalfactors;
   double alfabdone=10; //if the dose are already normalized for fractions and alfa/beta, otherwise set to -1
   double eqd2binwidth=1.; //binwidth in gy di eqd2 normalizzato
@@ -48,9 +48,9 @@ int main(int argc, char* argv[]) {
     parlimits={0.5, 0.01, 0.01, 5.0};
     fitpars["alfabeta"]=make_pair(parnum++, parlimits);
   }
-  if(clinicalfactors==1){
+  for(int i=0;i<clinicalfactors;i++){
     parlimits={1.0, 0.01, -5., 5.0};
-    fitpars["clinical_factor_0"]=make_pair(parnum++, parlimits);
+    fitpars[Form("clinical_factor_%i",i)]=make_pair(parnum++, parlimits);
   }
 
   if(datatype==1){

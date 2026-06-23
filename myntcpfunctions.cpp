@@ -721,6 +721,15 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
   auto lamdalikehoodAlfabdoneClinical_0 = [&](const double* par) {
       return functorLikehoodAlfabdoneClinical_0(sample, par);
   };
+    
+  auto lamdalikehoodFullClinical_1 = [&](const double* par) {
+    return functorLikehoodFullClinical_1(sample, par);
+  };
+  auto lamdalikehoodAlfabdoneClinical_1 = [&](const double* par) {
+      return functorLikehoodAlfabdoneClinical_1(sample, par);
+  };
+
+
 
   // ROOT::Math::Functor fpFunctor= (glbstuff.clinicalfactors.size()==0) ? ((glbstuff.alfabdone < 0) ?  ROOT::Math::Functor(lamdalikehoodFull, 4) : ROOT::Math::Functor(lamdalikehoodAlfabdone, 3)) : ((glbstuff.alfabdone < 0) ? ROOT::Math::Functor(lamdalikehoodFullClinical_0, 5) : ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_0, 4 ));
   ROOT::Math::Functor fpFunctor;
@@ -737,6 +746,12 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
   }else if(glbstuff.clinicalfactors==1 && glbstuff.alfabdone>=0){
     cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdoneClinical_0"<<endl;
     fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_0, 4);
+  }else if(glbstuff.clinicalfactors==2 && glbstuff.alfabdone<0){
+    cout<<"optimizeLikehood: functor=lamdalikehoodFullClinical_1"<<endl;
+    fpFunctor = ROOT::Math::Functor(lamdalikehoodFullClinical_1, 6);
+  }else if(glbstuff.clinicalfactors==2 && glbstuff.alfabdone>=0){
+    cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdoneClinical_1"<<endl;
+    fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_1, 5);
   }
 
   std::unique_ptr<ROOT::Math::Minimizer> fpMinimizer(ROOT::Math::Factory::CreateMinimizer(glbstuff.fitalgo.at(fitalgindex).first, glbstuff.fitalgo.at(fitalgindex).second));
@@ -762,10 +777,12 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
   for (const auto& p : ordered){
       const auto& name = p.second->first;
       const auto& lim  = p.second->second.second;
-      if(fixedpar.first!=p.first)
+      if(fixedpar.first!=p.first){
         fpMinimizer->SetLimitedVariable(p.first, name.c_str(), lim[0], lim[1], lim[2],lim[3]);
-      else
+      }
+      else{
         fpMinimizer->SetFixedVariable(p.first, name.c_str(), fixedpar.second);
+      }
 
   }  
 
@@ -798,7 +815,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
         for(int j=0;j<fpMinimizer->NFree();++j)
           std::cout << i << " " << j << " " << fpMinimizer->CovMatrix(i,j)/sqrt(fpMinimizer->CovMatrix(i,i)*fpMinimizer->CovMatrix(j,j)) << std::endl;  
     }
-    cout<<"status="<<status<<"CovMatrixStatus="<<fpMinimizer->CovMatrixStatus()<<"  Edm="<<fpMinimizer->Edm()<<"  degree of freedom:"<<fpMinimizer->NFree()<<"   -loglikehood minimum value:"<<fpMinimizer->MinValue()<<"  AIC="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()<<"  deviance/dof="<<2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())<<endl;
+    cout<<"status="<<status<<"CovMatrixStatus="<<fpMinimizer->CovMatrixStatus()<<"  Edm="<<fpMinimizer->Edm()<<"  degree of freedom:"<<fpMinimizer->NFree()<<"  fpMinimizer->NDim()="<<fpMinimizer->NDim()<<"   -loglikehood minimum value:"<<fpMinimizer->MinValue()<<"  AIC="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()<<"  deviance/dof="<<2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())<<endl;
     for(int i=0;i<fpMinimizer->NDim();i++){
       if(glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].size()==0){
         glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].push_back(fpMinimizer->X()[i]);
@@ -841,6 +858,14 @@ double functorLikehoodFull(const map<int, PatientData> &sample, const double* pa
   return eval;
 }
 
+//likehood: 
+//par: 0=[0] firstfitted value in tf1, 1=secondfitted value in tf1, 2=nvalue, 3=alfabeta
+double functorLikehoodAlfabdone(const map<int, PatientData> &sample, const double* par){
+  double eval=0.;
+  for(const auto &paziente : sample)
+    eval-=std::log(EvalScoreLikehoodAlfabdone(paziente.second, par)); 
+  return eval;
+}
 
 //par: 0=[0] firstfitted value in tf1, 1=secondfitted value in tf1, 2=nvalue, 3=alfabeta, 4=clinical factor at 0
 double functorLikehoodFullClinical_0(const map<int, PatientData> &sample, const double* par){
@@ -851,20 +876,27 @@ double functorLikehoodFullClinical_0(const map<int, PatientData> &sample, const 
 }
 
 //likehood: 
-//par: 0=[0] firstfitted value in tf1, 1=secondfitted value in tf1, 2=nvalue, 3=alfabeta
-double functorLikehoodAlfabdone(const map<int, PatientData> &sample, const double* par){
-  double eval=0.;
-  for(const auto &paziente : sample)
-    eval-=std::log(EvalScoreLikehoodAlfabdone(paziente.second, par)); 
-  return eval;
-}
-
-//likehood: 
 //par: 0=[0] firstfitted value in tf1, 1=secondfitted value in tf1, 2=nvalue, 3=clinical factor at 0
 double functorLikehoodAlfabdoneClinical_0(const map<int, PatientData> &sample, const double* par){
   double eval=0.;
   for(const auto &paziente : sample)
     eval-= std::log(EvalScoreLikehoodAlfabdoneClinical_0(paziente.second, par));
+  return eval;
+}
+//par: 0=[0] firstfitted value in tf1, 1=secondfitted value in tf1, 2=nvalue, 3=alfabeta, 4=clinical factor at 0
+double functorLikehoodFullClinical_1(const map<int, PatientData> &sample, const double* par){
+  double eval=0.;
+  for(const auto &paziente : sample)
+    eval-=std::log(EvalScoreLikehoodFullClinical_1(paziente.second, par));
+    return eval;
+}
+
+//likehood: 
+//par: 0=[0] firstfitted value in tf1, 1=secondfitted value in tf1, 2=nvalue, 3=clinical factor at 0
+double functorLikehoodAlfabdoneClinical_1(const map<int, PatientData> &sample, const double* par){
+  double eval=0.;
+  for(const auto &paziente : sample)
+    eval-= std::log(EvalScoreLikehoodAlfabdoneClinical_1(paziente.second, par));
   return eval;
 }
 
@@ -1445,12 +1477,16 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
   return 0;
 }
 
-int SetClusterAsClinicalFactor(map<int, PatientData> &sample, globalstuff &glbstuff){
+int SetClusterAsClinicalFactor(map<int, PatientData> &sample, const globalstuff &glbstuff){
   for(auto &paziente : sample){
     if(paziente.second.cluster>=0 && paziente.second.clinical_factor.size()==0){
-      paziente.second.clinical_factor.push_back(paziente.second.cluster);
-      glbstuff.clinicalfactors=paziente.second.clinical_factor.size();
-     }else{
+      if(glbstuff.clinicalfactors==1)
+        paziente.second.clinical_factor.push_back(paziente.second.cluster); //valore cluster è valore di clinical factor
+      if(glbstuff.clinicalfactors==2){//WARNING: SE SONO DUE VALORI SI PRESUPPONE SIANO DA CLUSTER E CHE SIANO NORMALIZZATI: cluster=1->(0,0) cluster=2->(1,0), cluster=3->(0,1)
+        paziente.second.clinical_factor.push_back( (paziente.second.cluster==2) ? 1 : 0  );
+        paziente.second.clinical_factor.push_back( (paziente.second.cluster==3) ? 1 : 0  );
+      }
+    }else{
       cout<<"ERROR in SetClusterAsClinicalFactor: paziente.cluster="<<paziente.second.cluster<<" paziente.clinical_factor.size()="<<paziente.second.clinical_factor.size()<<endl;
       return 1;
     }

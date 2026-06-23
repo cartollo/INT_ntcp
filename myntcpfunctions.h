@@ -139,13 +139,15 @@ void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuf
 void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors);
 void ChooseBestFit(globalstuff &glbstuff);
 void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sample, const globalstuff& glbstuff,int fitalgindex, int nbins);
-int SetClusterAsClinicalFactor(map<int, PatientData> &sample, globalstuff &glbstuff);
+int SetClusterAsClinicalFactor(map<int, PatientData> &sample, const globalstuff &glbstuff);
 
 
 double functorLikehoodFull(const map<int, PatientData> &sample, const double* par);
 double functorLikehoodAlfabdone(const map<int, PatientData> &sample, const double* par);
 double functorLikehoodFullClinical_0(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodFullClinical_1(const map<int, PatientData> &sample, const double* par);
 double functorLikehoodAlfabdoneClinical_0(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodAlfabdoneClinical_1(const map<int, PatientData> &sample, const double* par);
 
 void SetAucAvgPrec(int index, const pair<double,double> aucavgin, globalstuff& glbstuff);
 
@@ -155,24 +157,34 @@ inline double EvalScoreFull(const PatientData& paziente, const double *par){retu
 inline double EvalScoreLikehoodFull(const PatientData& paziente, const double *par){
   return (paziente.tgt_acutegitox<0.5) ? 1.-EvalScoreFull(paziente, par) : EvalScoreFull(paziente,par);};
 
+  inline double EvalScoreAlfabdone(const PatientData& paziente, const double *par){ return 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente, par[2])));};
+  inline double EvalScoreLikehoodAlfabdone(const PatientData& paziente, const double *par){
+    return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdone(paziente, par): EvalScoreAlfabdone(paziente, par);};
 
 inline double EvalScoreFullClinical_0(const PatientData& paziente, const double *par){return  1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente, par[3], par[2])-par[4]*paziente.clinical_factor[0]));};
 inline double EvalScoreLikehoodFullClinical_0(const PatientData& paziente, const double *par){
   return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreFullClinical_0(paziente, par): EvalScoreFullClinical_0(paziente, par);};
 
-inline double EvalScoreAlfabdone(const PatientData& paziente, const double *par){ return 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente, par[2])));};
-inline double EvalScoreLikehoodAlfabdone(const PatientData& paziente, const double *par){
-  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdone(paziente, par): EvalScoreAlfabdone(paziente, par);};
-
 inline double EvalScoreAlfabdoneClinical_0(const PatientData& paziente, const double *par){return 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente, par[2])-par[3]*paziente.clinical_factor[0]));};
 inline double EvalScoreLikehoodAlfabdoneClinical_0(const PatientData& paziente, const double *par){
   return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdoneClinical_0(paziente, par):EvalScoreAlfabdoneClinical_0(paziente, par) ;};
+
+inline double EvalScoreFullClinical_1(const PatientData& paziente, const double *par){return  1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente, par[3], par[2])-par[4]*paziente.clinical_factor[0]-par[5]*paziente.clinical_factor[1]));};
+inline double EvalScoreLikehoodFullClinical_1(const PatientData& paziente, const double *par){
+  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreFullClinical_1(paziente, par): EvalScoreFullClinical_1(paziente, par);};
+
+inline double EvalScoreAlfabdoneClinical_1(const PatientData& paziente, const double *par){return 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente, par[2])-par[3]*paziente.clinical_factor[0]-par[4]*paziente.clinical_factor[1]));};
+inline double EvalScoreLikehoodAlfabdoneClinical_1(const PatientData& paziente, const double *par){
+  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdoneClinical_1(paziente, par):EvalScoreAlfabdoneClinical_1(paziente, par) ;};
+
 
 inline double EvalScoreSelector(const globalstuff& glbstuff, const PatientData& paziente, const double *par){
   if(glbstuff.clinicalfactors==0){
     return (glbstuff.alfabdone < 0) ?  EvalScoreFull(paziente, par) : EvalScoreAlfabdone(paziente, par);
   }else if(glbstuff.clinicalfactors==1){
     return (glbstuff.alfabdone < 0) ? EvalScoreFullClinical_0(paziente, par) : EvalScoreAlfabdoneClinical_0(paziente, par);
+  }else if(glbstuff.clinicalfactors==2){
+    return (glbstuff.alfabdone < 0) ? EvalScoreFullClinical_1(paziente, par) : EvalScoreAlfabdoneClinical_1(paziente, par);
   }
 };
 
@@ -181,5 +193,7 @@ inline double functorSelector(const globalstuff& glbstuff, const map<int, Patien
     return (glbstuff.alfabdone < 0) ?  functorLikehoodFull(sample, par) : functorLikehoodAlfabdone(sample, par);
   }else if(glbstuff.clinicalfactors==1){
     return (glbstuff.alfabdone < 0) ? functorLikehoodFullClinical_0(sample, par) : functorLikehoodAlfabdoneClinical_0(sample, par);
+  }else if(glbstuff.clinicalfactors==2){
+    return (glbstuff.alfabdone < 0) ? functorLikehoodFullClinical_1(sample, par) : functorLikehoodAlfabdoneClinical_1(sample, par);
   }
 };
