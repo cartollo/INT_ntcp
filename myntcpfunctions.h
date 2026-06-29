@@ -99,6 +99,7 @@ struct globalstuff{
   //parameters:
   double alfabdone;
   int clinicalfactors; //number of clinical factor index 
+  int clusternum; //number of clusters 
   double eqd2binwidth;
   vector<double> alfabeta;
   vector<double> nvalue4eud;
@@ -136,7 +137,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
 pair<double,double> optlike_aucROC(const map<int, PatientData> &sample,const globalstuff &glbstuff, const int fitalgindex);
 void computeDCT(const vector<double>& x, vector<double>& c);
 void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuff);
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors);
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum);
 void ChooseBestFit(globalstuff &glbstuff);
 void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sample, const globalstuff& glbstuff,int fitalgindex, int nbins);
 int SetClusterAsClinicalFactor(map<int, PatientData> &sample, const globalstuff &glbstuff);
