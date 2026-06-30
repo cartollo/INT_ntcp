@@ -1382,7 +1382,7 @@ return;
 }
 
 
-int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname, const int datatype){
+int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname, const int datatype, const int powptype){
 
   if(debug)
     cout<<"start loadMetaFile"<<endl;
@@ -1398,8 +1398,9 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
     TString delimiter(",");
     vector<string> parts = splitCsvLine(line, delimiter);
     
-    int tgtpos=-1, doseptv_pos=-1, nfrac_pos=-1, meandoserectum_pos=-1, doseperfraction_pos=-1, prostatectomy_pos=-1, appendectomy_pos=-1, age_pos=-1,bmi_pos=-1,smoke_pos=-1,alcohol_pos=-1,diabetes_pos=-1,diverticulitis_pos=-1, psa_pos=-1, tumour_risk_pos=-1, lymph_irr_pos=-1, semivesicle_irr_pos=-1,mb_risk_pos=-1, cluster_pos=-1;
+    int tgtpos=-1, powp_pos, doseptv_pos=-1, nfrac_pos=-1, meandoserectum_pos=-1, doseperfraction_pos=-1, prostatectomy_pos=-1, appendectomy_pos=-1, age_pos=-1,bmi_pos=-1,smoke_pos=-1,alcohol_pos=-1,diabetes_pos=-1,diverticulitis_pos=-1, psa_pos=-1, tumour_risk_pos=-1, lymph_irr_pos=-1, semivesicle_irr_pos=-1,mb_risk_pos=-1, cluster_pos=-1;
     TString doseptv_name("dose to the prostate PTV (Gy)");
+    TString powp_name("WPRT");
     TString nfrac_name("fraction number");
     TString meandoserectum_name("mean dose to the rectum (Gy)");
     TString doseperfraction_name("dose/fraction");
@@ -1422,6 +1423,8 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
         tgtpos=i;
       if(doseptv_name.CompareTo(parts[i])==0)
         doseptv_pos=i;
+      if(powp_name.CompareTo(parts[i])==0)
+        powp_pos=i;
       if(nfrac_name.CompareTo(parts[i])==0)
         nfrac_pos=i;
       if(meandoserectum_name.CompareTo(parts[i])==0)
@@ -1457,8 +1460,8 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
       if(cluster_name.CompareTo(parts[i])==0)
         cluster_pos=i;
     }
-    if(tgtpos==-1 || doseptv_pos==-1 || nfrac_pos==-1 || meandoserectum_pos==-1 || doseperfraction_pos==-1 || prostatectomy_pos==-1 ||appendectomy_pos==-1 || age_pos==-1 ||bmi_pos==-1 ||smoke_pos==-1 ||alcohol_pos==-1 ||diabetes_pos==-1 ||diverticulitis_pos==-1 || psa_pos==-1 || tumour_risk_pos==-1 || lymph_irr_pos==-1 || semivesicle_irr_pos==-1 ||mb_risk_pos==-1 || cluster_pos==-1) {
-      throw std::runtime_error(Form("loadMetaFile: error, some variable not found: tgtpos=%i  doseptv_pos=%i  nfrac_pos=%i  meandoserectum_pos=%i  doseperfraction_pos=%i , prostatectomy_pos=%i, appendectomy_pos=%i, age_pos=%i,bmi_pos=%i,smoke_pos=%i,alcohol_pos=%i,diabetes_pos=%i,diverticulitis_pos=%i, psa_pos=%i, tumour_risk_pos=%i, lymph_irr_pos=%i, semivesicle_irr_pos=%i,mb_risk_pos=%i, cluster_pos=%i", tgtpos, doseptv_pos,  nfrac_pos,  meandoserectum_pos, doseperfraction_pos, prostatectomy_pos, appendectomy_pos, age_pos,bmi_pos,smoke_pos,alcohol_pos,diabetes_pos,diverticulitis_pos, psa_pos, tumour_risk_pos, lymph_irr_pos, semivesicle_irr_pos,mb_risk_pos, cluster_pos));
+    if(tgtpos==-1 || doseptv_pos==-1 || nfrac_pos==-1 || meandoserectum_pos==-1 || doseperfraction_pos==-1 || prostatectomy_pos==-1 ||appendectomy_pos==-1 || age_pos==-1 ||bmi_pos==-1 ||smoke_pos==-1 ||alcohol_pos==-1 ||diabetes_pos==-1 ||diverticulitis_pos==-1 || psa_pos==-1 || tumour_risk_pos==-1 || lymph_irr_pos==-1 || semivesicle_irr_pos==-1 ||mb_risk_pos==-1 || cluster_pos==-1 || powp_pos==-1) {
+      throw std::runtime_error(Form("loadMetaFile: error, some variable not found: tgtpos=%i  powp_pos=%i  doseptv_pos=%i  nfrac_pos=%i  meandoserectum_pos=%i  doseperfraction_pos=%i , prostatectomy_pos=%i, appendectomy_pos=%i, age_pos=%i,bmi_pos=%i,smoke_pos=%i,alcohol_pos=%i,diabetes_pos=%i,diverticulitis_pos=%i, psa_pos=%i, tumour_risk_pos=%i, lymph_irr_pos=%i, semivesicle_irr_pos=%i,mb_risk_pos=%i, cluster_pos=%i", tgtpos, powp_pos, doseptv_pos,  nfrac_pos,  meandoserectum_pos, doseperfraction_pos, prostatectomy_pos, appendectomy_pos, age_pos,bmi_pos,smoke_pos,alcohol_pos,diabetes_pos,diverticulitis_pos, psa_pos, tumour_risk_pos, lymph_irr_pos, semivesicle_irr_pos,mb_risk_pos, cluster_pos));
       return 1;
     }
 
@@ -1489,6 +1492,7 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
       it->second.dose_per_fraction=std::stod(trim(parts[doseperfraction_pos]));
       it->second.mean_dose_rectum=std::stod(trim(parts[meandoserectum_pos]));
       
+      it->second.powp= trim(parts[powp_pos]) == "WPRT" ? 1 : 0;
       it->second.prostatectomy= trim(parts[prostatectomy_pos]) == "Prostatectomy" ? 1 : 0;
       it->second.appendectomy= trim(parts[appendectomy_pos]) == "Appendectomy" ? 1:0;
       it->second.age=std::stoi(trim(parts[age_pos]));
@@ -1509,21 +1513,31 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
   in.close();
 
   if(datatype==2){//nanoport data, remove non nanoport patients
-  for(auto it = sample.begin(); it != sample.end();){
-    if(it->second.cluster <0 )
-      it = sample.erase(it);
-    else
-      ++it;
+    for(auto it = sample.begin(); it != sample.end();){
+      if(it->second.cluster <0 )
+        it = sample.erase(it);
+      else
+        ++it;
     }
   }else if(datatype==3){//old article clustering with MB class risk
-  for(auto it = sample.begin(); it != sample.end();){
-    it->second.cluster=it->second.mb_risk;
-    if(it->second.cluster <0 )
-      it = sample.erase(it);
-    else
-      ++it;
-  }
+    for(auto it = sample.begin(); it != sample.end();){
+      it->second.cluster=it->second.mb_risk;
+      if(it->second.cluster <0 )
+        it = sample.erase(it);
+      else
+        ++it;
     }
+  }
+  
+  //wprt / port selection
+  if(powptype!=-1){
+    for(auto it = sample.begin(); it != sample.end();){
+      if(it->second.powp!=powptype)
+        it = sample.erase(it);
+      else
+        ++it;
+    }
+  }
   
   if(addedinmap!=sample.size())
     cout<<"WARNING: mismatch between addedinmap="<<addedinmap<<"  and  sample.size()="<<sample.size()<<endl;
@@ -1551,7 +1565,7 @@ int SetClusterAsClinicalFactor(map<int, PatientData> &sample, const globalstuff 
   return 0;
 }
 
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum){
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum, int powptype){
   glbstuff.alfabdone=alfabdone;
   glbstuff.eqd2binwidth=eqd2binwidth;
   glbstuff.nvalue4eud=nvalue4eud;
@@ -1562,6 +1576,6 @@ void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidt
   glbstuff.clinicalfactors=clinicalfactors;
   glbstuff.clusternum=clusternum;
   glbstuff.maxbin= (datatype==1) ? 200:100;
-
+  glbstuff.powptype=powptype;
   return;
 }

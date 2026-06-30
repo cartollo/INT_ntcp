@@ -7,16 +7,17 @@ int main(int argc, char* argv[]) {
   TString dvhbfilename("");
   TString dvhafilename("");
   // dvhafilename="DVH_Rectum_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv";
-  // dvhafilename="DVH_Rectum_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT_plus_mbprofile_pts.csv";
+  dvhafilename="DVH_Rectum_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT_plus_mbprofile_pts.csv";
   // dvhafilename="DVH_PRIME_bowel_by_Boris_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv";
-  dvhafilename="DVH_Bowel_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT_plus_mbprofile_pts.csv";
+  // dvhafilename="DVH_Bowel_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT_plus_mbprofile_pts.csv";
+  Int_t powptype=-1; //-1=no selection, 0= only prostate, 1= whole pelvis 
   TString metafilename("metadata_paper_release_JI_COMBINED_metadata_microlearner_prostate_base_05_24_MODIFIEDYUNWITHCLUSTER.csv");
   TString outrootname("ntcp_outputs.root");
   TString txtappended("");
   TString tgtname("acute GI toxicity");
-  int datatype=3; //0=not specified, 1=hiroc synthetic, 2=nanoport, 3=old article clustering with MB class risk
+  int datatype=2; //0=not specified, 1=hiroc synthetic, 2=nanopore by michele, 3=old article clustering with MB class risk
   int clusternum=3; //number of cluster considered, it is related to clinicalfactors, 
-  int clinicalfactors=1; //0=no clinical factors, 1=only one value as clinical factor, 2= three values of cluster that actually are normalized
+  int clinicalfactors=2; //0=no clinical factors, 1=only one value as clinical factor, 2= three values of cluster that actually are normalized
   // vector<int> clinicalfactors;
   double alfabdone=10; //if the dose are already normalized for fractions and alfa/beta, otherwise set to -1
   double eqd2binwidth=1.; //binwidth in gy di eqd2 normalizzato
@@ -72,7 +73,7 @@ int main(int argc, char* argv[]) {
   if(txtappended.Length()>0){
     freopen(txtappended.Data(),"w",stdout);
     cout<<"dvha="<<dvhafilename.Data()<<"  dvhbfilename="<<dvhbfilename.Data()<<"  metafilename="<<metafilename.Data()<<"  outrootname="<<outrootname.Data()<<"  tgtname="<<tgtname.Data()<<endl;
-    cout<<"datatype="<<datatype<<"  clinicalfactors="<<clinicalfactors<<"  alfabdone="<<alfabdone<<"  eqd2binwidth="<<eqd2binwidth<<endl;
+    cout<<"datatype="<<datatype<<"  powptype="<<powptype<<"  clusternum="<<clusternum<<"  clinicalfactors="<<clinicalfactors<<"  alfabdone="<<alfabdone<<"  eqd2binwidth="<<eqd2binwidth<<endl;
     cout<<"alfabeta=(";
     for(int i=0;i<alfabeta.size();i++)
       cout<<alfabeta.at(i)<<", ";
@@ -97,7 +98,7 @@ int main(int argc, char* argv[]) {
   }else{ 
     if(loadDvhFile(dvhafilename.Data(), sample))
       return 1;
-    if(loadMetaFile(metafilename.Data(), sample, tgtname, datatype))
+    if(loadMetaFile(metafilename.Data(), sample, tgtname, datatype, powptype))
       return 1;
     if(dvhbfilename.Length()>0){
       if(loadDvhFile(dvhbfilename.Data(), samrect))
@@ -106,7 +107,7 @@ int main(int argc, char* argv[]) {
   }
 
   globalstuff glbstuff; 
-  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, datatype, clinicalfactors, clusternum);
+  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, datatype, clinicalfactors, clusternum, powptype);
 
   if(clinicalfactors>0)
     SetClusterAsClinicalFactor(sample, glbstuff);
