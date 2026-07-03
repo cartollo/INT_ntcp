@@ -18,12 +18,16 @@
 #include <TString.h>
 #include <TH2D.h>
 #include <TF1.h>
+#include <TF2.h>
+#include <TStyle.h>
+#include <TPaveText.h>
 #include <TFile.h>
 #include <TDirectory.h>
 #include <TSystem.h>
 #include "TROOT.h"
 #include <TCanvas.h>
 #include <TGraph.h>
+#include <TGraph2D.h>
 #include <TFitResultPtr.h>
 #include <TFitResult.h>
 #include <TVectorD.h>
@@ -57,7 +61,7 @@ double min_dose_st;
 double mean_dose_st;
 vector<double> dvhmapcum; //binwidth =1 gy, each value is the volume for a given dose (dose=index), cumulative
 vector<double> dvhmapdiff; //binwidth =1 gy, each value is the volume for a given dose (dose=index), differential
-vector<double> dvhdctdiff; //differential dct transform
+vector<double> dvhdctdiff; //differential dct transform (a tentative to use dct transform to ealuate dvh differences)
 
 //from meta file
 double dose_ptv;
@@ -107,6 +111,7 @@ struct globalstuff{
   int maxbin;
   int datatype;
   int powptype;
+  int twodvh;
 
   //fitted stuff
   vector<pair<string,string>> fitalgo; //algorithm used by tminimizer for fitting
@@ -127,6 +132,7 @@ int loadDvhFile(const string& filename,   map<int, PatientData> &sample);
 int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname, const int datatype, const int powptype);
 int loadSyntheticFile(const string& filename,   map<int, PatientData> &sample);
 void evaluateEqdEud(map<int, PatientData> &sample, const globalstuff &glbstuff);
+int CheckSampleSamrectConsistency(const map<int, PatientData> &sample, const map<int, PatientData> &samrect);
 void FillEqdEud(map<int, PatientData> &sample, const globalstuff &glbstuff);
 double CalculateEudFromScratch(const PatientData &paziente, double alfabeta, double nvalue);
 double CalculateEudEqdAlreadyDone(const PatientData &paziente, double nvalue);
@@ -134,23 +140,25 @@ double fitSigmoidal(TGraph* graph, int parnum, int functype);
 string trim(const string& s);
 vector<string> splitCsvLine(const string& line, const TString delimiter);
 void CreateHistoFromTgraph(TGraph *gr, TH1D *h);
-int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex, const pair<int,double> fixedpar=make_pair(-1,-1));
-void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex);
+int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex, map<int, PatientData> &samrect, const pair<int,double> fixedpar=make_pair(-1,-1) );
+void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex, map<int, PatientData> &samrect);
 pair<double,double> optlike_aucROC(const map<int, PatientData> &sample,const globalstuff &glbstuff, const int fitalgindex);
 void computeDCT(const vector<double>& x, vector<double>& c);
 void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuff);
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum, int powptype);
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum, int powptype, int twodvh);
 void ChooseBestFit(globalstuff &glbstuff);
 void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sample, const globalstuff& glbstuff,int fitalgindex, int nbins);
 int SetClusterAsClinicalFactor(map<int, PatientData> &sample, const globalstuff &glbstuff);
+TGraphErrors *MakeBandFromMinimizer(TF1 *f, ROOT::Math::Minimizer *minimizer, int npoints, double clscale);
 
-
+  
 double functorLikehoodFull(const map<int, PatientData> &sample, const double* par);
 double functorLikehoodAlfabdone(const map<int, PatientData> &sample, const double* par);
 double functorLikehoodFullClinical_0(const map<int, PatientData> &sample, const double* par);
 double functorLikehoodFullClinical_1(const map<int, PatientData> &sample, const double* par);
 double functorLikehoodAlfabdoneClinical_0(const map<int, PatientData> &sample, const double* par);
 double functorLikehoodAlfabdoneClinical_1(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodAlfabdone2DvhClinical_1(const map<int, PatientData> &sample, const map<int, PatientData> &samrect, const double* par);
 
 void SetAucAvgPrec(int index, const pair<double,double> aucavgin, globalstuff& glbstuff);
 
@@ -179,6 +187,10 @@ inline double EvalScoreLikehoodFullClinical_1(const PatientData& paziente, const
 inline double EvalScoreAlfabdoneClinical_1(const PatientData& paziente, const double *par){return 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente, par[2])-par[3]*paziente.clinical_factor[0]-par[4]*paziente.clinical_factor[1]));};
 inline double EvalScoreLikehoodAlfabdoneClinical_1(const PatientData& paziente, const double *par){
   return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdoneClinical_1(paziente, par):EvalScoreAlfabdoneClinical_1(paziente, par) ;};
+
+inline double EvalScoreAlfabdone2DvhClinical_1(const PatientData& pazienta, const PatientData& pazientb, const double *par){return 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(pazienta, par[2])-par[3]*CalculateEudEqdAlreadyDone(pazientb, par[2])-par[4]*pazienta.clinical_factor[0]-par[5]*pazienta.clinical_factor[1]));};
+inline double EvalScoreLikehoodAlfabdone2DvhClinical_1(const PatientData& pazienta, const PatientData& pazientb, const double *par){
+  return (pazienta.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdone2DvhClinical_1(pazienta, pazientb, par):EvalScoreAlfabdone2DvhClinical_1(pazienta, pazientb, par) ;};
 
 
 inline double EvalScoreSelector(const globalstuff& glbstuff, const PatientData& paziente, const double *par){
