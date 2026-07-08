@@ -16,12 +16,12 @@ int main(int argc, char* argv[]) {
   TString outrootname("ntcp_outputs.root");
   TString txtappended("");
   TString tgtname("acute GI toxicity");
-  int twodvh=1; //1= use both dvhb and dvha, otherwise only 0 WARNING: if twodvh==1, only clusterfactor 2 and clinicalfactors=2 and alfabdoneshould be set
+  int twodvh=0; //1= use both dvhb and dvha, otherwise only 0 WARNING: if twodvh==1, only clusterfactor 2 and clinicalfactors=2 and alfabdoneshould be set
   int datatype=3; //0=not specified, 1=hiroc synthetic, 2=nanopore by michele, 3=old article clustering with MB class risk
-  int clusternum=3; //number of cluster considered, it is related to clinicalfactors, 
-  int clinicalfactors=2; //0=no clinical factors, 1=only one value as clinical factor, 2= three values of cluster that actually are normalized
+  int clusternum=0; //number of cluster considered, it is related to clinicalfactors, (per ora è 0 o 3) 
+  int clinicalfactors=0; //0=no clinical factors, 1=only one value as clinical factor, 2= three values of cluster that actually are normalized
   // vector<int> clinicalfactors;
-  int drawlikehood=0; //draw or not the likehood function (it took time)
+  int drawlikehood=1; //draw or not the likehood function (it took time)
   double alfabdone=10; //if the dose are already normalized for fractions and alfa/beta, otherwise set to -1
   double eqd2binwidth=1.; //binwidth in gy di eqd2 normalizzato
   vector<double> alfabeta={0.1,0.5,1,2,4,10};
