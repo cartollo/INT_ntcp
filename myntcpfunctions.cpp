@@ -1195,42 +1195,55 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   gr_eud_vs_pred->Sort();
   for(auto &gr:gr_eudwithtox_vs_tox)
     gr->Sort();
+
   TF1* sigmoidbestnoclinical_0,*sigmoidbestnoclinical_1,*sigmoidbestnoclinical_2;
-  sigmoidbestnoclinical_0=new TF1("sigmoidbestnoclinical_0","1./(1.+exp(-[0]-[1]*x))", 0, 1000);
+  sigmoidbestnoclinical_0=new TF1("sigmoidbestnoclinical_0","1./(1.+exp(-[0]-[1]*x))", 0, 100);
   sigmoidbestnoclinical_0->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
   sigmoidbestnoclinical_0->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
   gr_eud_vs_tox->Fit(sigmoidbestnoclinical_0, "BS+","",0,100);
-  TGraphErrors *tgrer_sigmoidbestnoclinical;
-  if(glbstuff.clinicalfactors==0){
-    tgrer_sigmoidbestnoclinical=MakeBandFromMinimizer(sigmoidbestnoclinical_0, 2, cov, glbstuff,fitalgindex, 200, 1);
-  }
+  TGraphErrors *tgrer_sigmoidbestnoclinical_0, *tgrer_sigmoidbestclinical_1, *tgrer_sigmoidbestclinical_2;
+  vector<int> covindexxmakeband;
+  covindexxmakeband.push_back(glbstuff.fitpars.at("beta_zero").first);
+  covindexxmakeband.push_back(glbstuff.fitpars.at("beta_eud_a").first);
+  tgrer_sigmoidbestnoclinical_0=MakeBandFromMinimizer(sigmoidbestnoclinical_0, covindexxmakeband, 2, cov, glbstuff,fitalgindex, 200, 1);
+  tgrer_sigmoidbestnoclinical_0->SetLineColor(kGreen);
+  tgrer_sigmoidbestnoclinical_0->SetMarkerColor(kGreen);
   if(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3){
-    sigmoidbestnoclinical_1=new TF1("sigmoidbestnoclinical_1","1./(1.+exp(-[0]-[1]*x-[2]))", 0, 1000);
+    sigmoidbestnoclinical_1=new TF1("sigmoidbestnoclinical_1","1./(1.+exp(-[0]-([1]+[2])*x))", 0, 100);
     sigmoidbestnoclinical_1->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
     sigmoidbestnoclinical_1->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
     sigmoidbestnoclinical_1->FixParameter(2, glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0));
     gr_eud_vs_tox->Fit(sigmoidbestnoclinical_1, "BS+","",0,100);
-    sigmoidbestnoclinical_2=new TF1("sigmoidbestnoclinical_2","1./(1.+exp(-[0]-[1]*x-[2]))", 0, 1000);
+    covindexxmakeband.push_back(glbstuff.fitpars.at("clinical_factor_0").first);
+    tgrer_sigmoidbestclinical_1=MakeBandFromMinimizer(sigmoidbestnoclinical_1, covindexxmakeband, 3, cov, glbstuff,fitalgindex, 200, 1);
+    tgrer_sigmoidbestclinical_1->SetLineColor(kBlue);
+    tgrer_sigmoidbestclinical_1->SetMarkerColor(kBlue);
+    // tgrer_sigmoidbestclinical_1->Draw("LCE same");
+    sigmoidbestnoclinical_2=new TF1("sigmoidbestnoclinical_2","1./(1.+exp(-[0]-([1]+[2])*x))", 0, 100);
     sigmoidbestnoclinical_2->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
     sigmoidbestnoclinical_2->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
     sigmoidbestnoclinical_2->FixParameter(2, (glbstuff.clinicalfactors==2) ? glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_1").at(0) : glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0)*2.);
     gr_eud_vs_tox->Fit(sigmoidbestnoclinical_2, "BS+","",0,100);    
+    if(glbstuff.clinicalfactors==2)
+      covindexxmakeband.at(2)=glbstuff.fitpars.at("clinical_factor_1").first;
+    tgrer_sigmoidbestclinical_2=MakeBandFromMinimizer(sigmoidbestnoclinical_2, covindexxmakeband, 3, cov, glbstuff,fitalgindex, 200, 1);
+    tgrer_sigmoidbestclinical_2->SetLineColor(kRed);
+    tgrer_sigmoidbestclinical_2->SetMarkerColor(kRed);
+    // tgrer_sigmoidbestclinical_2->Draw("LCE same");
   }
   gr_eud_vs_tox->SetMarkerStyle(20);
-  gr_eud_vs_tox->SetMarkerColor(2);
   gr_eud_vs_tox->SetLineWidth(0);
-  gr_eud_vs_tox->SetLineColor(0);
   gr_eud_vs_tox->SetDrawOption("AP*");
   gr_eud_vs_tox->Write();
-    cout<<"stepb"<<endl;
   TCanvas *canvas_ntcps_eud_vs_tox = new TCanvas("canvas_ntcps_eud_vs_tox", "ntcp curves", 800, 600);
   gr_eud_vs_tox->GetListOfFunctions()->Clear();
-  if(glbstuff.clinicalfactors==0)
-    tgrer_sigmoidbestnoclinical->Draw("AP");
-  gr_eud_vs_tox->Draw("AP* same");
+  gr_eud_vs_tox->Draw("AP*");
   sigmoidbestnoclinical_0->SetLineColor(kGreen);
+  tgrer_sigmoidbestnoclinical_0->Draw("E same");
   sigmoidbestnoclinical_0->Draw("same");
   if(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3){
+    tgrer_sigmoidbestclinical_1->Draw("E same");
+    tgrer_sigmoidbestclinical_2->Draw("E same");
     sigmoidbestnoclinical_1->SetLineColor(kBlue);
     sigmoidbestnoclinical_1->Draw("same");
     sigmoidbestnoclinical_2->SetLineColor(kRed);
@@ -1238,7 +1251,6 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   }
   canvas_ntcps_eud_vs_tox->Write();
   delete canvas_ntcps_eud_vs_tox;
-  cout<<"stepc"<<endl;
   
   gr_eud_vs_pred->SetMarkerStyle(10);
   gr_eud_vs_pred->SetMarkerColor(3);
@@ -1247,44 +1259,45 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   gr_eud_vs_pred->SetDrawOption("AP*");
   gr_eud_vs_pred->Write();
 
-  if(glbstuff.twodvh){
-    TF2* sigmoid2dbestnoclinical_0=new TF2("sigmoid2dbestnoclinical_0","1./(1.+exp(-[0]-[1]*x-[2]*y))", 0, 1000, 0, 1000);
-    sigmoid2dbestnoclinical_0->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
-    sigmoid2dbestnoclinical_0->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
-    sigmoid2dbestnoclinical_0->FixParameter(2, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_b").at(0));
-    sigmoid2dbestnoclinical_0->Write();
-    gr2d_eud_vs_tox->Fit(sigmoid2dbestnoclinical_0, "BS+","");
-    if(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3){
-      TF2* sigmoid2dbestnoclinical_1=new TF2("sigmoid2dbestnoclinical_1","1./(1.+exp(-[0]-[1]*x-[2]*y-[3]))", 0, 1000, 0, 1000);
-      sigmoid2dbestnoclinical_1->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
-      sigmoid2dbestnoclinical_1->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
-      sigmoid2dbestnoclinical_1->FixParameter(2, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_b").at(0));
-      sigmoid2dbestnoclinical_1->FixParameter(3, glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0));
-      sigmoid2dbestnoclinical_1->Write();
-      gr2d_eud_vs_tox->Fit(sigmoid2dbestnoclinical_1, "BS+","");
-      TF2* sigmoid2dbestnoclinical_2=new TF2("sigmoid2dbestnoclinical_2","1./(1.+exp(-[0]-[1]*x-[2]*y -[3]))", 0, 1000, 0, 1000);
-      sigmoid2dbestnoclinical_2->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
-      sigmoid2dbestnoclinical_2->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
-      sigmoid2dbestnoclinical_2->FixParameter(2, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_b").at(0));
-      sigmoid2dbestnoclinical_2->FixParameter(3, (glbstuff.clinicalfactors==2) ? glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_1").at(0) : glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0)*2.);
-      sigmoid2dbestnoclinical_2->Write();
-      gr2d_eud_vs_tox->Fit(sigmoid2dbestnoclinical_2, "BS+","");
-      gr2d_eud_vs_tox->GetListOfFunctions()->Print();
-    }
-    gr2d_eud_vs_tox->SetMarkerStyle(20);
-    gr2d_eud_vs_tox->SetMarkerColor(2);
-    gr2d_eud_vs_tox->SetLineWidth(0);
-    gr2d_eud_vs_tox->SetLineColor(0);
-    gr2d_eud_vs_tox->SetDrawOption("AP*");
-    gr2d_eud_vs_tox->Write();    
-  }
+  //TODO: TO BE FIXED 
+  // if(glbstuff.twodvh){
+  //   TF2* sigmoid2dbestnoclinical_0=new TF2("sigmoid2dbestnoclinical_0","1./(1.+exp(-[0]-[1]*x-[2]*y))", 0, 1000, 0, 1000);
+  //   sigmoid2dbestnoclinical_0->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
+  //   sigmoid2dbestnoclinical_0->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
+  //   sigmoid2dbestnoclinical_0->FixParameter(2, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_b").at(0));
+  //   sigmoid2dbestnoclinical_0->Write();
+  //   gr2d_eud_vs_tox->Fit(sigmoid2dbestnoclinical_0, "BS+","");
+  //   if(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3){
+  //     TF2* sigmoid2dbestnoclinical_1=new TF2("sigmoid2dbestnoclinical_1","1./(1.+exp(-[0]-[1]*x-[2]*y-[3]))", 0, 1000, 0, 1000);
+  //     sigmoid2dbestnoclinical_1->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
+  //     sigmoid2dbestnoclinical_1->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
+  //     sigmoid2dbestnoclinical_1->FixParameter(2, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_b").at(0));
+  //     sigmoid2dbestnoclinical_1->FixParameter(3, glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0));
+  //     sigmoid2dbestnoclinical_1->Write();
+  //     gr2d_eud_vs_tox->Fit(sigmoid2dbestnoclinical_1, "BS+","");
+  //     TF2* sigmoid2dbestnoclinical_2=new TF2("sigmoid2dbestnoclinical_2","1./(1.+exp(-[0]-[1]*x-[2]*y -[3]))", 0, 1000, 0, 1000);
+  //     sigmoid2dbestnoclinical_2->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
+  //     sigmoid2dbestnoclinical_2->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
+  //     sigmoid2dbestnoclinical_2->FixParameter(2, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_b").at(0));
+  //     sigmoid2dbestnoclinical_2->FixParameter(3, (glbstuff.clinicalfactors==2) ? glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_1").at(0) : glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0)*2.);
+  //     sigmoid2dbestnoclinical_2->Write();
+  //     gr2d_eud_vs_tox->Fit(sigmoid2dbestnoclinical_2, "BS+","");
+  //     gr2d_eud_vs_tox->GetListOfFunctions()->Print();
+  //   }
+  //   gr2d_eud_vs_tox->SetMarkerStyle(20);
+  //   gr2d_eud_vs_tox->SetMarkerColor(2);
+  //   gr2d_eud_vs_tox->SetLineWidth(0);
+  //   gr2d_eud_vs_tox->SetLineColor(0);
+  //   gr2d_eud_vs_tox->SetDrawOption("AP*");
+  //   gr2d_eud_vs_tox->Write();    
+  // }
 
   if(debug)
     cout<<"optlike_fill: fit gr_eudwithtox_vs_tox"<<endl;
 
   if(glbstuff.clinicalfactors>0){ 
     for(int i=0;i<gr_eudwithtox_vs_tox.size();i++){
-      TF1* sigmoidfromlikehood=new TF1("sigmoidfromlikehood",  "1./(1.+exp(-[0]-[1]*x -[2]))", 0, 100);
+      TF1* sigmoidfromlikehood=new TF1("sigmoidfromlikehood",  "1./(1.+exp(-[0]-([1]-[2])*x))", 0, 100);
       sigmoidfromlikehood->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
       sigmoidfromlikehood->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
       sigmoidfromlikehood->FixParameter(2, (glbstuff.clinicalfactors==1) ? glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0)*i   :    
@@ -1737,53 +1750,72 @@ void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidt
 }
 
 // clsscale: 1 sigma; usa 1.96 per ~95%
-TGraphErrors *MakeBandFromMinimizer(TF1 *f, const int npar, const vector<double> &cov, const globalstuff &glbstuff, int fitalgindex, int npoints, double clscale) {
+TGraphErrors *MakeBandFromMinimizer(TF1 *f, vector<int> &cov_indices , const int npar, const vector<double> &cov, const globalstuff &glbstuff, int fitalgindex, int npoints, double clscale) {
 
   if(debug>3)
     cout<<"start MakeBandFromMinimizer with f="<<f->GetName()<<endl;
   
   int covndim = static_cast<int>(std::sqrt(cov.size()));
-  if (covndim * covndim != static_cast<int>(cov.size())) {
+  if (covndim * covndim != static_cast<int>(cov.size())){
     throw std::runtime_error("La dimensione del vettore non corrisponde a una matrice quadrata.");
   }    
-  std::vector<double> cov2(npar*npar);
-  for (int i = 0; i < npar; ++i)
-    for (int j = 0; j < npar; ++j)
-      cov2[i * npar + j] = cov[i * covndim + j];
+  for (int idx : cov_indices) {
+    if (idx < 0 || idx >= covndim) {
+      throw std::runtime_error("Indice parametro fuori range rispetto alla matrice di covarianza.");
+    }
+  }
+
+  vector<double> cov2(npar*npar);
+  for (int i = 0; i < npar; ++i) {
+    for (int j = 0; j < npar; ++j) {
+      cov2[i * npar + j] = cov[cov_indices[i] * covndim + cov_indices[j]];
+    }
+  }
 
   for (int i = 0; i < npar; i++)
-    f->SetParameter(i, glbstuff.fittedpar.at(fitalgindex).at(glbstuff.nameindex.at(i)).at(0));
+    f->SetParameter(i, glbstuff.fittedpar.at(fitalgindex).at(glbstuff.nameindex.at(cov_indices[i])).at(0));
+  if(std::strcmp(f->GetName(), "sigmoidbestnoclinical_2") == 0 && glbstuff.clinicalfactors==1)
+    f->SetParameter(2,f->GetParameter(2)*2);
+  
 
   TGraphErrors *band = new TGraphErrors(npoints);
   double xmin = f->GetXmin();
   double xmax = f->GetXmax();
-  for (int ipoint = 0; ipoint < npoints; ipoint++) {
-      double x = xmin + (xmax - xmin) * ipoint / double(npoints - 1);
-      double y = f->Eval(x);
-      vector<double> grad(npar); //J(x) derivata della funzione rispetto ai parametri... fatto a mano con h che tende a zero, come da definizione di derivata
-      for (int ipar = 0; ipar < npar; ipar++) {
-          double p0 = f->GetParameter(ipar);
-          // double h = 0.1 * minimizer->Errors()[ipar];
-          double h = 0.1 * glbstuff.fittedpar.at(fitalgindex).at(glbstuff.nameindex.at(ipar)).at(1);
-          f->SetParameter(ipar, p0 + h);
-          double yp = f->Eval(x);
-          f->SetParameter(ipar, p0 - h);
-          double ym = f->Eval(x);
-          f->SetParameter(ipar, p0);
-          grad[ipar] = (yp - ym) / (2.0 * h);
-      }
-      double var = 0.0;
-      for (int a = 0; a < npar; a++) {
-          for (int b = 0; b < npar; b++) {
-              var += grad[a] * cov2[a * npar + b] * grad[b];
-          }
-      }
 
-      double ey = clscale * std::sqrt(std::max(0.0, var));
-
-      band->SetPoint(ipoint, x, y);
-      band->SetPointError(ipoint, 0.0, ey);
+  for (int ipoint = 0; ipoint < npoints; ++ipoint) {
+    double x = xmin + (xmax - xmin) * ipoint / double(npoints - 1);
+    double y = f->Eval(x);
+    std::vector<double> grad(npar);
+    for (int ipar = 0; ipar < npar; ++ipar) {
+      double p0 = f->GetParameter(ipar);
+      int ipar_global = cov_indices[ipar];
+      double h = 0.1 * glbstuff.fittedpar.at(fitalgindex).at(glbstuff.nameindex.at(ipar_global)).at(1);
+      if (h == 0.0)
+          h = 1e-5 * std::max(1.0, std::abs(p0));
+      f->SetParameter(ipar, p0 + h);
+      if(std::strcmp(f->GetName(), "sigmoidbestnoclinical_2") == 0 && glbstuff.clinicalfactors==1)
+        f->SetParameter(2,f->GetParameter(2)*2);
+      double yp = f->Eval(x);
+      f->SetParameter(ipar, p0 - h);
+      if(std::strcmp(f->GetName(), "sigmoidbestnoclinical_2") == 0 && glbstuff.clinicalfactors==1)
+        f->SetParameter(2,f->GetParameter(2)*2);
+      double ym = f->Eval(x);
+      f->SetParameter(ipar, p0);
+      if(std::strcmp(f->GetName(), "sigmoidbestnoclinical_2") == 0 && glbstuff.clinicalfactors==1)
+        f->SetParameter(2,f->GetParameter(2)*2);
+      grad[ipar] = (yp - ym) / (2.0 * h);
     }
+    double var = 0.0;
+    for (int a = 0; a < npar; ++a) {
+      for (int b = 0; b < npar; ++b) {
+        var += grad[a] * cov2[a * npar + b] * grad[b];
+      }
+    }
+    double ey = clscale * std::sqrt(std::max(0.0, var));
+    band->SetPoint(ipoint, x, y);
+    band->SetPointError(ipoint, 0.0, ey);
+  }
+
   if(debug>3)
     cout<<"MakeBandFromMinimizer done"<<endl;
 
