@@ -17,11 +17,12 @@ int main(int argc, char* argv[]) {
   TString txtappended("");
   TString tgtname("acute GI toxicity");
   int twodvh=0; //1= use both dvhb and dvha, otherwise only 0 WARNING: if twodvh==1, only clusterfactor 2 and clinicalfactors=2 and alfabdoneshould be set
+  int prop2dose=0; //1=clinical factors are proportional to dose, 0=clinical factors added as additional value to the intercept
   int datatype=3; //0=not specified, 1=hiroc synthetic, 2=nanopore by michele, 3=old article clustering with MB class risk
   int clusternum=3; //number of cluster considered, it is related to clinicalfactors, (per ora è 0 o 3) 
   int clinicalfactors=2; //0=no clinical factors, 1=only one value as clinical factor, 2= three values of cluster that actually are normalized
   // vector<int> clinicalfactors;
-  int drawlikehood=0; //draw or not the likehood function (it took time)
+  int drawlikehood=1; //draw or not the likehood function (it took time)
   double alfabdone=10; //if the dose are already normalized for fractions and alfa/beta, otherwise set to -1
   double eqd2binwidth=1.; //binwidth in gy di eqd2 normalizzato
   vector<double> alfabeta={0.1,0.5,1,2,4,10};
@@ -44,22 +45,23 @@ int main(int argc, char* argv[]) {
   
   //value: 0:number of parameter index, 1=initial value, 2=step, 3=lower, 4=upper (for setlimitedvariable)
   int parnum=0;
-  vector parlimits = {-2.0, 0.01, -5.0, 5.0};
+  vector parlimits = {-2.0, 0.0001, -5.0, 5.0};
   fitpars["beta_zero"]=make_pair(parnum++, parlimits);
-  parlimits={0.0, 0.01, -10., 10.0};
+  parlimits={0.0, 0.0001, -10., 10.0};
   fitpars["beta_eud_a"]=make_pair(parnum++, parlimits);
-  parlimits={90, 0.01, 0, 150.0};
+  parlimits={0.5, 0.0001, 0, 1.0};
   fitpars["nvalue"]=make_pair(parnum++, parlimits);
   if(twodvh){
-    parlimits={0.0, 0.01, -10., 10.0};
+    parlimits={0.0, 0.0001, -10., 10.0};
     fitpars["beta_eud_b"]=make_pair(parnum++, parlimits);
   }
   if(alfabdone<0){
-    parlimits={0.5, 0.01, 0.01, 5.0};
+    parlimits={0.5, 0.0001, 0.01, 5.0};
     fitpars["alfabeta"]=make_pair(parnum++, parlimits);
   }
+
   for(int i=0;i<clinicalfactors;i++){
-      parlimits={0., 0.01, -1., 1.};
+    parlimits=(prop2dose==1) ? vector<double>{0., 0.0001, -1., 1.} : ( (i==0) ? vector<double>{1.0, 0.0001, -10, 10} : vector<double>{5.0, 0.0001, 0., 10.}) ;
     fitpars[Form("clinical_factor_%i",i)]=make_pair(parnum++, parlimits);
   }
 
@@ -125,7 +127,7 @@ if(twodvh>0 && (alfabdone<0 || dvhbfilename.Length()<4 || (datatype!=2 && dataty
   }
 
   globalstuff glbstuff; 
-  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, datatype, clinicalfactors, clusternum, powptype, twodvh);
+  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, datatype, clinicalfactors, clusternum, powptype, twodvh, prop2dose);
 
   if(clinicalfactors>0)
     SetClusterAsClinicalFactor(sample, glbstuff);

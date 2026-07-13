@@ -1,0 +1,91 @@
+appunti meeting 10/7 Rancati-Jacovacci
+n va da 1 a 0
+calibrazione fare con meno bin, va bene anche solo 3
+,magari fare calibrazione agnostica: regressione su ntcp predizione e toxicità 1 o 0
+difrerenza dimensioni bowel può portare a differenza in dvh a basse dose, perchè basse dosi è bordo campo che non è qualcosa di ottimizabile
+fini fiorino: paper tossicità bowel, li fanno V45 invece hce bowel, prendere i parametri da quel lavoro, probabilmente c'è un update di questo lavoro, cercare IHU (intestinal ematological urinary), cercare solo tossicità bowel
+non fittare n
+tossicità acuta su retto pochi lavori, vedi libro Rnacati/fiorino
+t0ossiciàtà acitpo è più D50gy o dose media
+provare lo stesso a usare bootstrap, mantenendo sempre stesso rate
+valutare se passare da 3 a 2 cluster
+ha senso fare solo whole pelvis
+fissare n a 1, fare bowel con parametri da letteratura
+
+bootstrap separatamente i gruppi mantenendo i rate all'interno dei cluster
+
+vedere tossicità urinaria tardiva se si può tirare fuori qualcosa
+
+
+misura: auc ok ma no impo per ora, c'è misura  clinical utility: conosce Cicchetti per modelli eri o chiedere a Fabio, che misura se quello che tu vuoi aggiungere (e.g. microbiota) ha o no una utilità clinica nel caso in cui devi prendere decisione, e ci sono modelli che ti dicono il guadagno...
+vikers paper: clinical decision curve o decision curve, 
+esiste articolo complicato... 
+
+
+late e acute toxicity sono molto diversi, in acute n=1 è come organo parallelo, quindi contano molto le basse dosi, mentre late è organo quasi seriale, conta molto alte dosi, come articolo d'avino su prediction of GI toxicity etc.
+
+
+
+
+
+
+
+nanoport, aspetto dati da Michele:
+169 whole pelvis radiotherapy dvh presenti
+72 da Michele che sono fuori da whole pelvis radiotherapy, ci potrebbero essere persone che hanno fatto prostata only radiotherapy dove non c'è dvh, capire quali sono quelli che mancano e chiedere a Eliana se può estrarre dvh di pazienti mancanti
+capire clustering per nanoport
+bowel senza whole pelvis prenderanno molto meno dose, quindi dvh saranno molto diversi...
+
+
+cose da fare:
+-rectum
+-per includere dati microbiota, su cui è già stato visto che funziona, prendere valori di ntcp da letteratura e poi fare nuovo fit
+-provare poi l'head and neck, dove dosi ad organi diversi sono associati tossicità diverse. tipo mucositis da cavità orale e dosi alle parotidi che portano a xerostomia
+
+
+
+-fittare dvh per estrarre parametri e usarlo in ntcp?
+-nessuna variabile tra eud, dose max etc. è significativa per tossicità
+-ntcp plot no sense
+
+-eud su differenziale e volume normalizzato!
+-normalizzare su volume
+
+
+
+chiacchierata Eliana 5/2 teams
+-per modelli ntcp la dose è ovviamente fondamentale
+-si usa dvh per ottimizzare piano, dvh differenziale o cumulativo, dvh è base di partenza 
+da dvh si ottiene eud, che è un solo valore è equivalent dose
+eliana ha script che calcola dvh partendo da matrice dose, 
+
+script fa foglio excel
+max_dose_plan è dose massima del piano
+max_dose_str è dose massima tra tutti i voxel
+poi è dvh cumulativo per organo target
+
+al modello serve eud
+eud peso ogni voxel con propria dose, non è media aritmetica perchè c'è parametro volume-effetto
+eud è qeullo che serve a Jacopo per microlearner su effetti acuti
+da dvh posso passare a eud calcolando la dose fisica, ma non tiene conto del frazionamento e dell'organo, serve dose biological
+serve biological effective dose (bed) dove ho anche fattore alfa/beta
+c'è foglio con dose massima, numero frazioni, giorni di irragiamento e dose/frazione (~2 gy)
+per uniformare calcolo si calcola equivalent 
+alfa/beta basso ~3 è per effetto tardivi, alfa/beta alto ~10 è per effetti acuti
+eud dipende molto da questo e quindi prima va riscalata istogramma dvh con equivalent dose per 2 gy, con fattore tempo (esiste formula) e poi passo a eud
+si può fare anche riscalamento prima di dvh, ma direttamente in matrice di dose
+
+eudn-1 è circa dose media dalla formula, sono dosi fisiche
+se voglio dose biologiche devo passare prima dalla formula e poi ricalcolo eud
+per dose massima: posso calcolare quanto organo prende il 2%
+per dose minima_ è la spalla, oppure qual è il minimo 
+
+esiste software autoconturing, oppure conturing fatto da radioterapisti
+ci sono 6 pazienti a cui sembra che manca il nome della struttura-> da caopire se chiedere a radioterapisti, oppure usare autocontiring o altro
+
+per dose media serve eud_n1, massimo e minimo possono fare da libreria
+
+
+da chiedere?
+differenza max_dose_plan e max_dose_voxel, cosa significa massima dose tra tutti i voxel?
+come calcolo eud/geud?
