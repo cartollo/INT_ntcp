@@ -12,13 +12,14 @@ int main(int argc, char* argv[]) {
   // dvhafilename="DVH_PRIME_bowel_by_Boris_1Gy_10ab_single_dose_converted_ML_prostate_WPRT.csv";
   dvhafilename="DVH_Bowel_MIM_1Gy_10ab_single_dose_converted_ML_prostate_WPRT_plus_mbprofile_pts.csv";
   Int_t powptype=1; //-1=no selection, 0= only prostate, 1= whole pelvis 
-  TString metafilename("metadata_paper_release_JI_COMBINED_metadata_microlearner_prostate_base_05_24_MODIFIEDYUNWITHCLUSTER.csv");
+  TString metafilename("metadata_paper_release_JI_COMBINED_metadata_microlearner_prostate_base_05_24_adding_nanopore_clusters_july14.csv");
   TString outrootname("ntcp_outputs.root");
   TString txtappended("");
   TString tgtname("acute GI toxicity");
+  int usedosevar=-1; //-1=use eud, >=0 use doses4volume index
   int twodvh=0; //1= use both dvhb and dvha, otherwise only 0 WARNING: if twodvh==1, only clusterfactor 2 and clinicalfactors=2 and alfabdoneshould be set
   int prop2dose=0; //1=clinical factors are proportional to dose, 0=clinical factors added as additional value to the intercept
-  int datatype=3; //0=not specified, 1=hiroc synthetic, 2=nanopore by michele, 3=old article clustering with MB class risk
+  int datatype=4; //0=not specified, 1=hiroc synthetic, 2=nanopore by michele with all core features, 3=old article clustering with MB class risk, 4=new michele clustering with only common core features
   int clusternum=3; //number of cluster considered, it is related to clinicalfactors, (per ora è 0 o 3) 
   int clinicalfactors=2; //0=no clinical factors, 1=only one value as clinical factor, 2= three values of cluster that actually are normalized
   // vector<int> clinicalfactors;
@@ -30,6 +31,7 @@ int main(int argc, char* argv[]) {
     alfabeta.clear();
     alfabeta.push_back(alfabdone);
   }
+  vector<double> doses4volume={40, 45, 50};
 
   vector<double> nvalue4eud={ 0.01,0.1,1,5,10,100}; //1->eud=mean dose, +inf->eud=max dose
   map<string, pair<int,vector<double>>> fitpars;
@@ -106,6 +108,9 @@ if(twodvh>0 && (alfabdone<0 || dvhbfilename.Length()<4 || (datatype!=2 && dataty
     }    
   }
 
+  globalstuff glbstuff; 
+  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, datatype, clinicalfactors, clusternum, powptype, twodvh, prop2dose, doses4volume, usedosevar);
+
   map<int, PatientData> sample, samrect;
   
   if(datatype==1){
@@ -114,20 +119,17 @@ if(twodvh>0 && (alfabdone<0 || dvhbfilename.Length()<4 || (datatype!=2 && dataty
   }else{ 
     if(loadDvhFile(dvhafilename.Data(), sample))
       return 1;
-    if(loadMetaFile(metafilename.Data(), sample, tgtname, datatype, powptype))
+    if(loadMetaFile(metafilename.Data(), sample, tgtname, glbstuff))
       return 1;
     if(twodvh){//double file with double sample!
       if(loadDvhFile(dvhbfilename.Data(), samrect))
         return 1;
-      if(loadMetaFile(metafilename.Data(), samrect, tgtname, datatype, powptype))
+      if(loadMetaFile(metafilename.Data(), samrect, tgtname, glbstuff))
         return 1;
       if(CheckSampleSamrectConsistency(sample, samrect))
         return 1;
     }
   }
-
-  globalstuff glbstuff; 
-  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, datatype, clinicalfactors, clusternum, powptype, twodvh, prop2dose);
 
   if(clinicalfactors>0)
     SetClusterAsClinicalFactor(sample, glbstuff);

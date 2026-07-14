@@ -728,62 +728,52 @@ int CheckSampleSamrectConsistency(const map<int, PatientData> &sample, const map
 }
 
 
+
 int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex,  map<int, PatientData> &samrect, const pair<int,double> fixedpar) {
   
   if(debug)
     cout<<"start optimizeLikehood, fitalgindex="<<fitalgindex<<endl;
 
   //lambda
-  auto lamdalikehoodFull = [&](const double* par) {
-      return functorLikehoodFull(sample, par);
-    };
-    auto lamdalikehoodAlfabdone = [&](const double* par) {
-      return functorLikehoodAlfabdone(sample, par);
-    };
-    
-    auto lamdalikehoodFullClinical_0 = [&](const double* par) {
-    return functorLikehoodFullClinical_0(sample, par);
-  };
-  auto lamdalikehoodAlfabdoneClinical_0 = [&](const double* par) {
-      return functorLikehoodAlfabdoneClinical_0(sample, par);
-  };
-    
-  auto lamdalikehoodFullClinical_1 = [&](const double* par) {
-    return functorLikehoodFullClinical_1(sample, par);
-  };
-  auto lamdalikehoodAlfabdoneClinical_1 = [&](const double* par) {
-      return functorLikehoodAlfabdoneClinical_1(sample, par);
-  };
-
-  auto lamdalikehoodAlfabdone2DvhClinical_1 = [&](const double* par) {
-        return functorLikehoodAlfabdone2DvhClinical_1(sample, samrect, par);
-    };  
+  auto lamdalikehoodFull = [&](const double* par) {return functorLikehoodFull(sample, par);};
+  auto lamdalikehoodAlfabdone = [&](const double* par) {return functorLikehoodAlfabdone(sample, par);};
+  auto lamdalikehoodFullClinical_0 = [&](const double* par) {return functorLikehoodFullClinical_0(sample, par);};
+  auto lamdalikehoodAlfabdoneClinical_0 = [&](const double* par) {return functorLikehoodAlfabdoneClinical_0(sample, par);};
+  auto lamdalikehoodFullClinical_1 = [&](const double* par) {return functorLikehoodFullClinical_1(sample, par);};
+  auto lamdalikehoodAlfabdoneClinical_1 = [&](const double* par) {return functorLikehoodAlfabdoneClinical_1(sample, par);};
+  auto lamdalikehoodAlfabdone2DvhClinical_1 = [&](const double* par) {return functorLikehoodAlfabdone2DvhClinical_1(sample, samrect, par);};  
+  auto lambdalikehoodDose4Vol = [&](const double* par) {return functorLikehoodDose4Vol(sample, par);};  
 
 
 
   // ROOT::Math::Functor fpFunctor= (glbstuff.clinicalfactors.size()==0) ? ((glbstuff.alfabdone < 0) ?  ROOT::Math::Functor(lamdalikehoodFull, 4) : ROOT::Math::Functor(lamdalikehoodAlfabdone, 3)) : ((glbstuff.alfabdone < 0) ? ROOT::Math::Functor(lamdalikehoodFullClinical_0, 5) : ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_0, 4 ));
   ROOT::Math::Functor fpFunctor;
-  if(glbstuff.clinicalfactors == 0 && glbstuff.alfabdone<0 && glbstuff.twodvh==0){
-    cout<<"optimizeLikehood: functor=lamdalikehoodFull"<<endl;
-    fpFunctor = ROOT::Math::Functor(lamdalikehoodFull, 4);
-  }else if(glbstuff.clinicalfactors==0 && glbstuff.alfabdone>=0 && glbstuff.twodvh==0){
-    cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdone"<<endl;
-    fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdone, 3);
-  }else if(glbstuff.clinicalfactors==1 && glbstuff.alfabdone<0 && glbstuff.twodvh==0){
-    cout<<"optimizeLikehood: functor=lamdalikehoodFullClinical_0"<<endl;
-    fpFunctor = ROOT::Math::Functor(lamdalikehoodFullClinical_0, 5);
-  }else if(glbstuff.clinicalfactors==1 && glbstuff.alfabdone>=0 && glbstuff.twodvh==0){
-    cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdoneClinical_0"<<endl;
-    fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_0, 4);
-  }else if(glbstuff.clinicalfactors==2 && glbstuff.alfabdone<0 && glbstuff.twodvh==0){
-    cout<<"optimizeLikehood: functor=lamdalikehoodFullClinical_1"<<endl;
-    fpFunctor = ROOT::Math::Functor(lamdalikehoodFullClinical_1, 6);
-  }else if(glbstuff.clinicalfactors==2 && glbstuff.alfabdone>=0 && glbstuff.twodvh==0){
-    cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdoneClinical_1"<<endl;
-    fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_1, 5);
-  }else if(glbstuff.clinicalfactors==2 && glbstuff.alfabdone>=0 && glbstuff.twodvh>0){
-    cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdone2DvhClinical_1"<<endl;
-    fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdone2DvhClinical_1, 6);
+  if(glbstuff.usedosevar==-1){
+    if(glbstuff.clinicalfactors == 0 && glbstuff.alfabdone<0 && glbstuff.twodvh==0){
+      cout<<"optimizeLikehood: functor=lamdalikehoodFull"<<endl;
+      fpFunctor = ROOT::Math::Functor(lamdalikehoodFull, 4);
+    }else if(glbstuff.clinicalfactors==0 && glbstuff.alfabdone>=0 && glbstuff.twodvh==0){
+      cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdone"<<endl;
+      fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdone, 3);
+    }else if(glbstuff.clinicalfactors==1 && glbstuff.alfabdone<0 && glbstuff.twodvh==0){
+      cout<<"optimizeLikehood: functor=lamdalikehoodFullClinical_0"<<endl;
+      fpFunctor = ROOT::Math::Functor(lamdalikehoodFullClinical_0, 5);
+    }else if(glbstuff.clinicalfactors==1 && glbstuff.alfabdone>=0 && glbstuff.twodvh==0){
+      cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdoneClinical_0"<<endl;
+      fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_0, 4);
+    }else if(glbstuff.clinicalfactors==2 && glbstuff.alfabdone<0 && glbstuff.twodvh==0){
+      cout<<"optimizeLikehood: functor=lamdalikehoodFullClinical_1"<<endl;
+      fpFunctor = ROOT::Math::Functor(lamdalikehoodFullClinical_1, 6);
+    }else if(glbstuff.clinicalfactors==2 && glbstuff.alfabdone>=0 && glbstuff.twodvh==0){
+      cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdoneClinical_1"<<endl;
+      fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_1, 5);
+    }else if(glbstuff.clinicalfactors==2 && glbstuff.alfabdone>=0 && glbstuff.twodvh>0){
+      cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdone2DvhClinical_1"<<endl;
+      fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdone2DvhClinical_1, 6);
+    }
+  }else{
+      cout<<"optimizeLikehood: functor=Dose4Vollikehood, usedosevar="<<glbstuff.usedosevar<<"  doses4volume.at(glbstuff.usedosevar)="<<glbstuff.doses4volume.at(glbstuff.usedosevar)<<endl;
+      fpFunctor = ROOT::Math::Functor(lambdalikehoodDose4Vol, 2);    
   }
 
   std::unique_ptr<ROOT::Math::Minimizer> fpMinimizer(ROOT::Math::Factory::CreateMinimizer(glbstuff.fitalgo.at(fitalgindex).first, glbstuff.fitalgo.at(fitalgindex).second));
@@ -791,7 +781,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
   fpMinimizer->SetFunction(fpFunctor);
   fpMinimizer->SetMaxFunctionCalls(1000000);
   fpMinimizer->SetMaxIterations(100000);
-  fpMinimizer->SetTolerance(1e-2);
+  fpMinimizer->SetTolerance(1e-3);//to be checked
   fpMinimizer->SetStrategy(2);
   fpMinimizer->SetErrorDef(0.5); // I minimize a -log likehoood, so the error def should be 0.5
   if(debug)
@@ -837,6 +827,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
 // status = 4 : Reached call limit
 // status = 5 : Covariance is not positive defined   
   Int_t status=fpMinimizer->Status();
+  // if(fixedpar.first<0 || (fixedpar.first>=0 && )){ //no parameter was fixed, this is a minimization of the full model
   if(fixedpar.first<0){ //no parameter was fixed, this is a minimization of the full model
     cout<<endl<<endl<<"optimizeLikehood: minimization done with "<<glbstuff.fitalgo.at(fitalgindex).first<<"/"<<glbstuff.fitalgo.at(fitalgindex).second<<endl;
     if(status==0){
@@ -970,6 +961,14 @@ double functorLikehoodAlfabdone2DvhClinical_1(const map<int, PatientData> &sampl
     else
       cout<<"functorLikehoodAlfabdone2DvhClinical_1: no matching found for sample.second.id="<<pazienta.second.id<<endl;
   }
+  return eval;
+}
+
+//likehood:
+double functorLikehoodDose4Vol(const map<int, PatientData> &sample, const double* par){
+  double eval=0.;
+  for(const auto &paziente : sample)
+    eval-= std::log( paziente.second.dvhcumnormmap.at(par[0]).at(par[2]) );
   return eval;
 }
 
@@ -1579,7 +1578,7 @@ return;
 }
 
 
-int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname, const int datatype, const int powptype){
+int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname, const globalstuff &glbstuff){
 
   if(debug)
     cout<<"start loadMetaFile"<<endl;
@@ -1614,7 +1613,7 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
     TString lymph_irr_name("lymph node irradiation");
     TString semivesicle_irr_name("semil vesicle irradiation");
     TString mb_risk_name("MB risk class");
-    TString cluster_name("cluster");
+    TString cluster_name((glbstuff.datatype==4) ? "cluster2" : "cluster");
     for(int i=0;i<parts.size();i++){
       if(tgtname.CompareTo(parts[i])==0)
         tgtpos=i;
@@ -1709,14 +1708,14 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
   }
   in.close();
 
-  if(datatype==2){//nanoport data, remove non nanoport patients
+  if(glbstuff.datatype==2 || glbstuff.datatype==4){//nanoport data, remove non nanoport patients
     for(auto it = sample.begin(); it != sample.end();){
       if(it->second.cluster <0 )
         it = sample.erase(it);
       else
         ++it;
     }
-  }else if(datatype==3){//old article clustering with MB class risk
+  }else if(glbstuff.datatype==3){//old article clustering with MB class risk
     for(auto it = sample.begin(); it != sample.end();){
       it->second.cluster=it->second.mb_risk;
       if(it->second.cluster <0 )
@@ -1727,9 +1726,9 @@ int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TStrin
   }
   
   //wprt / port selection
-  if(powptype!=-1){
+  if(glbstuff.powptype!=-1){
     for(auto it = sample.begin(); it != sample.end();){
-      if(it->second.powp!=powptype)
+      if(it->second.powp!=glbstuff.powptype)
         it = sample.erase(it);
       else
         ++it;
@@ -1761,7 +1760,7 @@ int SetClusterAsClinicalFactor(map<int, PatientData> &sample, const globalstuff 
   return 0;
 }
 
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum, int powptype, int twodvh, int prop2dose){
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum, int powptype, int twodvh, int prop2dose, const vector<double> &doses4volume, int usedosevar){
   glbstuff.alfabdone=alfabdone;
   glbstuff.eqd2binwidth=eqd2binwidth;
   glbstuff.nvalue4eud=nvalue4eud;
@@ -1775,6 +1774,8 @@ void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidt
   glbstuff.powptype=powptype;
   glbstuff.twodvh=twodvh;
   glbstuff.prop2dose=prop2dose;
+  glbstuff.doses4volume=doses4volume;
+  glbstuff.usedosevar=usedosevar;
   return;
 }
 

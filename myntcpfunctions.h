@@ -88,6 +88,8 @@ int semivesicle_irr;
 int mb_risk;
 int cluster; //microbiota cluster classification
 
+map<double, double> volmindose; //volume with a minimum of dose, key=minimum dose value, value=volume
+
 
 
 //calculated stuff
@@ -108,6 +110,8 @@ struct globalstuff{
   double eqd2binwidth;
   vector<double> alfabeta;
   vector<double> nvalue4eud;
+  vector<double> doses4volume;
+  int usedosevar; //-1=use eud, >=0 use doses4volume index
   int maxbin;
   int datatype;
   int powptype;
@@ -131,7 +135,7 @@ int CreateNtcpSigmoidalSingle(TString pltname, const TVectorD &vx, const TVector
 int CreateNtcpSigmoidalPredefined(map<int, PatientData> &sample, TString tgtname);
 void PrintSampleLine(int idx, const   map<int, PatientData> &sample);
 int loadDvhFile(const string& filename,   map<int, PatientData> &sample);
-int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname, const int datatype, const int powptype);
+int loadMetaFile(const string& filename,   map<int, PatientData> &sample, TString tgtname, const globalstuff &glbstuff);
 int loadSyntheticFile(const string& filename,   map<int, PatientData> &sample);
 void evaluateEqdEud(map<int, PatientData> &sample, const globalstuff &glbstuff);
 int CheckSampleSamrectConsistency(const map<int, PatientData> &sample, const map<int, PatientData> &samrect);
@@ -147,7 +151,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
 pair<double,double> optlike_aucROC(const map<int, PatientData> &sample,const globalstuff &glbstuff, const int fitalgindex);
 void computeDCT(const vector<double>& x, vector<double>& c);
 void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuff);
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum, int powptype, int twodvh, int prop2dose);
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum, int powptype, int twodvh, int prop2dose, const vector<double> &doses4volume, int usedosevar);
 void ChooseBestFit(globalstuff &glbstuff);
 void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sample, const globalstuff& glbstuff,int fitalgindex, int nbins);
 int SetClusterAsClinicalFactor(map<int, PatientData> &sample, const globalstuff &glbstuff);
@@ -161,6 +165,8 @@ double functorLikehoodFullClinical_1(const map<int, PatientData> &sample, const 
 double functorLikehoodAlfabdoneClinical_0(const map<int, PatientData> &sample, const double* par);
 double functorLikehoodAlfabdoneClinical_1(const map<int, PatientData> &sample, const double* par);
 double functorLikehoodAlfabdone2DvhClinical_1(const map<int, PatientData> &sample, const map<int, PatientData> &samrect, const double* par);
+
+double functorLikehoodDose4Vol(const map<int, PatientData> &sample, const double* par);
 
 void SetAucAvgPrec(int index, const pair<double,double> aucavgin, globalstuff& glbstuff);
 
