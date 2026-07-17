@@ -245,8 +245,8 @@ inline double EvalScoreLikehoodDose4VolClinical(const PatientData& paziente, con
 
 
 inline double EvalScoreSelector(const globalstuff& glbstuff, const PatientData& paziente, const double *par){
-  if(glbstuff.usedosevar>=0){
-    return (glbstuff.clinicalfactors==0) ? EvalScoreDose4Vol(paziente, par) : EvalScoreDose4Volclinical(paziente, par);
+  if(glbstuff.usedosevar>=0){ 
+    return  (paziente.dvhcumnormmap.at(par[2]).size()<=par[3]) ? -1 : ((glbstuff.clinicalfactors==0) ? EvalScoreDose4Vol(paziente, par) : EvalScoreDose4Volclinical(paziente, par));
   }else if(glbstuff.clinicalfactors==0){
     return (glbstuff.alfabdone < 0) ?  EvalScoreFull(paziente, par) : EvalScoreAlfabdone(paziente, par);
   }else if(glbstuff.clinicalfactors==1){

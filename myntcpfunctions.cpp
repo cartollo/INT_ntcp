@@ -773,7 +773,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
     }
   }else{
       cout<<"optimizeLikehood: functor=lambdalikehoodDose4Vol, usedosevar="<<glbstuff.usedosevar<<"  doses4volume.at(glbstuff.usedosevar)="<<glbstuff.doses4volume.at(glbstuff.usedosevar)<<endl;
-      fpFunctor = ROOT::Math::Functor(lambdalikehoodDose4Vol, 2);    
+      fpFunctor = ROOT::Math::Functor(lambdalikehoodDose4Vol, 4);    
   }
 
   std::unique_ptr<ROOT::Math::Minimizer> fpMinimizer(ROOT::Math::Factory::CreateMinimizer(glbstuff.fitalgo.at(fitalgindex).first, glbstuff.fitalgo.at(fitalgindex).second));
@@ -840,9 +840,8 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
       for(int i=0;i<fpMinimizer->NDim();i++){
         par[i]=fpMinimizer->X()[i];
       }
-      cout<<"merda ndim="<<fpMinimizer->NDim()<<"  "<<fpMinimizer->NFree()<<endl;
+      cout<<"merda ndim="<<fpMinimizer->NDim()<<"  "<<fpMinimizer->NFree()<<"  "<<par[0]<<"  "<<par[1]<<endl;
       for(auto &paziente : sample){//fill scores
-        cout<<"tmp: faccio paziente paziente.second.dvhcumnormmap.at(par[2]).size()="<<paziente.second.dvhcumnormmap.at(par[2]).size()<<endl;
         paziente.second.optlike_ntcpscore[fitalgindex]= (glbstuff.twodvh==0) ? EvalScoreSelector(glbstuff, paziente.second, par) : EvalScoreAlfabdone2DvhClinical_1(paziente.second, samrect.at(paziente.second.id), par)  ;
       }
     }else{
@@ -977,10 +976,10 @@ double functorLikehoodAlfabdone2DvhClinical_1(const map<int, PatientData> &sampl
 //par0=alfabeta, par1=dose value
 double functorLikehoodDose4Vol(const map<int, PatientData> &sample, const double* par){
   double eval=0.;
-  cout<<"par2="<<par[2]<<"  "<<par[3]<<endl;
-  for(const auto &paziente : sample)
-    if(paziente.second.dvhcumnormmap.at(par[2]).size()>=par[3])
+  for(const auto &paziente : sample){
+    if(paziente.second.dvhcumnormmap.at(par[2]).size()>par[3])
       eval-= std::log( EvalScoreLikehoodDose4Vol(paziente.second, par));
+  }
   return eval;
 }
 
@@ -1193,17 +1192,21 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   vector<int> clsindex(glbstuff.clusternum,0);
   vector<int> gr_eudwithtox_index(gr_eudwithtox_vs_tox.size(),0);
   for(auto &paziente : sample){
+    cout<<"tmp stemplksdjflas="<<paziente.second.id<<"  "<<paziente.second.dvhcumnormmap.at(glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0)).size()<<"  "<<glbstuff.fittedpar.at(fitalgindex).at("volume").at(0)<<endl;
       paziente.second.optlike_eud[fitalgindex]= (glbstuff.usedosevar==-1) ?
-      (glbstuff.alfabdone<0) ? CalculateEudFromScratch(paziente.second,glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0) , glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) : CalculateEudEqdAlreadyDone(paziente.second, glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) :
-      paziente.second.dvhcumnormmap.at(glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0)).at(glbstuff.fittedpar.at(fitalgindex).at("volume").at(0) );
-    if(glbstuff.twodvh)
+       ( (glbstuff.alfabdone<0) ? CalculateEudFromScratch(paziente.second,glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0) , glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) : CalculateEudEqdAlreadyDone(paziente.second, glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) ) :
+       ((paziente.second.dvhcumnormmap.at(glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0)).size()>glbstuff.fittedpar.at(fitalgindex).at("volume").at(0)) ? 
+       paziente.second.dvhcumnormmap.at(glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0)).at(glbstuff.fittedpar.at(fitalgindex).at("volume").at(0) ) : -1);
+
+       if(glbstuff.twodvh)
       samrect.at(paziente.second.id).optlike_eud[fitalgindex]= (glbstuff.alfabdone<0) ? CalculateEudFromScratch(samrect.at(paziente.second.id),glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0) , glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) : CalculateEudEqdAlreadyDone(samrect.at(paziente.second.id), glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0));    
-    
       hall->Fill(paziente.second.optlike_eud.at(fitalgindex));
     if(paziente.second.tgt_acutegitox>0.5)
       hyes->Fill(paziente.second.optlike_eud.at(fitalgindex));
     else
       hno->Fill(paziente.second.optlike_eud.at(fitalgindex));
+      
+    cout<<"tmp stemplksdjflas="<<paziente.second.id<<endl;
     gr_eud_vs_tox->SetPoint(index, paziente.second.optlike_eud.at(fitalgindex), paziente.second.tgt_acutegitox);
     if(glbstuff.twodvh)
       gr2d_eud_vs_tox->SetPoint(index, paziente.second.optlike_eud.at(fitalgindex), samrect.at(paziente.second.id).optlike_eud.at(fitalgindex), paziente.second.tgt_acutegitox);
@@ -1214,6 +1217,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     }
     index++;
   }
+  cout<<"tmp stempa"<<endl;
   gr_eud_vs_tox->Sort();
   gr_eud_vs_pred->Sort();
   for(auto &gr:gr_eudwithtox_vs_tox)
