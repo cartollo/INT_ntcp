@@ -16,12 +16,13 @@ int main(int argc, char* argv[]) {
   TString outrootname("ntcp_outputs.root");
   TString txtappended("");
   TString tgtname("acute GI toxicity");
-  int usedosevar=-1; //-1=use eud, >=0 use doses4volume index
+  int usedosevar=1; //-1=use eud, >=0 use doses4volume index
+  vector<double> doses4volume={40, 45, 50};
   int twodvh=0; //1= use both dvhb and dvha, otherwise only 0 WARNING: if twodvh==1, only clusterfactor 2 and clinicalfactors=2 and alfabdoneshould be set
-  int prop2dose=0; //1=clinical factors are proportional to dose, 0=clinical factors added as additional value to the intercept
-  int datatype=4; //0=not specified, 1=hiroc synthetic, 2=nanopore by michele with all core features, 3=old article clustering with MB class risk, 4=new michele clustering with only common core features
-  int clusternum=3; //number of cluster considered, it is related to clinicalfactors, (per ora è 0 o 3) 
-  int clinicalfactors=2; //0=no clinical factors, 1=only one value as clinical factor, 2= three values of cluster that actually are normalized
+  int prop2dose=1; //1=clinical factors are proportional to dose, 0=clinical factors added as additional value to the intercept
+  int datatype=3; //0=not specified, 1=hiroc synthetic, 2=nanopore by michele with all core features, 3=old article clustering with MB class risk, 4=new michele clustering with only common core features
+  int clusternum=0; //number of cluster considered, it is related to clinicalfactors, (per ora è 0 o 3) 
+  int clinicalfactors=0; //0=no clinical factors, 1=only one value as clinical factor, 2= three values of cluster that actually are normalized
   // vector<int> clinicalfactors;
   int drawlikehood=1; //draw or not the likehood function (it took time)
   double alfabdone=10; //if the dose are already normalized for fractions and alfa/beta, otherwise set to -1
@@ -31,7 +32,6 @@ int main(int argc, char* argv[]) {
     alfabeta.clear();
     alfabeta.push_back(alfabdone);
   }
-  vector<double> doses4volume={40, 45, 50};
 
   vector<double> nvalue4eud={ 0.01,0.1,1,5,10,100}; //1->eud=mean dose, +inf->eud=max dose
   map<string, pair<int,vector<double>>> fitpars;
@@ -51,8 +51,15 @@ int main(int argc, char* argv[]) {
   fitpars["beta_zero"]=make_pair(parnum++, parlimits);
   parlimits={0.0, 0.0001, -10., 10.0};
   fitpars["beta_eud_a"]=make_pair(parnum++, parlimits);
-  parlimits={0.5, 0.0001, 0, 1.0};
-  fitpars["nvalue"]=make_pair(parnum++, parlimits);
+  if(usedosevar==-1){
+    parlimits={0.5, 0.0001, 0, 1.0};
+    fitpars["nvalue"]=make_pair(parnum++, parlimits);
+  }else{
+    parlimits={alfabdone, 0, 0, 0};
+    fitpars["alfabeta"]=make_pair(parnum++, parlimits);    
+    parlimits={doses4volume.at(usedosevar), 0, 0, 0};
+    fitpars["volume"]=make_pair(parnum++, parlimits);    
+  }
   if(twodvh){
     parlimits={0.0, 0.0001, -10., 10.0};
     fitpars["beta_eud_b"]=make_pair(parnum++, parlimits);
@@ -90,7 +97,7 @@ if(twodvh>0 && (alfabdone<0 || dvhbfilename.Length()<4 || (datatype!=2 && dataty
 
   if(txtappended.Length()>0){
     freopen(txtappended.Data(),"w",stdout);
-    cout<<"dvha="<<dvhafilename.Data()<<"  dvhbfilename="<<dvhbfilename.Data()<<"  metafilename="<<metafilename.Data()<<"  outrootname="<<outrootname.Data()<<"  tgtname="<<tgtname.Data()<<endl;
+    cout<<"dvha="<<dvhafilename.Data()<<"  dvhbfilename="<<dvhbfilename.Data()<<"  metafilename="<<metafilename.Data()<<"  outrootname="<<outrootname.Data()<<"  tgtname="<<tgtname.Data()<<"  usedosevar="<<usedosevar<<endl;
     cout<<"datatype="<<datatype<<"  powptype="<<powptype<<"  clusternum="<<clusternum<<"  clinicalfactors="<<clinicalfactors<<"  alfabdone="<<alfabdone<<"  eqd2binwidth="<<eqd2binwidth<<endl;
     cout<<"alfabeta=(";
     for(int i=0;i<alfabeta.size();i++)
