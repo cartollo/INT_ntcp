@@ -840,7 +840,6 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
       for(int i=0;i<fpMinimizer->NDim();i++){
         par[i]=fpMinimizer->X()[i];
       }
-      cout<<"merda ndim="<<fpMinimizer->NDim()<<"  "<<fpMinimizer->NFree()<<"  "<<par[0]<<"  "<<par[1]<<endl;
       for(auto &paziente : sample){//fill scores
         paziente.second.optlike_ntcpscore[fitalgindex]= (glbstuff.twodvh==0) ? EvalScoreSelector(glbstuff, paziente.second, par) : EvalScoreAlfabdone2DvhClinical_1(paziente.second, samrect.at(paziente.second.id), par)  ;
       }
@@ -1192,7 +1191,6 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   vector<int> clsindex(glbstuff.clusternum,0);
   vector<int> gr_eudwithtox_index(gr_eudwithtox_vs_tox.size(),0);
   for(auto &paziente : sample){
-    cout<<"tmp stemplksdjflas="<<paziente.second.id<<"  "<<paziente.second.dvhcumnormmap.at(glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0)).size()<<"  "<<glbstuff.fittedpar.at(fitalgindex).at("volume").at(0)<<endl;
       paziente.second.optlike_eud[fitalgindex]= (glbstuff.usedosevar==-1) ?
        ( (glbstuff.alfabdone<0) ? CalculateEudFromScratch(paziente.second,glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0) , glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) : CalculateEudEqdAlreadyDone(paziente.second, glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) ) :
        ((paziente.second.dvhcumnormmap.at(glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0)).size()>glbstuff.fittedpar.at(fitalgindex).at("volume").at(0)) ? 
@@ -1206,7 +1204,6 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     else
       hno->Fill(paziente.second.optlike_eud.at(fitalgindex));
       
-    cout<<"tmp stemplksdjflas="<<paziente.second.id<<endl;
     gr_eud_vs_tox->SetPoint(index, paziente.second.optlike_eud.at(fitalgindex), paziente.second.tgt_acutegitox);
     if(glbstuff.twodvh)
       gr2d_eud_vs_tox->SetPoint(index, paziente.second.optlike_eud.at(fitalgindex), samrect.at(paziente.second.id).optlike_eud.at(fitalgindex), paziente.second.tgt_acutegitox);
@@ -1217,28 +1214,36 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     }
     index++;
   }
-  cout<<"tmp stempa"<<endl;
+  cout<<"stepa"<<endl;
   gr_eud_vs_tox->Sort();
   gr_eud_vs_pred->Sort();
   for(auto &gr:gr_eudwithtox_vs_tox)
-    gr->Sort();
-
+  gr->Sort();
+  
+  cout<<"stepb "<<fitalgindex<<"  "<<glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0)<<endl;
   TF1* sigmoidbestnoclinical_0,*sigmoidbestnoclinical_1,*sigmoidbestnoclinical_2;
   sigmoidbestnoclinical_0=new TF1("sigmoidbestnoclinical_0","1./(1.+exp(-[0]-[1]*x))", 0, 100);
   sigmoidbestnoclinical_0->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
+  cout<<"stepb "<<fitalgindex<<"  "<<glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0)<<endl;
   sigmoidbestnoclinical_0->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
+  cout<<"stebb"<<endl;
   gr_eud_vs_tox->Fit(sigmoidbestnoclinical_0, "BS+","",0,100);
   TGraphErrors *tgrer_sigmoidbestnoclinical_0, *tgrer_sigmoidbestclinical_1, *tgrer_sigmoidbestclinical_2;
+  cout<<"stebbc"<<endl;
   vector<int> covindexxmakeband;
   if(glbstuff.fitpars.at("beta_zero").second.at(1)>0)
-    covindexxmakeband.push_back(glbstuff.fitpars.at("beta_zero").first);
+  covindexxmakeband.push_back(glbstuff.fitpars.at("beta_zero").first);
+  cout<<"stebbd"<<endl;
   if(glbstuff.fitpars.at("beta_eud_a").second.at(1)>0)
     covindexxmakeband.push_back(glbstuff.fitpars.at("beta_eud_a").first);
+  cout<<"stebbb"<<endl;
+
   if(covindexxmakeband.size()>0){
     tgrer_sigmoidbestnoclinical_0=MakeBandFromMinimizer(sigmoidbestnoclinical_0, covindexxmakeband, 2, cov, glbstuff,fitalgindex, 200, 1);
     tgrer_sigmoidbestnoclinical_0->SetLineColor(kGreen+3);
     tgrer_sigmoidbestnoclinical_0->SetMarkerColor(kGreen+3);
   }
+
   if(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3){
     gr_eudwithtox_vs_tox.at(0)->SetMarkerColor(kGreen+3);
     gr_eudwithtox_vs_tox.at(0)->SetMarkerStyle(20);
@@ -1248,7 +1253,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     sigmoidbestnoclinical_1->FixParameter(2, glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0));
     gr_eud_vs_tox->Fit(sigmoidbestnoclinical_1, "BS+","",0,100);
     if(glbstuff.fitpars.at("clinical_factor_0").second.at(1)>0)
-      covindexxmakeband.push_back(glbstuff.fitpars.at("clinical_factor_0").first);
+    covindexxmakeband.push_back(glbstuff.fitpars.at("clinical_factor_0").first);
     if(covindexxmakeband.size()>0){
       tgrer_sigmoidbestclinical_1=MakeBandFromMinimizer(sigmoidbestnoclinical_1, covindexxmakeband, 3, cov, glbstuff,fitalgindex, 210, 1);
       tgrer_sigmoidbestclinical_1->SetLineColor(kBlue);
@@ -1263,7 +1268,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     sigmoidbestnoclinical_2->FixParameter(2, (glbstuff.clinicalfactors==2) ? glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_1").at(0) : glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0)*2.);
     gr_eud_vs_tox->Fit(sigmoidbestnoclinical_2, "BS+","",0,100);    
     if(glbstuff.clinicalfactors==2)
-      covindexxmakeband.at(2)=glbstuff.fitpars.at("clinical_factor_1").first;
+    covindexxmakeband.at(2)=glbstuff.fitpars.at("clinical_factor_1").first;
     if(covindexxmakeband.size()>0){
       tgrer_sigmoidbestclinical_2=MakeBandFromMinimizer(sigmoidbestnoclinical_2, covindexxmakeband, 3, cov, glbstuff,fitalgindex, 220, 1);
       tgrer_sigmoidbestclinical_2->SetLineColor(kRed);
@@ -1273,6 +1278,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     gr_eudwithtox_vs_tox.at(2)->SetMarkerColor(kRed);
     gr_eudwithtox_vs_tox.at(2)->SetMarkerStyle(22);
   }
+  cout<<"stepc"<<endl;
   gr_eud_vs_tox->SetMarkerStyle(24);
   gr_eud_vs_tox->SetLineWidth(0);
   gr_eud_vs_tox->SetDrawOption("AP*");
@@ -1516,7 +1522,7 @@ void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sa
       double pred = paziente.second.optlike_ntcpscore.at(fitalgindex);
       double obs  = paziente.second.tgt_acutegitox;
 
-      if(pred < 0.0 || pred > 1.0){
+      if((pred > 1.0) || (pred < 0. && glbstuff.usedosevar!=-1 ) ){
         cout<<"ERROR:PlotCalibrationCurveQuantiles: predicted ntcpscore is "<<pred<<endl;
         continue;
       }
@@ -1591,6 +1597,8 @@ void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sa
   // c->Write();
   // c->SetGrid();
   // c->SaveAs(outname.c_str());
+
+  return;
 }
 
 void SetAucAvgPrec(int index, const pair<double,double> aucavgin, globalstuff& glbstuff){
