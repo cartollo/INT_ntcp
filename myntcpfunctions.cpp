@@ -358,13 +358,13 @@ int CreateNtcpSigmoidalSingle(TString pltname, const TVectorD &vx, const TVector
   if(debug)
     cout<<"start CreateNtcpSigmoidalSingle on "<<pltname<<endl;
 
-  TDirectory *dir=gDirectory->GetDirectory("ntpc_linear");
+  TDirectory *dir=gDirectory->GetDirectory("ntcp_linear");
   if(dir){
-    gDirectory->cd("ntpc_linear");
+    gDirectory->cd("ntcp_linear");
   }else{
-    cout<<"WARNING in CreateNtcpSigmoidalSingle: ntpc_linear not present... I'll create a new one"<<endl;
-    gDirectory->mkdir("ntpc_linear");
-    gDirectory->cd("ntpc_linear");
+    cout<<"WARNING in CreateNtcpSigmoidalSingle: ntcp_linear not present... I'll create a new one"<<endl;
+    gDirectory->mkdir("ntcp_linear");
+    gDirectory->cd("ntcp_linear");
   }
   
   TGraph *gr=new TGraph(vx, vy);
@@ -389,8 +389,8 @@ int CreateNtcpSigmoidalPredefined(map<int, PatientData> &sample, TString tgtname
   if(debug)
     cout<<"start CreateNtcpSigmoidalPredefined"<<endl;
 
-  gDirectory->mkdir("ntpc_linear");
-  gDirectory->cd("ntpc_linear");
+  gDirectory->mkdir("ntcp_linear");
+  gDirectory->cd("ntcp_linear");
 
   map <string, pair<TGraph*,TH1D*>> ntcp_linear_models;
   TGraph *gr;
@@ -854,6 +854,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
 
     for(int i=0;i<fpMinimizer->NDim();i++){
       if(glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].size()==0){
+        cout<<"tmp: fill "<<fpMinimizer->VariableName(i)<<endl;
         glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].push_back(fpMinimizer->X()[i]);
         glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].push_back(fpMinimizer->Errors()[i]);
         TString tmp_title=glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second+"_likelihood_"+fpMinimizer->VariableName(i);
@@ -1147,7 +1148,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"eud_optlike_Yes";
   TH1D *hyes=new TH1D(name, varname+" value;"+varname+";Number of patients",100, 0., 100);        
   
-  gDirectory->cd("ntpc_linear");
+  gDirectory->cd("ntcp_linear");
   TGraph* gr_eud_vs_tox=new TGraph(sample.size());
   // vector<TGraph*> gr_clfac_eud_vs_tox;
   // for(int i=0;i<glbstuff.clusternum;i++){
@@ -1173,7 +1174,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   gr_eud_vs_pred->SetName(name);
   gr_eud_vs_pred->SetTitle(varname+" vs NTCP prediction with optimized NTCP ;"+varname+";prediction");
   vector<TGraph*> gr_eudwithtox_vs_tox; //mi aspetto che numerazione cluster vada da 0 in su
-  if(glbstuff.clinicalfactors>0){
+  if(glbstuff.clusternum>0){
     for(int i=0;i<glbstuff.clusternum;i++){
       TGraph* gr=new TGraph((dynamic_cast<TH1D*>(gDirectory->Get("../cluster")))->GetBinContent(i+1));
       name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+Form("_ntcp_linear_"+varname+"_vs_tox_withclinicalfactors%i",i);
@@ -1214,29 +1215,33 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     }
     index++;
   }
-  cout<<"stepa"<<endl;
+  cout<<"tmp: stepa"<<endl;
   gr_eud_vs_tox->Sort();
   gr_eud_vs_pred->Sort();
   for(auto &gr:gr_eudwithtox_vs_tox)
   gr->Sort();
   
-  cout<<"stepb "<<fitalgindex<<"  "<<glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0)<<endl;
-  TF1* sigmoidbestnoclinical_0,*sigmoidbestnoclinical_1,*sigmoidbestnoclinical_2;
-  sigmoidbestnoclinical_0=new TF1("sigmoidbestnoclinical_0","1./(1.+exp(-[0]-[1]*x))", 0, 100);
+  cout<<"tmp: stepb "<<fitalgindex<<"  "<<glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0)<<endl;
+  TF1::EAddToList::kNo;
+  TF1* sigmoidbestnoclinical_0=nullptr,*sigmoidbestnoclinical_1=nullptr,*sigmoidbestnoclinical_2=nullptr;
+  cout<<"tmp: stepcf "<<fitalgindex<<"  merda"<<endl;
+  sigmoidbestnoclinical_0=new TF1(Form("sigmoidbestnoclinical_0_%i",glbstuff.fitpars.at("beta_zero").first ),"1./(1.+exp(-[0]-[1]*x))", 0, 100);
+  cout<<"tmp: stepcd "<<fitalgindex<<"  merda"<<endl;
   sigmoidbestnoclinical_0->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
-  cout<<"stepb "<<fitalgindex<<"  "<<glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0)<<endl;
+  cout<<"tmp: stepc "<<fitalgindex<<"  merda"<<endl;
+  cout<<"tmp: stepc "<<fitalgindex<<"  "<<glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0)<<endl;
   sigmoidbestnoclinical_0->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
-  cout<<"stebb"<<endl;
+  cout<<"tmp: stebb"<<endl;
   gr_eud_vs_tox->Fit(sigmoidbestnoclinical_0, "BS+","",0,100);
   TGraphErrors *tgrer_sigmoidbestnoclinical_0, *tgrer_sigmoidbestclinical_1, *tgrer_sigmoidbestclinical_2;
-  cout<<"stebbc"<<endl;
+  cout<<"tmp: stebbc"<<endl;
   vector<int> covindexxmakeband;
   if(glbstuff.fitpars.at("beta_zero").second.at(1)>0)
   covindexxmakeband.push_back(glbstuff.fitpars.at("beta_zero").first);
-  cout<<"stebbd"<<endl;
+  cout<<"tmp: stebbd"<<endl;
   if(glbstuff.fitpars.at("beta_eud_a").second.at(1)>0)
     covindexxmakeband.push_back(glbstuff.fitpars.at("beta_eud_a").first);
-  cout<<"stebbb"<<endl;
+  cout<<"tmp: stebbb"<<endl;
 
   if(covindexxmakeband.size()>0){
     tgrer_sigmoidbestnoclinical_0=MakeBandFromMinimizer(sigmoidbestnoclinical_0, covindexxmakeband, 2, cov, glbstuff,fitalgindex, 200, 1);
@@ -1268,7 +1273,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     sigmoidbestnoclinical_2->FixParameter(2, (glbstuff.clinicalfactors==2) ? glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_1").at(0) : glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0)*2.);
     gr_eud_vs_tox->Fit(sigmoidbestnoclinical_2, "BS+","",0,100);    
     if(glbstuff.clinicalfactors==2)
-    covindexxmakeband.at(2)=glbstuff.fitpars.at("clinical_factor_1").first;
+      covindexxmakeband.at(2)=glbstuff.fitpars.at("clinical_factor_1").first;
     if(covindexxmakeband.size()>0){
       tgrer_sigmoidbestclinical_2=MakeBandFromMinimizer(sigmoidbestnoclinical_2, covindexxmakeband, 3, cov, glbstuff,fitalgindex, 220, 1);
       tgrer_sigmoidbestclinical_2->SetLineColor(kRed);
@@ -1522,7 +1527,7 @@ void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sa
       double pred = paziente.second.optlike_ntcpscore.at(fitalgindex);
       double obs  = paziente.second.tgt_acutegitox;
 
-      if((pred > 1.0) || (pred < 0. && glbstuff.usedosevar!=-1 ) ){
+      if((pred > 1.0) || (pred < 0. && glbstuff.usedosevar==-1 ) ){
         cout<<"ERROR:PlotCalibrationCurveQuantiles: predicted ntcpscore is "<<pred<<endl;
         continue;
       }
