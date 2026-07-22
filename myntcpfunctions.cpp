@@ -888,7 +888,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
     cout<<"optimizeLikehood done, fitalgindex="<<fitalgindex<<endl;
 
   if(status==0){
-    vector<double> cov(fpMinimizer->NFree() * fpMinimizer->NFree());
+    vector<double> cov(fpMinimizer->NDim() * fpMinimizer->NDim());
     fpMinimizer->GetCovMatrix(cov.data());
     optlike_fill(sample, glbstuff,fitalgindex, samrect,cov); // TODO: need to be fixed
     pair<double,double>aucprecres=optlike_aucROC(sample, glbstuff, fitalgindex);
