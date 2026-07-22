@@ -167,12 +167,16 @@ if(twodvh>0 && (alfabdone<0 || dvhbfilename.Length()<4 || (datatype!=2 && dataty
   
   //le'ts find the best eud, n, alfabeta, n values minimizing a likehood function
   for(int i=0;i<fitalgo.size();i++){
-    int optstatus=optimizeLikehood(sample, glbstuff, i, samrect);//0 because it's the first index for fitalgo which has only one enters, for the moment
-  }
+    int optstatus=-1;
+    if(usedosevar==-1)
+      optstatus=optimizeEudLikehood(sample, glbstuff, i, samrect);//0 because it's the first index for fitalgo which has only one enters, for the moment
+    else
+      optstatus=optimizeVolumeLikehood(sample, glbstuff, i);//0 because it's the first index for fitalgo which has only one enters, for the moment
+    }
   
-  ChooseBestFit(glbstuff);
-  if(drawlikehood)
-    DrawLikeHood(sample, glbstuff);  //it took time to draw likehood for each point, disable it for code development purpouse
+  // ChooseBestFit(glbstuff);
+  // if(drawlikehood)
+  //   DrawLikeHood(sample, glbstuff);  //it took time to draw likehood for each point, disable it for code development purpouse
 
   outrootfile->Write();
   outrootfile->Close();

@@ -728,8 +728,8 @@ int CheckSampleSamrectConsistency(const map<int, PatientData> &sample, const map
 }
 
 
-
-int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex,  map<int, PatientData> &samrect, const pair<int,double> fixedpar) {
+//only for eud
+int optimizeEudLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex,  map<int, PatientData> &samrect, const pair<int,double> fixedpar) {
   
   if(debug)
     cout<<"start optimizeLikehood, fitalgindex="<<fitalgindex<<endl;
@@ -741,39 +741,32 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
   auto lamdalikehoodAlfabdoneClinical_0 = [&](const double* par) {return functorLikehoodAlfabdoneClinical_0(sample, par);};
   auto lamdalikehoodFullClinical_1 = [&](const double* par) {return functorLikehoodFullClinical_1(sample, par);};
   auto lamdalikehoodAlfabdoneClinical_1 = [&](const double* par) {return functorLikehoodAlfabdoneClinical_1(sample, par);};
-  auto lamdalikehoodAlfabdone2DvhClinical_1 = [&](const double* par) {return functorLikehoodAlfabdone2DvhClinical_1(sample, samrect, par);};  
-  auto lambdalikehoodDose4Vol = [&](const double* par) {return functorLikehoodDose4Vol(sample, par);};  
-
+  auto lamdalikehoodAlfabdone2DvhClinical_1 = [&](const double* par) {return functorLikehoodAlfabdone2DvhClinical_1(sample, samrect, par);}; 
 
 
   // ROOT::Math::Functor fpFunctor= (glbstuff.clinicalfactors.size()==0) ? ((glbstuff.alfabdone < 0) ?  ROOT::Math::Functor(lamdalikehoodFull, 4) : ROOT::Math::Functor(lamdalikehoodAlfabdone, 3)) : ((glbstuff.alfabdone < 0) ? ROOT::Math::Functor(lamdalikehoodFullClinical_0, 5) : ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_0, 4 ));
   ROOT::Math::Functor fpFunctor;
-  if(glbstuff.usedosevar==-1){
-    if(glbstuff.clinicalfactors == 0 && glbstuff.alfabdone<0 && glbstuff.twodvh==0){
-      cout<<"optimizeLikehood: functor=lamdalikehoodFull"<<endl;
-      fpFunctor = ROOT::Math::Functor(lamdalikehoodFull, 4);
-    }else if(glbstuff.clinicalfactors==0 && glbstuff.alfabdone>=0 && glbstuff.twodvh==0){
-      cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdone"<<endl;
-      fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdone, 3);
-    }else if(glbstuff.clinicalfactors==1 && glbstuff.alfabdone<0 && glbstuff.twodvh==0){
-      cout<<"optimizeLikehood: functor=lamdalikehoodFullClinical_0"<<endl;
-      fpFunctor = ROOT::Math::Functor(lamdalikehoodFullClinical_0, 5);
-    }else if(glbstuff.clinicalfactors==1 && glbstuff.alfabdone>=0 && glbstuff.twodvh==0){
-      cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdoneClinical_0"<<endl;
-      fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_0, 4);
-    }else if(glbstuff.clinicalfactors==2 && glbstuff.alfabdone<0 && glbstuff.twodvh==0){
-      cout<<"optimizeLikehood: functor=lamdalikehoodFullClinical_1"<<endl;
-      fpFunctor = ROOT::Math::Functor(lamdalikehoodFullClinical_1, 6);
-    }else if(glbstuff.clinicalfactors==2 && glbstuff.alfabdone>=0 && glbstuff.twodvh==0){
-      cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdoneClinical_1"<<endl;
-      fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_1, 5);
-    }else if(glbstuff.clinicalfactors==2 && glbstuff.alfabdone>=0 && glbstuff.twodvh>0){
-      cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdone2DvhClinical_1"<<endl;
-      fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdone2DvhClinical_1, 6);
-    }
-  }else{
-      cout<<"optimizeLikehood: functor=lambdalikehoodDose4Vol, usedosevar="<<glbstuff.usedosevar<<"  doses4volume.at(glbstuff.usedosevar)="<<glbstuff.doses4volume.at(glbstuff.usedosevar)<<endl;
-      fpFunctor = ROOT::Math::Functor(lambdalikehoodDose4Vol, 4);    
+  if(glbstuff.clinicalfactors == 0 && glbstuff.alfabdone<0 && glbstuff.twodvh==0){
+    cout<<"optimizeLikehood: functor=lamdalikehoodFull"<<endl;
+    fpFunctor = ROOT::Math::Functor(lamdalikehoodFull, 4);
+  }else if(glbstuff.clinicalfactors==0 && glbstuff.alfabdone>=0 && glbstuff.twodvh==0){
+    cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdone"<<endl;
+    fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdone, 3);
+  }else if(glbstuff.clinicalfactors==1 && glbstuff.alfabdone<0 && glbstuff.twodvh==0){
+    cout<<"optimizeLikehood: functor=lamdalikehoodFullClinical_0"<<endl;
+    fpFunctor = ROOT::Math::Functor(lamdalikehoodFullClinical_0, 5);
+  }else if(glbstuff.clinicalfactors==1 && glbstuff.alfabdone>=0 && glbstuff.twodvh==0){
+    cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdoneClinical_0"<<endl;
+    fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_0, 4);
+  }else if(glbstuff.clinicalfactors==2 && glbstuff.alfabdone<0 && glbstuff.twodvh==0){
+    cout<<"optimizeLikehood: functor=lamdalikehoodFullClinical_1"<<endl;
+    fpFunctor = ROOT::Math::Functor(lamdalikehoodFullClinical_1, 6);
+  }else if(glbstuff.clinicalfactors==2 && glbstuff.alfabdone>=0 && glbstuff.twodvh==0){
+    cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdoneClinical_1"<<endl;
+    fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_1, 5);
+  }else if(glbstuff.clinicalfactors==2 && glbstuff.alfabdone>=0 && glbstuff.twodvh>0){
+    cout<<"optimizeLikehood: functor=lamdalikehoodAlfabdone2DvhClinical_1"<<endl;
+    fpFunctor = ROOT::Math::Functor(lamdalikehoodAlfabdone2DvhClinical_1, 6);
   }
 
   std::unique_ptr<ROOT::Math::Minimizer> fpMinimizer(ROOT::Math::Factory::CreateMinimizer(glbstuff.fitalgo.at(fitalgindex).first, glbstuff.fitalgo.at(fitalgindex).second));
@@ -781,7 +774,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
   fpMinimizer->SetFunction(fpFunctor);
   fpMinimizer->SetMaxFunctionCalls(1000000);
   fpMinimizer->SetMaxIterations(100000);
-  fpMinimizer->SetTolerance(1e-3);//to be checked
+  fpMinimizer->SetTolerance(1e-3);
   fpMinimizer->SetStrategy(2);
   fpMinimizer->SetErrorDef(0.5); // I minimize a -log likehoood, so the error def should be 0.5
   if(debug)
@@ -804,14 +797,15 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
         if(lim[1]>0){
           if(debug)
             cout<<"fpMinimizer->setlimtedvariable index="<<p.first<<"  name="<<name<<endl;
-            fpMinimizer->SetLimitedVariable(p.first, name.c_str(), lim[0], lim[1], lim[2],lim[3]);
-          }else{
-            if(debug)
-              cout<<"fpMinimizer->setfixed variableindex="<<p.first<<"  name="<<name<<endl;
+          fpMinimizer->SetLimitedVariable(p.first, name.c_str(), lim[0], lim[1], lim[2],lim[3]);
+        }else{
+          if(debug)
+            cout<<"fpMinimizer->setfixed variableindex="<<p.first<<"  name="<<name<<endl;
           fpMinimizer->SetFixedVariable(p.first, name.c_str(), lim[0]);
         }
         glbstuff.nameindex[p.first]=name.c_str();
-      }else{
+      }
+      else{
         if(debug)
           cout<<"fpMinimizer->setFixedVariable index="<<p.first<<"  name="<<name<<endl;        
         fpMinimizer->SetFixedVariable(p.first, name.c_str(), fixedpar.second);
@@ -832,15 +826,13 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
 // status = 4 : Reached call limit
 // status = 5 : Covariance is not positive defined   
   Int_t status=fpMinimizer->Status();
-  // if(fixedpar.first<0 || (fixedpar.first>=0 && )){ //no parameter was fixed, this is a minimization of the full model
   if(fixedpar.first<0){ //no parameter was fixed, this is a minimization of the full model
     cout<<endl<<endl<<"optimizeLikehood: minimization done with "<<glbstuff.fitalgo.at(fitalgindex).first<<"/"<<glbstuff.fitalgo.at(fitalgindex).second<<endl;
     if(status==0){
-      double par[10]; //10 per essere sicuri di prendere tutti i parametri
-      for(int i=0;i<fpMinimizer->NDim();i++){
-        par[i]=fpMinimizer->X()[i];
-      }
       for(auto &paziente : sample){//fill scores
+        double par[10]; //10 per essere sicuri di prendere tutti i parametri
+        for(int i=0;i<fpMinimizer->NDim();i++)
+          par[i]=fpMinimizer->X()[i];
         paziente.second.optlike_ntcpscore[fitalgindex]= (glbstuff.twodvh==0) ? EvalScoreSelector(glbstuff, paziente.second, par) : EvalScoreAlfabdone2DvhClinical_1(paziente.second, samrect.at(paziente.second.id), par)  ;
       }
     }else{
@@ -854,7 +846,6 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
 
     for(int i=0;i<fpMinimizer->NDim();i++){
       if(glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].size()==0){
-        cout<<"tmp: fill "<<fpMinimizer->VariableName(i)<<endl;
         glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].push_back(fpMinimizer->X()[i]);
         glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].push_back(fpMinimizer->Errors()[i]);
         TString tmp_title=glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second+"_likelihood_"+fpMinimizer->VariableName(i);
@@ -868,7 +859,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
       cout<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<endl;
     }
     glbstuff.fitresults[fitalgindex].insert(glbstuff.fitresults[fitalgindex].end(), {(double)status, (double)fpMinimizer->CovMatrixStatus(), fpMinimizer->Edm(), (double)fpMinimizer->NFree(), fpMinimizer->MinValue(), 2*fpMinimizer->NFree()+2*fpMinimizer->MinValue(), 2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())});    
-  }else{ //fixed par just for the calculation of Likehood Ratio Test (LRT) TODO: LRT case for dose4volume case need to be done
+  }else{ //fixed par just for the calculation of Likehood Ratio Test (LRT)
     if(debug)
       cout<<"minimization done for LRT for variable="<<fpMinimizer->VariableName(fixedpar.first)<<" with status="<<status<<endl;
     if(status==0){
@@ -890,15 +881,14 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
   if(status==0){
     vector<double> cov(fpMinimizer->NFree() * fpMinimizer->NFree());
     fpMinimizer->GetCovMatrix(cov.data());
-    optlike_fill(sample, glbstuff,fitalgindex, samrect,cov); // TODO: need to be fixed
+    optlike_fill(sample, glbstuff,fitalgindex, samrect,cov);
     pair<double,double>aucprecres=optlike_aucROC(sample, glbstuff, fitalgindex);
     cout<<"fitalgo with "<<glbstuff.fitalgo.at(fitalgindex).first<<" and "<<glbstuff.fitalgo.at(fitalgindex).second<<" done. AUC="<<aucprecres.first<<"  average_precision="<<aucprecres.second<<endl;
     SetAucAvgPrec(fitalgindex, aucprecres, glbstuff); 
     PlotCalibrationCurveQuantilesAndHLtest(sample, glbstuff, fitalgindex, 3);    
     if(fixedpar.first>0){
       for(auto &par:glbstuff.fitpars)
-      if(par.second.second.at(1)!=0)//skip fixed pars
-          optimizeLikehood(sample, glbstuff, fitalgindex, samrect, make_pair(par.second.first,0.)); //for Likelihood ratio test, dove parametri in più sono messi a 0 pef fare contfronto. 
+        optimizeEudLikehood(sample, glbstuff, fitalgindex, samrect, make_pair(par.second.first,0.)); //for Likelihood ratio test, dove parametri in più sono messi a 0 pef fare contfronto. 
         // for(auto &par:fitpars) //TODO: to be developed
         //   optimizeLikehood(sample, glbstuff, i, make_pair(par.second.first,par.second)); //for Likelihood profile, dove parametri in più sono messi al minimo per fare likelihood profile.
     }
@@ -982,6 +972,137 @@ double functorLikehoodDose4Vol(const map<int, PatientData> &sample, const double
   }
   return eval;
 }
+
+int optimizeVolumeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex, const pair<int,double> fixedpar) {
+  
+  if(debug)
+    cout<<"start optimizeVolumeLikehood, fitalgindex="<<fitalgindex<<endl;
+
+  //lambda
+  auto lamdalikehoodDose4Vol = [&](const double* par) {return functorLikehoodDose4Vol(sample, par);};
+
+
+  // ROOT::Math::Functor fpFunctor= (glbstuff.clinicalfactors.size()==0) ? ((glbstuff.alfabdone < 0) ?  ROOT::Math::Functor(lamdalikehoodFull, 4) : ROOT::Math::Functor(lamdalikehoodAlfabdone, 3)) : ((glbstuff.alfabdone < 0) ? ROOT::Math::Functor(lamdalikehoodFullClinical_0, 5) : ROOT::Math::Functor(lamdalikehoodAlfabdoneClinical_0, 4 ));
+  ROOT::Math::Functor fpFunctor;
+  fpFunctor = ROOT::Math::Functor(lamdalikehoodDose4Vol, 4);
+  std::unique_ptr<ROOT::Math::Minimizer> fpMinimizer(ROOT::Math::Factory::CreateMinimizer(glbstuff.fitalgo.at(fitalgindex).first, glbstuff.fitalgo.at(fitalgindex).second));
+
+  fpMinimizer->SetFunction(fpFunctor);
+  fpMinimizer->SetMaxFunctionCalls(1000000);
+  fpMinimizer->SetMaxIterations(100000);
+  fpMinimizer->SetTolerance(1e-2);
+  fpMinimizer->SetStrategy(2);
+  fpMinimizer->SetErrorDef(0.5); // I minimize a -log likehoood, so the error def should be 0.5
+  if(debug)
+    fpMinimizer->SetPrintLevel(2);
+  
+  std::map<int, decltype(glbstuff.fitpars.begin())> ordered;
+
+  if(debug)
+    cout<<"optimizeVolumeLikehood: set variables"<<endl;
+
+  // ROOT/Minuit2 uses the variable registration order as the FCN par[] order.
+  // Therefore variables must be registered sorted by index.
+  for (auto it = glbstuff.fitpars.begin(); it != glbstuff.fitpars.end();++it)
+      ordered[it->second.first] = it;
+
+  for (const auto& p : ordered){
+      const auto& name = p.second->first;
+      const auto& lim  = p.second->second.second;
+      if(fixedpar.first!=p.first){
+        if(lim[1]>0){
+          if(debug)
+            cout<<"fpMinimizer->setlimtedvariable index="<<p.first<<"  name="<<name<<endl;
+          fpMinimizer->SetLimitedVariable(p.first, name.c_str(), lim[0], lim[1], lim[2],lim[3]);
+        }else{
+          if(debug)
+            cout<<"fpMinimizer->setfixed variableindex="<<p.first<<"  name="<<name<<endl;
+          fpMinimizer->SetFixedVariable(p.first, name.c_str(), lim[0]);
+        }
+        glbstuff.nameindex[p.first]=name.c_str();
+      }
+      else{
+        if(debug)
+          cout<<"fpMinimizer->setFixedVariable index="<<p.first<<"  name="<<name<<endl;        
+        fpMinimizer->SetFixedVariable(p.first, name.c_str(), fixedpar.second);
+        glbstuff.nameindex[p.first]=name.c_str();
+      }
+  }  
+
+  if(debug)
+    cout<<"optimizeVolumeLikehood: before minimization"<<endl;  
+
+  fpMinimizer->Minimize();
+  if(debug)
+    cout<<"optimizeVolumeLikehood: minimization done"<<endl; 
+// using Minuit2 you have as status: (https://root-forum.cern.ch/t/is-fit-validity-or-minimizer-status-more-important/30637)
+// status = 1 : Covariance was made pos defined
+// status = 2 : Hesse is invalid
+// status = 3 : Edm is above max
+// status = 4 : Reached call limit
+// status = 5 : Covariance is not positive defined   
+  Int_t status=fpMinimizer->Status();
+  int patcount=0;
+  if(fixedpar.first<0){ //no parameter was fixed, this is a minimization of the full model
+    cout<<endl<<endl<<"optimizeVolumeLikehood: minimization done with "<<glbstuff.fitalgo.at(fitalgindex).first<<"/"<<glbstuff.fitalgo.at(fitalgindex).second<<endl;
+    if(status==0){
+      for(auto &paziente : sample){//fill scores
+        double par[10]; //10 per essere sicuri di prendere tutti i parametri
+        for(int i=0;i<fpMinimizer->NDim();i++)
+          par[i]=fpMinimizer->X()[i];
+        paziente.second.optlike_ntcpvolumescore[fitalgindex]=  EvalScoreSelector(glbstuff, paziente.second, par) ;
+        if(paziente.second.optlike_ntcpvolumescore[fitalgindex]>=0)
+          patcount++;
+      }
+    }else{
+      cout<<"minimization failed"<<endl;  
+      cout<<"print correlations:"<<endl;
+      for(int i=0;i<fpMinimizer->NFree();++i)
+        for(int j=0;j<fpMinimizer->NFree();++j)
+          std::cout << i << " " << j << " " << fpMinimizer->CovMatrix(i,j)/sqrt(fpMinimizer->CovMatrix(i,i)*fpMinimizer->CovMatrix(j,j)) << std::endl;  
+    }
+    cout<<"status="<<status<<" CovMatrixStatus="<<fpMinimizer->CovMatrixStatus()<<"  Edm="<<fpMinimizer->Edm()<<"  degree of freedom:"<<fpMinimizer->NFree()<<"  fpMinimizer->NDim()="<<fpMinimizer->NDim()<<"   -loglikehood minimum value:"<<fpMinimizer->MinValue()<<"  AIC="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()<<"  AICc_reduced="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()+2*fpMinimizer->NFree()*(fpMinimizer->NFree()+1)/(patcount-fpMinimizer->NFree()-1)<<"  deviance/dof="<<2*fpMinimizer->MinValue()/(patcount-fpMinimizer->NFree())<<endl;
+
+    for(int i=0;i<fpMinimizer->NDim();i++){
+      if(glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].size()==0){
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].push_back(fpMinimizer->X()[i]);
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].push_back(fpMinimizer->Errors()[i]);
+        TString tmp_title=glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second+"_likelihood_"+fpMinimizer->VariableName(i);
+        TH1D* h=new TH1D(tmp_title, "variable value;likelihood value",200, fpMinimizer->X()[i]-3*fpMinimizer->Errors()[i], fpMinimizer->X()[i]+3.*fpMinimizer->Errors()[i]);   
+      }else{
+        cout<<"WARNING:optimizeVolumeLikehood: glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].size() not =0, the fitted values has already filled... this is strange, please take a look; fitalgindex="<<fitalgindex<<"  size="<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].size()<<endl;
+        cout<<"I'll overwrite the new values:"<<endl;
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].at(0)=fpMinimizer->X()[i];
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].at(1)=fpMinimizer->Errors()[i];
+      }
+      cout<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<endl;
+    }
+    glbstuff.fitresults[fitalgindex].insert(glbstuff.fitresults[fitalgindex].end(), {(double)status, (double)fpMinimizer->CovMatrixStatus(), fpMinimizer->Edm(), (double)fpMinimizer->NFree(), fpMinimizer->MinValue(), 2*fpMinimizer->NFree()+2*fpMinimizer->MinValue(), 2*fpMinimizer->MinValue()/(patcount-fpMinimizer->NFree())});    
+  }
+
+  if(debug)
+    cout<<"optimizeVolumeLikehood done, fitalgindex="<<fitalgindex<<endl;
+
+  if(status==0){
+    vector<double> cov(fpMinimizer->NDim() * fpMinimizer->NDim());
+    fpMinimizer->GetCovMatrix(cov.data()); 
+    optlikeVolume_fill(sample, glbstuff,fitalgindex,cov);
+    pair<double,double>aucprecres=optlike_aucROC(sample, glbstuff, fitalgindex);
+    cout<<"optimizeVolumeLikehood: fitalgo with "<<glbstuff.fitalgo.at(fitalgindex).first<<" and "<<glbstuff.fitalgo.at(fitalgindex).second<<" done. AUC="<<aucprecres.first<<"  average_precision="<<aucprecres.second<<endl;
+    SetAucAvgPrec(fitalgindex, aucprecres, glbstuff); 
+    PlotCalibrationCurveQuantilesAndHLtest(sample, glbstuff, fitalgindex, 3);    
+    // if(fixedpar.first>0){
+      // for(auto &par:glbstuff.fitpars)
+        // optimizeVolumeLikehood(sample, glbstuff, fitalgindex, samrect, make_pair(par.second.first,0.)); //for Likelihood ratio test, dove parametri in più sono messi a 0 pef fare contfronto. 
+        // for(auto &par:fitpars) //TODO: to be developed
+        //   optimizeVolumeLikehood(sample, glbstuff, i, make_pair(par.second.first,par.second)); //for Likelihood profile, dove parametri in più sono messi al minimo per fare likelihood profile.
+    // }
+  } 
+  
+
+    return status;
+}
+
 
 
 //evaluate eud given an alfabeta and an nvalue
@@ -1136,17 +1257,197 @@ void FillEqdEud(map<int, PatientData> &sample, const globalstuff &glbstuff){
   return;
 }
 
+void optlikeVolume_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex, vector<double> &cov){
+
+  if(debug)
+    cout<<"start optlikeVolume_fill"<<endl;
+
+  gDirectory->mkdir("ntcp_volume");
+  gDirectory->cd("ntcp_volume");
+
+  TString name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_vol_optlike_All";
+  TH1D *hall=new TH1D(name, "Volume value;Volume;Number of patients",100, 0., 100);        
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"vol_optlike_No";
+  TH1D *hno=new TH1D(name, "vol value;vol;Number of patients",100, 0., 100);        
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"vol_optlike_Yes";
+  TH1D *hyes=new TH1D(name, "vol value;vol;Number of patients",100, 0., 100);        
+    
+  TGraph* gr_vol_vs_tox=new TGraph();
+  TGraph* gr_vol_vs_pred=new TGraph();
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_vol_vs_tox";
+  gr_vol_vs_tox->SetName(name);
+  gr_vol_vs_tox->SetTitle("vol vs toxicity optimized NTCP ;vol;toxicity");
+
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_vol_vs_pred";
+  gr_vol_vs_pred->SetName(name);
+  gr_vol_vs_pred->SetTitle("volume vs NTCP prediction with optimized NTCP ;vol;prediction");
+  vector<TGraph*> gr_volwithtox_vs_tox; //mi aspetto che numerazione cluster vada da 0 in su
+  if(glbstuff.clinicalfactors>0){
+    for(int i=0;i<glbstuff.clusternum;i++){
+      TGraph* gr=new TGraph((dynamic_cast<TH1D*>(gDirectory->Get("../cluster")))->GetBinContent(i+1));
+      name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+Form("_ntcp_linear_eud_vs_tox_withclinicalfactors%i",i);
+      gr->SetName(name);
+      gr->SetTitle(Form("Vol vs toxicity with cluster%i;vol;toxicity",i));
+      gr_volwithtox_vs_tox.push_back(gr);
+    }
+  }
+
+  if(debug)
+    cout<<"optlikeVolume_fill: fill plots"<<endl;
+
+  int index=0;
+  vector<int> gr_volwithtox_index(gr_volwithtox_vs_tox.size(),0);
+  for(auto &paziente : sample){
+    cout<<"start patient loop "<<paziente.second.id<<endl;
+    cout<<"tmp: glbstuff.fittedpar.at(fitalgindex).at(alfabeta).at(0)="<<glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0)<<"  "<<paziente.second.dvhcumnormmap.at(glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0)).size()<<"  "<<glbstuff.fittedpar.at(fitalgindex).at("volume").at(0)<<endl;
+    if(paziente.second.dvhcumnormmap.at(glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0)).size()<=glbstuff.fittedpar.at(fitalgindex).at("volume").at(0))
+      continue;
+    paziente.second.optlike_vol[fitalgindex]= paziente.second.dvhcumnormmap.at(glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0)).at(glbstuff.fittedpar.at(fitalgindex).at("volume").at(0));
+    hall->Fill(paziente.second.optlike_vol.at(fitalgindex));
+    if(paziente.second.tgt_acutegitox>0.5)
+      hyes->Fill(paziente.second.optlike_vol.at(fitalgindex));
+    else
+      hno->Fill(paziente.second.optlike_vol.at(fitalgindex));
+    gr_vol_vs_tox->SetPoint(index, paziente.second.optlike_vol.at(fitalgindex), paziente.second.tgt_acutegitox);
+    gr_vol_vs_pred->SetPoint(index, paziente.second.optlike_vol.at(fitalgindex), paziente.second.optlike_ntcpvolumescore.at(fitalgindex));
+    if(glbstuff.clusternum>0){
+      gr_volwithtox_vs_tox.at(paziente.second.cluster)->SetPoint(gr_volwithtox_index.at(paziente.second.cluster), paziente.second.optlike_vol.at(fitalgindex), paziente.second.tgt_acutegitox+paziente.second.cluster*0.05);
+      gr_volwithtox_index.at(paziente.second.cluster)++;
+    }
+    index++;
+  }
+  cout<<"optlikeVolume_fill: end of loop on patients"<<endl;
+  gr_vol_vs_tox->Sort();
+  gr_vol_vs_pred->Sort();
+  for(auto &gr:gr_volwithtox_vs_tox)
+    gr->Sort();
+
+  cout<<"optlikeVolume_fill: start fit"<<endl;
+  TF1* sigmoidbestnoclinical_0,*sigmoidbestnoclinical_1=nullptr,*sigmoidbestnoclinical_2=nullptr;
+  sigmoidbestnoclinical_0=new TF1("sigmoidbestnoclinical_0","1./(1.+exp(-[0]-[1]*x))", 0, 100);
+  sigmoidbestnoclinical_0->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
+  sigmoidbestnoclinical_0->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
+  cout<<"step a"<<endl;
+  gr_vol_vs_tox->Fit(sigmoidbestnoclinical_0, "BS+","",0,100);
+  cout<<"step b"<<endl;
+  TGraphErrors *tgrer_sigmoidbestnoclinical_0, *tgrer_sigmoidbestclinical_1=nullptr, *tgrer_sigmoidbestclinical_2=nullptr;
+  vector<int> covindexxmakeband;
+  covindexxmakeband.push_back(glbstuff.fitpars.at("beta_zero").first);
+  covindexxmakeband.push_back(glbstuff.fitpars.at("beta_eud_a").first);
+  tgrer_sigmoidbestnoclinical_0=MakeBandFromMinimizer(sigmoidbestnoclinical_0, covindexxmakeband, 2, cov, glbstuff,fitalgindex, 200, 1);
+  tgrer_sigmoidbestnoclinical_0->SetLineColor(kGreen+3);
+  tgrer_sigmoidbestnoclinical_0->SetMarkerColor(kGreen+3);
+  cout<<"step c"<<endl;
+  if(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3){
+    gr_volwithtox_vs_tox.at(0)->SetMarkerColor(kGreen+3);
+    gr_volwithtox_vs_tox.at(0)->SetMarkerStyle(20);
+    sigmoidbestnoclinical_1=new TF1("sigmoidbestnoclinical_1",(glbstuff.prop2dose==1) ? "1./(1.+exp(-[0]-([1]+[2])*x))" : "1./(1.+exp(-[0]-[1]*x-[2]))", 0, 100);
+    sigmoidbestnoclinical_1->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
+    sigmoidbestnoclinical_1->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
+    sigmoidbestnoclinical_1->FixParameter(2, glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0));
+    gr_vol_vs_tox->Fit(sigmoidbestnoclinical_1, "BS+","",0,100);
+    covindexxmakeband.push_back(glbstuff.fitpars.at("clinical_factor_0").first);
+    tgrer_sigmoidbestclinical_1=MakeBandFromMinimizer(sigmoidbestnoclinical_1, covindexxmakeband, 3, cov, glbstuff,fitalgindex, 210, 1);
+    tgrer_sigmoidbestclinical_1->SetLineColor(kBlue);
+    tgrer_sigmoidbestclinical_1->SetMarkerColor(kBlue);
+    // tgrer_sigmoidbestclinical_1->Draw("LCE same");
+    gr_volwithtox_vs_tox.at(1)->SetMarkerColor(kBlue);
+    gr_volwithtox_vs_tox.at(1)->SetMarkerStyle(21);
+    sigmoidbestnoclinical_2=new TF1("sigmoidbestnoclinical_2",(glbstuff.prop2dose==1) ? "1./(1.+exp(-[0]-([1]+[2])*x))" :  "1./(1.+exp(-[0]-[1]*x-[2]))", 0, 100);
+    sigmoidbestnoclinical_2->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
+    sigmoidbestnoclinical_2->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
+    sigmoidbestnoclinical_2->FixParameter(2, (glbstuff.clinicalfactors==2) ? glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_1").at(0) : glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0)*2.);
+    gr_vol_vs_tox->Fit(sigmoidbestnoclinical_2, "BS+","",0,100);    
+    if(glbstuff.clinicalfactors==2)
+      covindexxmakeband.at(2)=glbstuff.fitpars.at("clinical_factor_1").first;
+    tgrer_sigmoidbestclinical_2=MakeBandFromMinimizer(sigmoidbestnoclinical_2, covindexxmakeband, 3, cov, glbstuff,fitalgindex, 220, 1);
+    tgrer_sigmoidbestclinical_2->SetLineColor(kRed);
+    tgrer_sigmoidbestclinical_2->SetMarkerColor(kRed);
+    // tgrer_sigmoidbestclinical_2->Draw("LCE same");
+    gr_volwithtox_vs_tox.at(2)->SetMarkerColor(kRed);
+    gr_volwithtox_vs_tox.at(2)->SetMarkerStyle(22);
+  }
+  gr_vol_vs_tox->SetMarkerStyle(24);
+  gr_vol_vs_tox->SetLineWidth(0);
+  gr_vol_vs_tox->SetDrawOption("AP*");
+  gr_vol_vs_tox->Write();
+  cout<<"step d"<<endl;
+  TCanvas *canvas_ntcps_eud_vs_tox = new TCanvas("canvas_ntcps_vol_vs_tox", "ntcp curves", 800, 600);
+  // gr_vol_vs_tox->GetListOfFunctions()->Clear();
+  if(!(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3)){
+    gr_vol_vs_tox->Draw("AP*");
+    gr_vol_vs_tox->GetXaxis()->SetLimits(0, 40);   // solo asse X
+    gr_vol_vs_tox->SetMinimum(-0.2);
+    gr_vol_vs_tox->SetMaximum(1.2);         
+  }else{
+    gr_volwithtox_vs_tox.at(0)->Draw("AP");    
+    gr_volwithtox_vs_tox.at(0)->GetXaxis()->SetLimits(0, 40);   // solo asse X
+    gr_volwithtox_vs_tox.at(0)->SetMinimum(-0.2);
+    gr_volwithtox_vs_tox.at(0)->SetMaximum(1.2);         
+
+  }
+  sigmoidbestnoclinical_0->SetLineColor(kGreen+3);
+  tgrer_sigmoidbestnoclinical_0->Draw("E same");
+  sigmoidbestnoclinical_0->Draw("same");
+  if(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3){
+    for(int i=1;i<glbstuff.clusternum;i++)
+      gr_volwithtox_vs_tox.at(i)->Draw("P same");
+    tgrer_sigmoidbestclinical_1->Draw("E same");
+    tgrer_sigmoidbestclinical_2->Draw("E same");
+    sigmoidbestnoclinical_1->SetLineColor(kBlue);
+    sigmoidbestnoclinical_1->Draw("same");
+    sigmoidbestnoclinical_2->SetLineColor(kRed);
+    sigmoidbestnoclinical_2->Draw("same");
+  }
+  canvas_ntcps_eud_vs_tox->Write();
+  delete canvas_ntcps_eud_vs_tox;
+  
+  gr_vol_vs_pred->SetMarkerStyle(10);
+  gr_vol_vs_pred->SetMarkerColor(3);
+  gr_vol_vs_pred->SetLineWidth(2);
+  gr_vol_vs_pred->SetLineColor(3);
+  gr_vol_vs_pred->SetDrawOption("AP*");
+  gr_vol_vs_pred->Write();
+
+  if(debug)
+    cout<<"optlikeVolume_fill: fit gr_volwithtox_vs_tox"<<endl;
+
+  if(glbstuff.clinicalfactors>0){ 
+    for(int i=0;i<gr_volwithtox_vs_tox.size();i++){
+      TF1* sigmoidfromlikehood=new TF1("sigmoidfromlikehood",  (glbstuff.prop2dose==1) ? "1./(1.+exp(-[0]-([1]+[2])*x))" : "1./(1.+exp(-[0]-[1]*x-[2]))", 0, 100);
+      sigmoidfromlikehood->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
+      sigmoidfromlikehood->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
+      sigmoidfromlikehood->FixParameter(2, (glbstuff.clinicalfactors==1) ? glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0)*i   :    
+        (  (i==2) ? glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_1").at(0) :  (  (i==1) ? glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0) : 0   ) )  );
+      gr_volwithtox_vs_tox.at(i)->Fit(sigmoidfromlikehood,"BS+","",0,100);
+      gr_volwithtox_vs_tox.at(i)->SetMarkerStyle(20);
+      gr_volwithtox_vs_tox.at(i)->SetMarkerColor(2);
+      gr_volwithtox_vs_tox.at(i)->SetLineWidth(0);
+      gr_volwithtox_vs_tox.at(i)->SetLineColor(0);
+      gr_volwithtox_vs_tox.at(i)->SetDrawOption("AP*");
+      gr_volwithtox_vs_tox.at(i)->Write();
+    }
+  }  
+  gDirectory->cd("..");
+
+  if(debug)
+    cout<<"optlikeVolume_fill done"<<endl;
+
+  return;
+}
+
+
 void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex, map<int, PatientData> &samrect, vector<double> &cov){
 
   if(debug)
     cout<<"start optlike_fill"<<endl;
-  TString varname=(glbstuff.usedosevar==-1) ? "eud":"dosevol";
-  TString name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+ "_"+varname+ "_optlike_All";
-  TH1D *hall=new TH1D(name, varname+" value;"+varname+";Number of patients",100, 0., 100);        
-  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+varname+"_optlike_No";
-  TH1D *hno=new TH1D(name, varname+" value;"+varname+";Number of patients",100, 0., 100);        
+
+  TString name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_eud_optlike_All";
+  TH1D *hall=new TH1D(name, "eud value;eud;Number of patients",100, 0., 100);        
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"eud_optlike_No";
+  TH1D *hno=new TH1D(name, "eud value;eud;Number of patients",100, 0., 100);        
   name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"eud_optlike_Yes";
-  TH1D *hyes=new TH1D(name, varname+" value;"+varname+";Number of patients",100, 0., 100);        
+  TH1D *hyes=new TH1D(name, "eud value;eud;Number of patients",100, 0., 100);        
   
   gDirectory->cd("ntcp_linear");
   TGraph* gr_eud_vs_tox=new TGraph(sample.size());
@@ -1162,24 +1463,24 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   TGraph2D* gr2d_eud_vs_tox;
   if(glbstuff.twodvh)
     gr2d_eud_vs_tox=new TGraph2D(sample.size());
-  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_"+varname+"_vs_tox";
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_eud_vs_tox";
   gr_eud_vs_tox->SetName(name);
-  gr_eud_vs_tox->SetTitle("eud vs toxicity optimized NTCP ;"+varname+";toxicity");
-  if(glbstuff.twodvh){ //non previsto per volume
-    name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_2d_ntcp_linear_"+varname+"_vs_tox";
+  gr_eud_vs_tox->SetTitle("eud vs toxicity optimized NTCP ;eud;toxicity");
+  if(glbstuff.twodvh){
+    name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_2d_ntcp_linear_eud_vs_tox";
     gr2d_eud_vs_tox->SetName(name);
-    gr2d_eud_vs_tox->SetTitle(varname+" vs toxicity optimized NTCP ;"+varname+" A; "+varname+" B;toxicity");
+    gr2d_eud_vs_tox->SetTitle("eud vs toxicity optimized NTCP ;eud A; eud B;toxicity");
   }
-  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_"+varname+"_vs_pred";
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_eud_vs_pred";
   gr_eud_vs_pred->SetName(name);
-  gr_eud_vs_pred->SetTitle(varname+" vs NTCP prediction with optimized NTCP ;"+varname+";prediction");
+  gr_eud_vs_pred->SetTitle("eud vs NTCP prediction with optimized NTCP ;eud;prediction");
   vector<TGraph*> gr_eudwithtox_vs_tox; //mi aspetto che numerazione cluster vada da 0 in su
-  if(glbstuff.clusternum>0){
+  if(glbstuff.clinicalfactors>0){
     for(int i=0;i<glbstuff.clusternum;i++){
       TGraph* gr=new TGraph((dynamic_cast<TH1D*>(gDirectory->Get("../cluster")))->GetBinContent(i+1));
-      name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+Form("_ntcp_linear_"+varname+"_vs_tox_withclinicalfactors%i",i);
+      name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+Form("_ntcp_linear_eud_vs_tox_withclinicalfactors%i",i);
       gr->SetName(name);
-      gr->SetTitle(Form(varname+" vs toxicity with cluster%i;eud;toxicity",i));
+      gr->SetTitle(Form("EUD vs toxicity with cluster%i;eud;toxicity",i));
       gr_eudwithtox_vs_tox.push_back(gr);
     }
   }
@@ -1189,22 +1490,16 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
 
   name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_score_vs_tox";
   int index=0;
-  vector<int> clsindex(glbstuff.clusternum,0);
   vector<int> gr_eudwithtox_index(gr_eudwithtox_vs_tox.size(),0);
   for(auto &paziente : sample){
-      paziente.second.optlike_eud[fitalgindex]= (glbstuff.usedosevar==-1) ?
-       ( (glbstuff.alfabdone<0) ? CalculateEudFromScratch(paziente.second,glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0) , glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) : CalculateEudEqdAlreadyDone(paziente.second, glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) ) :
-       ((paziente.second.dvhcumnormmap.at(glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0)).size()>glbstuff.fittedpar.at(fitalgindex).at("volume").at(0)) ? 
-       paziente.second.dvhcumnormmap.at(glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0)).at(glbstuff.fittedpar.at(fitalgindex).at("volume").at(0) ) : -1);
-
-       if(glbstuff.twodvh)
+    paziente.second.optlike_eud[fitalgindex]= (glbstuff.alfabdone<0) ? CalculateEudFromScratch(paziente.second,glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0) , glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) : CalculateEudEqdAlreadyDone(paziente.second, glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0));
+    if(glbstuff.twodvh)
       samrect.at(paziente.second.id).optlike_eud[fitalgindex]= (glbstuff.alfabdone<0) ? CalculateEudFromScratch(samrect.at(paziente.second.id),glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0) , glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) : CalculateEudEqdAlreadyDone(samrect.at(paziente.second.id), glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0));    
-      hall->Fill(paziente.second.optlike_eud.at(fitalgindex));
+    hall->Fill(paziente.second.optlike_eud.at(fitalgindex));
     if(paziente.second.tgt_acutegitox>0.5)
       hyes->Fill(paziente.second.optlike_eud.at(fitalgindex));
     else
       hno->Fill(paziente.second.optlike_eud.at(fitalgindex));
-      
     gr_eud_vs_tox->SetPoint(index, paziente.second.optlike_eud.at(fitalgindex), paziente.second.tgt_acutegitox);
     if(glbstuff.twodvh)
       gr2d_eud_vs_tox->SetPoint(index, paziente.second.optlike_eud.at(fitalgindex), samrect.at(paziente.second.id).optlike_eud.at(fitalgindex), paziente.second.tgt_acutegitox);
@@ -1215,40 +1510,23 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     }
     index++;
   }
-  cout<<"tmp: stepa"<<endl;
   gr_eud_vs_tox->Sort();
   gr_eud_vs_pred->Sort();
   for(auto &gr:gr_eudwithtox_vs_tox)
-  gr->Sort();
-  
-  cout<<"tmp: stepb "<<fitalgindex<<"  "<<glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0)<<endl;
-  TF1::EAddToList::kNo;
-  TF1* sigmoidbestnoclinical_0=nullptr,*sigmoidbestnoclinical_1=nullptr,*sigmoidbestnoclinical_2=nullptr;
-  cout<<"tmp: stepcf "<<fitalgindex<<"  merda"<<endl;
-  sigmoidbestnoclinical_0=new TF1(Form("sigmoidbestnoclinical_0_%i",glbstuff.fitpars.at("beta_zero").first ),"1./(1.+exp(-[0]-[1]*x))", 0, 100);
-  cout<<"tmp: stepcd "<<fitalgindex<<"  merda"<<endl;
+    gr->Sort();
+
+  TF1* sigmoidbestnoclinical_0,*sigmoidbestnoclinical_1,*sigmoidbestnoclinical_2;
+  sigmoidbestnoclinical_0=new TF1("sigmoidbestnoclinical_0","1./(1.+exp(-[0]-[1]*x))", 0, 100);
   sigmoidbestnoclinical_0->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
-  cout<<"tmp: stepc "<<fitalgindex<<"  merda"<<endl;
-  cout<<"tmp: stepc "<<fitalgindex<<"  "<<glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0)<<endl;
   sigmoidbestnoclinical_0->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
-  cout<<"tmp: stebb"<<endl;
   gr_eud_vs_tox->Fit(sigmoidbestnoclinical_0, "BS+","",0,100);
   TGraphErrors *tgrer_sigmoidbestnoclinical_0, *tgrer_sigmoidbestclinical_1, *tgrer_sigmoidbestclinical_2;
-  cout<<"tmp: stebbc"<<endl;
   vector<int> covindexxmakeband;
-  if(glbstuff.fitpars.at("beta_zero").second.at(1)>0)
   covindexxmakeband.push_back(glbstuff.fitpars.at("beta_zero").first);
-  cout<<"tmp: stebbd"<<endl;
-  if(glbstuff.fitpars.at("beta_eud_a").second.at(1)>0)
-    covindexxmakeband.push_back(glbstuff.fitpars.at("beta_eud_a").first);
-  cout<<"tmp: stebbb"<<endl;
-
-  if(covindexxmakeband.size()>0){
-    tgrer_sigmoidbestnoclinical_0=MakeBandFromMinimizer(sigmoidbestnoclinical_0, covindexxmakeband, 2, cov, glbstuff,fitalgindex, 200, 1);
-    tgrer_sigmoidbestnoclinical_0->SetLineColor(kGreen+3);
-    tgrer_sigmoidbestnoclinical_0->SetMarkerColor(kGreen+3);
-  }
-
+  covindexxmakeband.push_back(glbstuff.fitpars.at("beta_eud_a").first);
+  tgrer_sigmoidbestnoclinical_0=MakeBandFromMinimizer(sigmoidbestnoclinical_0, covindexxmakeband, 2, cov, glbstuff,fitalgindex, 200, 1);
+  tgrer_sigmoidbestnoclinical_0->SetLineColor(kGreen+3);
+  tgrer_sigmoidbestnoclinical_0->SetMarkerColor(kGreen+3);
   if(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3){
     gr_eudwithtox_vs_tox.at(0)->SetMarkerColor(kGreen+3);
     gr_eudwithtox_vs_tox.at(0)->SetMarkerStyle(20);
@@ -1257,14 +1535,11 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     sigmoidbestnoclinical_1->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
     sigmoidbestnoclinical_1->FixParameter(2, glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0));
     gr_eud_vs_tox->Fit(sigmoidbestnoclinical_1, "BS+","",0,100);
-    if(glbstuff.fitpars.at("clinical_factor_0").second.at(1)>0)
     covindexxmakeband.push_back(glbstuff.fitpars.at("clinical_factor_0").first);
-    if(covindexxmakeband.size()>0){
-      tgrer_sigmoidbestclinical_1=MakeBandFromMinimizer(sigmoidbestnoclinical_1, covindexxmakeband, 3, cov, glbstuff,fitalgindex, 210, 1);
-      tgrer_sigmoidbestclinical_1->SetLineColor(kBlue);
-      tgrer_sigmoidbestclinical_1->SetMarkerColor(kBlue);
-      // tgrer_sigmoidbestclinical_1->Draw("LCE same");
-    }
+    tgrer_sigmoidbestclinical_1=MakeBandFromMinimizer(sigmoidbestnoclinical_1, covindexxmakeband, 3, cov, glbstuff,fitalgindex, 210, 1);
+    tgrer_sigmoidbestclinical_1->SetLineColor(kBlue);
+    tgrer_sigmoidbestclinical_1->SetMarkerColor(kBlue);
+    // tgrer_sigmoidbestclinical_1->Draw("LCE same");
     gr_eudwithtox_vs_tox.at(1)->SetMarkerColor(kBlue);
     gr_eudwithtox_vs_tox.at(1)->SetMarkerStyle(21);
     sigmoidbestnoclinical_2=new TF1("sigmoidbestnoclinical_2",(glbstuff.prop2dose==1) ? "1./(1.+exp(-[0]-([1]+[2])*x))" :  "1./(1.+exp(-[0]-[1]*x-[2]))", 0, 100);
@@ -1274,16 +1549,13 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     gr_eud_vs_tox->Fit(sigmoidbestnoclinical_2, "BS+","",0,100);    
     if(glbstuff.clinicalfactors==2)
       covindexxmakeband.at(2)=glbstuff.fitpars.at("clinical_factor_1").first;
-    if(covindexxmakeband.size()>0){
-      tgrer_sigmoidbestclinical_2=MakeBandFromMinimizer(sigmoidbestnoclinical_2, covindexxmakeband, 3, cov, glbstuff,fitalgindex, 220, 1);
-      tgrer_sigmoidbestclinical_2->SetLineColor(kRed);
-      tgrer_sigmoidbestclinical_2->SetMarkerColor(kRed);
-      // tgrer_sigmoidbestclinical_2->Draw("LCE same");
-    }
+    tgrer_sigmoidbestclinical_2=MakeBandFromMinimizer(sigmoidbestnoclinical_2, covindexxmakeband, 3, cov, glbstuff,fitalgindex, 220, 1);
+    tgrer_sigmoidbestclinical_2->SetLineColor(kRed);
+    tgrer_sigmoidbestclinical_2->SetMarkerColor(kRed);
+    // tgrer_sigmoidbestclinical_2->Draw("LCE same");
     gr_eudwithtox_vs_tox.at(2)->SetMarkerColor(kRed);
     gr_eudwithtox_vs_tox.at(2)->SetMarkerStyle(22);
   }
-  cout<<"stepc"<<endl;
   gr_eud_vs_tox->SetMarkerStyle(24);
   gr_eud_vs_tox->SetLineWidth(0);
   gr_eud_vs_tox->SetDrawOption("AP*");
@@ -1389,6 +1661,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
 
 
 
+
 pair<double,double> optlike_aucROC(const map<int, PatientData> &sample, const globalstuff &glbstuff, const int fitalgindex)
 {
   map<double, vector<int>, std::greater<double>> data;
@@ -1401,7 +1674,10 @@ pair<double,double> optlike_aucROC(const map<int, PatientData> &sample, const gl
       nPos++;
     else
       nNeg++;     
-    data[paziente.second.optlike_ntcpscore.at(fitalgindex)].push_back(paziente.second.tgt_acutegitox);
+    if(glbstuff.usedosevar==-1)
+      data[paziente.second.optlike_ntcpscore.at(fitalgindex)].push_back(paziente.second.tgt_acutegitox);
+    else
+      data[paziente.second.optlike_ntcpvolumescore.at(fitalgindex)].push_back(paziente.second.tgt_acutegitox);
   }
 
   if (nPos == 0 || nNeg == 0)
@@ -1414,7 +1690,7 @@ pair<double,double> optlike_aucROC(const map<int, PatientData> &sample, const gl
   double auc = 0.0, avg_precision=0.; //AUC is the area under the curve given by the point, avg_precision is the actual area under each point as a step function
   int ip=0;
   TGraph* grROC = new TGraph();
-  TString pltname="roccurve_"+glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second;
+  TString pltname="roccurve_" +glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second;
   grROC->SetName(pltname);
   grROC->SetPoint(ip++, 0.0, 0.0);
   for (const auto& kv : data) {
@@ -1524,7 +1800,7 @@ void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sa
 
   vector<pair<double,double>> data; // pred, obs
   for(const auto& paziente : sample){
-      double pred = paziente.second.optlike_ntcpscore.at(fitalgindex);
+      double pred = glbstuff.usedosevar==-1 ? paziente.second.optlike_ntcpscore.at(fitalgindex) : paziente.second.optlike_ntcpvolumescore.at(fitalgindex);
       double obs  = paziente.second.tgt_acutegitox;
 
       if((pred > 1.0) || (pred < 0. && glbstuff.usedosevar==-1 ) ){

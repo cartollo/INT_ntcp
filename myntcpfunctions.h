@@ -97,8 +97,10 @@ map<double, double> volmindose; //volume with a minimum of dose, key=minimum dos
 map<double,vector<double>> dvhcumnormmap; //equivalent cumulative dvh normalized for alfabeta and fractions for all the patients with eqd2map, key=alfabeta
 map<double,vector<double>> dvhdiffnormmap; //equivalent differential dvh normalized for alfabeta and fractions for all the patients with eqd2map, key=alfabeta
 map<pair<double,double>, double> eudmap; //eud value (value) for given n and alfa/beta (key=make_pair(n,alfabeta))
-map<int,double> optlike_eud; //from optimizeLikehood key=fitalgindex, value=eud values, used for the ntcp tgrapqh, or dose volume value if usedosevar is activated
+map<int,double> optlike_eud; //from optimizeLikehood key=fitalgindex, value=eud values, used for the ntcp tgrapqh, 
+map<int,double> optlike_vol; //from optlikeVolume_fill key=fitalgindex, value=vol values, used for the ntcp tgrapqh, 
 map<int,double> optlike_ntcpscore; //key: fitalgo index, value: ntcp score
+map<int,double> optlike_ntcpvolumescore; //key: fitalgo index, value: ntcp score
 int status; //-1=not set, 0=all ok, 1=not monotonous
 };
 
@@ -146,8 +148,10 @@ double fitSigmoidal(TGraph* graph, int parnum, int functype);
 string trim(const string& s);
 vector<string> splitCsvLine(const string& line, const TString delimiter);
 void CreateHistoFromTgraph(TGraph *gr, TH1D *h);
-int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex, map<int, PatientData> &samrect, const pair<int,double> fixedpar=make_pair(-1,-1) );
+int optimizeEudLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex, map<int, PatientData> &samrect, const pair<int,double> fixedpar=make_pair(-1,-1) );
+int optimizeVolumeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex, const pair<int,double> fixedpar=make_pair(-1,-1) );
 void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex, map<int, PatientData> &samrect, vector<double> &cov);
+void optlikeVolume_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex, vector<double> &cov);
 
 pair<double,double> optlike_aucROC(const map<int, PatientData> &sample,const globalstuff &glbstuff, const int fitalgindex);
 void computeDCT(const vector<double>& x, vector<double>& c);
