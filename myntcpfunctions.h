@@ -168,6 +168,7 @@ double functorLikehoodAlfabdoneClinical_1(const map<int, PatientData> &sample, c
 double functorLikehoodAlfabdone2DvhClinical_1(const map<int, PatientData> &sample, const map<int, PatientData> &samrect, const double* par);
 
 double functorLikehoodDose4Vol(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodDose4VolClinical(const map<int, PatientData> &sample, const double* par);
 
 void SetAucAvgPrec(int index, const pair<double,double> aucavgin, globalstuff& glbstuff);
 
