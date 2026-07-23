@@ -903,7 +903,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
     pair<double,double>aucprecres=optlike_aucROC(sample, glbstuff, fitalgindex);
     cout<<"fitalgo with "<<glbstuff.fitalgo.at(fitalgindex).first<<" and "<<glbstuff.fitalgo.at(fitalgindex).second<<" done. AUC="<<aucprecres.first<<"  average_precision="<<aucprecres.second<<endl;
     SetAucAvgPrec(fitalgindex, aucprecres, glbstuff); 
-    PlotCalibrationCurveQuantilesAndHLtest(sample, glbstuff, fitalgindex, 3);    
+    PlotCalibrationCurveQuantilesAndHLtest(sample, glbstuff, fitalgindex, 4);    
     if(fixedpar.first>0){
       for(auto &par:glbstuff.fitpars)
       if(par.second.second.at(1)!=0)//skip fixed pars
@@ -1160,11 +1160,11 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     cout<<"start optlike_fill"<<endl;
   TString varname=(glbstuff.usedosevar==-1) ? "eud":"dosevol";
   TString name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+ "_"+varname+ "_optlike_All";
-  TH1D *hall=new TH1D(name, varname+" value;"+varname+";Number of patients",100, 0., 100);        
+  TH1D *hall=new TH1D(name, varname+" value;"+varname+";Number of patients",100, 0.,(glbstuff.usedosevar==-1) ? 100:0.5);        
   name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+varname+"_optlike_No";
-  TH1D *hno=new TH1D(name, varname+" value;"+varname+";Number of patients",100, 0., 100);        
-  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"eud_optlike_Yes";
-  TH1D *hyes=new TH1D(name, varname+" value;"+varname+";Number of patients",100, 0., 100);        
+  TH1D *hno=new TH1D(name, varname+" value;"+varname+";Number of patients",100, 0., (glbstuff.usedosevar==-1) ?100:0.5);        
+  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+varname+"_optlike_Yes";
+  TH1D *hyes=new TH1D(name, varname+" value;"+varname+";Number of patients",100, 0., (glbstuff.usedosevar==-1) ?100:0.5);        
   
   gDirectory->cd("ntcp_linear");
   TGraph* gr_eud_vs_tox=new TGraph();
@@ -1182,7 +1182,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     gr2d_eud_vs_tox=new TGraph2D();
   name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_"+varname+"_vs_tox";
   gr_eud_vs_tox->SetName(name);
-  gr_eud_vs_tox->SetTitle("eud vs toxicity optimized NTCP ;"+varname+";toxicity");
+  gr_eud_vs_tox->SetTitle(varname + "vs toxicity optimized NTCP ;"+varname+";toxicity");
   if(glbstuff.twodvh){ //non previsto per volume
     name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_2d_ntcp_linear_"+varname+"_vs_tox";
     gr2d_eud_vs_tox->SetName(name);
@@ -1197,7 +1197,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
       TGraph* gr=new TGraph((dynamic_cast<TH1D*>(gDirectory->Get("../cluster")))->GetBinContent(i+1));
       name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+Form("_ntcp_linear_"+varname+"_vs_tox_withclinicalfactors%i",i);
       gr->SetName(name);
-      gr->SetTitle(Form(varname+" vs toxicity with cluster%i;eud;toxicity",i));
+      gr->SetTitle(Form(varname+" vs toxicity with cluster%i;"+varname+";toxicity",i));
       gr_eudwithtox_vs_tox.push_back(gr);
     }
   }
@@ -1205,15 +1205,16 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   if(debug)
     cout<<"optlike_fill: fill plots"<<endl;
 
-  name=glbstuff.fitalgo.at(fitalgindex).first+glbstuff.fitalgo.at(fitalgindex).second+"_ntcp_linear_score_vs_tox";
   int index=0;
-  vector<int> clsindex(glbstuff.clusternum,0);
   vector<int> gr_eudwithtox_index(gr_eudwithtox_vs_tox.size(),0);
   for(auto &paziente : sample){
     paziente.second.optlike_eud[fitalgindex]= (glbstuff.usedosevar==-1) ?
     ( (glbstuff.alfabdone<0) ? CalculateEudFromScratch(paziente.second,glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0) , glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) : CalculateEudEqdAlreadyDone(paziente.second, glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) ) :
     ((paziente.second.dvhcumnormmap.at(glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0)).size()>glbstuff.fittedpar.at(fitalgindex).at("volume").at(0)) ? 
       paziente.second.dvhcumnormmap.at(glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0)).at(glbstuff.fittedpar.at(fitalgindex).at("volume").at(0) ) : -1);
+
+    if(glbstuff.usedosevar!=-1 && paziente.second.optlike_eud[fitalgindex]==-1)
+      continue;
 
     if(glbstuff.twodvh)
       samrect.at(paziente.second.id).optlike_eud[fitalgindex]= (glbstuff.alfabdone<0) ? CalculateEudFromScratch(samrect.at(paziente.second.id),glbstuff.fittedpar.at(fitalgindex).at("alfabeta").at(0) , glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0)) : CalculateEudEqdAlreadyDone(samrect.at(paziente.second.id), glbstuff.fittedpar.at(fitalgindex).at("nvalue").at(0));    
@@ -1224,9 +1225,9 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
       hno->Fill(paziente.second.optlike_eud.at(fitalgindex));
       
     gr_eud_vs_tox->SetPoint(index, paziente.second.optlike_eud.at(fitalgindex), paziente.second.tgt_acutegitox);
+    gr_eud_vs_pred->SetPoint(index, paziente.second.optlike_eud.at(fitalgindex), paziente.second.optlike_ntcpscore.at(fitalgindex));
     if(glbstuff.twodvh)
       gr2d_eud_vs_tox->SetPoint(index, paziente.second.optlike_eud.at(fitalgindex), samrect.at(paziente.second.id).optlike_eud.at(fitalgindex), paziente.second.tgt_acutegitox);
-    gr_eud_vs_pred->SetPoint(index, paziente.second.optlike_eud.at(fitalgindex), paziente.second.optlike_ntcpscore.at(fitalgindex));
     if(glbstuff.clusternum>0){
       gr_eudwithtox_vs_tox.at(paziente.second.cluster)->SetPoint(gr_eudwithtox_index.at(paziente.second.cluster), paziente.second.optlike_eud.at(fitalgindex), paziente.second.tgt_acutegitox+paziente.second.cluster*0.05);
       gr_eudwithtox_index.at(paziente.second.cluster)++;
@@ -1236,11 +1237,11 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   gr_eud_vs_tox->Sort();
   gr_eud_vs_pred->Sort();
   for(auto &gr:gr_eudwithtox_vs_tox)
-  gr->Sort();
+    gr->Sort();
   
   TF1::EAddToList::kNo;
   TF1* sigmoidbestnoclinical_0=nullptr,*sigmoidbestnoclinical_1=nullptr,*sigmoidbestnoclinical_2=nullptr;
-  sigmoidbestnoclinical_0=new TF1(Form("sigmoidbestnoclinical_0_%i",glbstuff.fitpars.at("beta_zero").first ),"1./(1.+exp(-[0]-[1]*x))", 0, 100);
+  sigmoidbestnoclinical_0=new TF1(Form("sigmoidbestnoclinical_0_%i",glbstuff.fitpars.at("beta_zero").first ),"1./(1.+exp(-[0]-[1]*x))", 0, (glbstuff.usedosevar==-1) ? 100: 1);
   sigmoidbestnoclinical_0->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
   sigmoidbestnoclinical_0->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
   gr_eud_vs_tox->Fit(sigmoidbestnoclinical_0, "BS+","",0,100);
@@ -1260,7 +1261,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   if(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3){
     gr_eudwithtox_vs_tox.at(0)->SetMarkerColor(kGreen+3);
     gr_eudwithtox_vs_tox.at(0)->SetMarkerStyle(20);
-    sigmoidbestnoclinical_1=new TF1("sigmoidbestnoclinical_1",(glbstuff.prop2dose==1) ? "1./(1.+exp(-[0]-([1]+[2])*x))" : "1./(1.+exp(-[0]-[1]*x-[2]))", 0, 100);
+    sigmoidbestnoclinical_1=new TF1("sigmoidbestnoclinical_1",(glbstuff.prop2dose==1) ? "1./(1.+exp(-[0]-([1]+[2])*x))" : "1./(1.+exp(-[0]-[1]*x-[2]))", 0, (glbstuff.usedosevar==-1) ? 100: 1);
     sigmoidbestnoclinical_1->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
     sigmoidbestnoclinical_1->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
     sigmoidbestnoclinical_1->FixParameter(2, glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0));
@@ -1275,7 +1276,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     }
     gr_eudwithtox_vs_tox.at(1)->SetMarkerColor(kBlue);
     gr_eudwithtox_vs_tox.at(1)->SetMarkerStyle(21);
-    sigmoidbestnoclinical_2=new TF1("sigmoidbestnoclinical_2",(glbstuff.prop2dose==1) ? "1./(1.+exp(-[0]-([1]+[2])*x))" :  "1./(1.+exp(-[0]-[1]*x-[2]))", 0, 100);
+    sigmoidbestnoclinical_2=new TF1("sigmoidbestnoclinical_2",(glbstuff.prop2dose==1) ? "1./(1.+exp(-[0]-([1]+[2])*x))" :  "1./(1.+exp(-[0]-[1]*x-[2]))", 0, (glbstuff.usedosevar==-1) ? 100: 1);
     sigmoidbestnoclinical_2->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
     sigmoidbestnoclinical_2->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
     sigmoidbestnoclinical_2->FixParameter(2, (glbstuff.clinicalfactors==2) ? glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_1").at(0) : glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0)*2.);
@@ -1292,19 +1293,25 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     gr_eudwithtox_vs_tox.at(2)->SetMarkerStyle(22);
   }
   gr_eud_vs_tox->SetMarkerStyle(24);
+  gr_eud_vs_tox->SetMarkerColor(kRed);
   gr_eud_vs_tox->SetLineWidth(0);
   gr_eud_vs_tox->SetDrawOption("AP*");
   gr_eud_vs_tox->Write();
-  TCanvas *canvas_ntcps_eud_vs_tox = new TCanvas("canvas_ntcps_eud_vs_tox", "ntcp curves", 800, 600);
+  gr_eud_vs_pred->SetMarkerStyle(24);
+  gr_eud_vs_pred->SetMarkerColor(kBlue);
+  gr_eud_vs_pred->SetLineWidth(0);
+  gr_eud_vs_pred->SetDrawOption("AP");
+  gr_eud_vs_pred->Write();  
+  TCanvas *canvas_ntcps_eud_vs_tox = new TCanvas("canvas_ntcps_"+varname+"_vs_tox", "ntcp curves", 800, 600);
   // gr_eud_vs_tox->GetListOfFunctions()->Clear();
   if(!(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3)){
     gr_eud_vs_tox->Draw("AP*");
-    gr_eud_vs_tox->GetXaxis()->SetLimits(0, (glbstuff.usedosevar==-1) ? 1:40);   // solo asse X
+    gr_eud_vs_tox->GetXaxis()->SetLimits(0, (glbstuff.usedosevar==-1) ? 40:1);   // solo asse X
     gr_eud_vs_tox->SetMinimum(-0.2);
     gr_eud_vs_tox->SetMaximum(1.2);         
   }else{
     gr_eudwithtox_vs_tox.at(0)->Draw("AP");    
-    gr_eudwithtox_vs_tox.at(0)->GetXaxis()->SetLimits(0, (glbstuff.usedosevar==-1) ? 1:40);   // solo asse X
+    gr_eudwithtox_vs_tox.at(0)->GetXaxis()->SetLimits(0, (glbstuff.usedosevar==-1) ? 40:1);   // solo asse X
     gr_eudwithtox_vs_tox.at(0)->SetMinimum(-0.2);
     gr_eudwithtox_vs_tox.at(0)->SetMaximum(1.2);         
 
@@ -1324,13 +1331,6 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   }
   canvas_ntcps_eud_vs_tox->Write();
   delete canvas_ntcps_eud_vs_tox;
-  
-  gr_eud_vs_pred->SetMarkerStyle(10);
-  gr_eud_vs_pred->SetMarkerColor(3);
-  gr_eud_vs_pred->SetLineWidth(2);
-  gr_eud_vs_pred->SetLineColor(3);
-  gr_eud_vs_pred->SetDrawOption("AP*");
-  gr_eud_vs_pred->Write();
 
   //TODO: TO BE FIXED 
   // if(glbstuff.twodvh){
