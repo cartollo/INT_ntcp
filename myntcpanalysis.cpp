@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
   int usedosevar=1; //-1=use eud, >=0 use doses4volume index
   vector<double> doses4volume={40, 45, 50};
   int twodvh=0; //1= use both dvhb and dvha, otherwise only 0 WARNING: if twodvh==1, only clusterfactor 2 and clinicalfactors=2 and alfabdoneshould be set
-  int prop2dose=1; //1=clinical factors are proportional to dose, 0=clinical factors added as additional value to the intercept
+  int prop2dose=0; //1=clinical factors are proportional to dose, 0=clinical factors added as additional value to the intercept
   int datatype=3; //0=not specified, 1=hiroc synthetic, 2=nanopore by michele with all core features, 3=old article clustering with MB class risk, 4=new michele clustering with only common core features
   int clusternum=3; //number of cluster considered, it is related to clinicalfactors, (per ora è 0 o 3) 
   int clinicalfactors=2; //0=no clinical factors, 1=only one value as clinical factor, 2= three values of cluster that actually are normalized

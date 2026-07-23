@@ -161,14 +161,20 @@ TGraphErrors *MakeBandFromMinimizer(TF1 *f, vector<int> &cov_indices, const int 
   
 double functorLikehoodFull(const map<int, PatientData> &sample, const double* par);
 double functorLikehoodAlfabdone(const map<int, PatientData> &sample, const double* par);
-double functorLikehoodFullClinical_0(const map<int, PatientData> &sample, const double* par);
-double functorLikehoodFullClinical_1(const map<int, PatientData> &sample, const double* par);
-double functorLikehoodAlfabdoneClinical_0(const map<int, PatientData> &sample, const double* par);
-double functorLikehoodAlfabdoneClinical_1(const map<int, PatientData> &sample, const double* par);
-double functorLikehoodAlfabdone2DvhClinical_1(const map<int, PatientData> &sample, const map<int, PatientData> &samrect, const double* par);
+double functorLikehoodFullClinical_0Add(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodFullClinical_0Prop(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodFullClinical_1Add(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodFullClinical_1Prop(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodAlfabdoneClinical_0Add(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodAlfabdoneClinical_0Prop(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodAlfabdoneClinical_1Add(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodAlfabdoneClinical_1Prop(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodAlfabdone2DvhClinical_1Add(const map<int, PatientData> &sample, const map<int, PatientData> &samrect, const double* par);
+double functorLikehoodAlfabdone2DvhClinical_1Prop(const map<int, PatientData> &sample, const map<int, PatientData> &samrect, const double* par);
 
 double functorLikehoodDose4Vol(const map<int, PatientData> &sample, const double* par);
-double functorLikehoodDose4VolClinical(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodDose4VolClinicalAdd(const map<int, PatientData> &sample, const double* par);
+double functorLikehoodDose4VolClinicalProp(const map<int, PatientData> &sample, const double* par);
 
 void SetAucAvgPrec(int index, const pair<double,double> aucavgin, globalstuff& glbstuff);
 
@@ -190,55 +196,55 @@ inline double EvalScoreLikehoodDose4Vol(const PatientData& paziente, const doubl
 
 // PROPORTIONAL MODEL
 
-inline double EvalScoreFullClinical_0(const PatientData& paziente, const double *par){return  1./(1.+exp(-par[0]-(par[1] + par[4]*paziente.clinical_factor[0])*CalculateEudFromScratch(paziente, par[3], par[2])));};
-inline double EvalScoreLikehoodFullClinical_0(const PatientData& paziente, const double *par){
-  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreFullClinical_0(paziente, par): EvalScoreFullClinical_0(paziente, par);};
+inline double EvalScoreFullClinical_0Prop(const PatientData& paziente, const double *par){return  1./(1.+exp(-par[0]-(par[1] + par[4]*paziente.clinical_factor[0])*CalculateEudFromScratch(paziente, par[3], par[2])));};
+inline double EvalScoreLikehoodFullClinical_0Prop(const PatientData& paziente, const double *par){
+  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreFullClinical_0Prop(paziente, par): EvalScoreFullClinical_0Prop(paziente, par);};
 
-inline double EvalScoreAlfabdoneClinical_0(const PatientData& paziente, const double *par){return 1./(1.+exp(-par[0]-(par[1] + par[3]*paziente.clinical_factor[0])*CalculateEudEqdAlreadyDone(paziente, par[2])));};
-inline double EvalScoreLikehoodAlfabdoneClinical_0(const PatientData& paziente, const double *par){
-  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdoneClinical_0(paziente, par):EvalScoreAlfabdoneClinical_0(paziente, par) ;};
+inline double EvalScoreAlfabdoneClinical_0Prop(const PatientData& paziente, const double *par){return 1./(1.+exp(-par[0]-(par[1] + par[3]*paziente.clinical_factor[0])*CalculateEudEqdAlreadyDone(paziente, par[2])));};
+inline double EvalScoreLikehoodAlfabdoneClinical_0Prop(const PatientData& paziente, const double *par){
+  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdoneClinical_0Prop(paziente, par):EvalScoreAlfabdoneClinical_0Prop(paziente, par) ;};
 
-inline double EvalScoreFullClinical_1(const PatientData& paziente, const double *par){return  1./(1.+exp(-par[0]-(par[1]+par[4]*paziente.clinical_factor[0]+par[5]*paziente.clinical_factor[1])*CalculateEudFromScratch(paziente, par[3], par[2])));};
-inline double EvalScoreLikehoodFullClinical_1(const PatientData& paziente, const double *par){
-  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreFullClinical_1(paziente, par): EvalScoreFullClinical_1(paziente, par);};
+inline double EvalScoreFullClinical_1Prop(const PatientData& paziente, const double *par){return  1./(1.+exp(-par[0]-(par[1]+par[4]*paziente.clinical_factor[0]+par[5]*paziente.clinical_factor[1])*CalculateEudFromScratch(paziente, par[3], par[2])));};
+inline double EvalScoreLikehoodFullClinical_1Prop(const PatientData& paziente, const double *par){
+  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreFullClinical_1Prop(paziente, par): EvalScoreFullClinical_1Prop(paziente, par);};
 
-inline double EvalScoreAlfabdoneClinical_1(const PatientData& paziente, const double *par){return 1./(1.+exp(-par[0]-(par[1]+par[3]*paziente.clinical_factor[0]+par[4]*paziente.clinical_factor[1])*CalculateEudEqdAlreadyDone(paziente, par[2])));};
-inline double EvalScoreLikehoodAlfabdoneClinical_1(const PatientData& paziente, const double *par){
-  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdoneClinical_1(paziente, par):EvalScoreAlfabdoneClinical_1(paziente, par) ;};
+inline double EvalScoreAlfabdoneClinical_1Prop(const PatientData& paziente, const double *par){return 1./(1.+exp(-par[0]-(par[1]+par[3]*paziente.clinical_factor[0]+par[4]*paziente.clinical_factor[1])*CalculateEudEqdAlreadyDone(paziente, par[2])));};
+inline double EvalScoreLikehoodAlfabdoneClinical_1Prop(const PatientData& paziente, const double *par){
+  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdoneClinical_1Prop(paziente, par):EvalScoreAlfabdoneClinical_1Prop(paziente, par) ;};
   
-inline double EvalScoreAlfabdone2DvhClinical_1(const PatientData& pazienta, const PatientData& pazientb, const double *par){return 1./(1.+exp(-par[0]-(par[1]+par[4]*pazienta.clinical_factor[0]+par[5]*pazienta.clinical_factor[1])*CalculateEudEqdAlreadyDone(pazienta, par[2])-(par[3]+par[4]*pazienta.clinical_factor[0]+par[5]*pazienta.clinical_factor[1])*CalculateEudEqdAlreadyDone(pazientb, par[2])));};
-inline double EvalScoreLikehoodAlfabdone2DvhClinical_1(const PatientData& pazienta, const PatientData& pazientb, const double *par){
-  return (pazienta.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdone2DvhClinical_1(pazienta, pazientb, par):EvalScoreAlfabdone2DvhClinical_1(pazienta, pazientb, par) ;};
+inline double EvalScoreAlfabdone2DvhClinical_1Prop(const PatientData& pazienta, const PatientData& pazientb, const double *par){return 1./(1.+exp(-par[0]-(par[1]+par[4]*pazienta.clinical_factor[0]+par[5]*pazienta.clinical_factor[1])*CalculateEudEqdAlreadyDone(pazienta, par[2])-(par[3]+par[4]*pazienta.clinical_factor[0]+par[5]*pazienta.clinical_factor[1])*CalculateEudEqdAlreadyDone(pazientb, par[2])));};
+inline double EvalScoreLikehoodAlfabdone2DvhClinical_1Prop(const PatientData& pazienta, const PatientData& pazientb, const double *par){
+  return (pazienta.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdone2DvhClinical_1Prop(pazienta, pazientb, par):EvalScoreAlfabdone2DvhClinical_1Prop(pazienta, pazientb, par) ;};
 
-inline double EvalScoreDose4Volclinical(const PatientData& paziente, const double *par){ return 1./(1.+exp(-par[0]-(par[1]+par[4]*paziente.clinical_factor[0]+par[5]*paziente.clinical_factor[1])*paziente.dvhcumnormmap.at(par[2]).at(par[3])));};
-inline double EvalScoreLikehoodDose4VolClinical(const PatientData& paziente, const double *par){
-  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreDose4Volclinical(paziente, par): EvalScoreDose4Volclinical(paziente, par);};
+inline double EvalScoreDose4VolClinicalProp(const PatientData& paziente, const double *par){ return 1./(1.+exp(-par[0]-(par[1]+par[4]*paziente.clinical_factor[0]+par[5]*paziente.clinical_factor[1])*paziente.dvhcumnormmap.at(par[2]).at(par[3])));};
+inline double EvalScoreLikehoodDose4VolClinicalProp(const PatientData& paziente, const double *par){
+  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreDose4VolClinicalProp(paziente, par): EvalScoreDose4VolClinicalProp(paziente, par);};
+ 
 
+// //ADDITIVE MODEL
+inline double EvalScoreFullClinical_0Add(const PatientData& paziente, const double *par){return  1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente, par[3], par[2])-par[4]*paziente.clinical_factor[0]));};
+inline double EvalScoreLikehoodFullClinical_0Add(const PatientData& paziente, const double *par){
+  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreFullClinical_0Add(paziente, par): EvalScoreFullClinical_0Add(paziente, par);};
 
-//ADDITIVE MODEL
-// inline double EvalScoreFullClinical_0(const PatientData& paziente, const double *par){return  1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente, par[3], par[2])-par[4]*paziente.clinical_factor[0]));};
-// inline double EvalScoreLikehoodFullClinical_0(const PatientData& paziente, const double *par){
-//   return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreFullClinical_0(paziente, par): EvalScoreFullClinical_0(paziente, par);};
+inline double EvalScoreAlfabdoneClinical_0Add(const PatientData& paziente, const double *par){return 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente, par[2])-par[3]*paziente.clinical_factor[0]));};
+inline double EvalScoreLikehoodAlfabdoneClinical_0Add(const PatientData& paziente, const double *par){
+  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdoneClinical_0Add(paziente, par):EvalScoreAlfabdoneClinical_0Add(paziente, par) ;};
 
-// inline double EvalScoreAlfabdoneClinical_0(const PatientData& paziente, const double *par){return 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente, par[2])-par[3]*paziente.clinical_factor[0]));};
-// inline double EvalScoreLikehoodAlfabdoneClinical_0(const PatientData& paziente, const double *par){
-//   return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdoneClinical_0(paziente, par):EvalScoreAlfabdoneClinical_0(paziente, par) ;};
+inline double EvalScoreFullClinical_1Add(const PatientData& paziente, const double *par){return  1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente, par[3], par[2])-par[4]*paziente.clinical_factor[0]-par[5]*paziente.clinical_factor[1]));};
+inline double EvalScoreLikehoodFullClinical_1Add(const PatientData& paziente, const double *par){
+  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreFullClinical_1Add(paziente, par): EvalScoreFullClinical_1Add(paziente, par);};
 
-// inline double EvalScoreFullClinical_1(const PatientData& paziente, const double *par){return  1./(1.+exp(-par[0]-par[1]*CalculateEudFromScratch(paziente, par[3], par[2])-par[4]*paziente.clinical_factor[0]-par[5]*paziente.clinical_factor[1]));};
-// inline double EvalScoreLikehoodFullClinical_1(const PatientData& paziente, const double *par){
-//   return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreFullClinical_1(paziente, par): EvalScoreFullClinical_1(paziente, par);};
+inline double EvalScoreAlfabdoneClinical_1Add(const PatientData& paziente, const double *par){return 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente, par[2])-par[3]*paziente.clinical_factor[0]-par[4]*paziente.clinical_factor[1]));};
+inline double EvalScoreLikehoodAlfabdoneClinical_1Add(const PatientData& paziente, const double *par){
+  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdoneClinical_1Add(paziente, par):EvalScoreAlfabdoneClinical_1Add(paziente, par) ;};
 
-// inline double EvalScoreAlfabdoneClinical_1(const PatientData& paziente, const double *par){return 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(paziente, par[2])-par[3]*paziente.clinical_factor[0]-par[4]*paziente.clinical_factor[1]));};
-// inline double EvalScoreLikehoodAlfabdoneClinical_1(const PatientData& paziente, const double *par){
-//   return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdoneClinical_1(paziente, par):EvalScoreAlfabdoneClinical_1(paziente, par) ;};
+inline double EvalScoreAlfabdone2DvhClinical_1Add(const PatientData& pazienta, const PatientData& pazientb, const double *par){return 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(pazienta, par[2])-par[3]*CalculateEudEqdAlreadyDone(pazientb, par[2])-par[4]*pazienta.clinical_factor[0]-par[5]*pazienta.clinical_factor[1]));};
+inline double EvalScoreLikehoodAlfabdone2DvhClinical_1Add(const PatientData& pazienta, const PatientData& pazientb, const double *par){
+  return (pazienta.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdone2DvhClinical_1Add(pazienta, pazientb, par):EvalScoreAlfabdone2DvhClinical_1Add(pazienta, pazientb, par) ;};
 
-// inline double EvalScoreAlfabdone2DvhClinical_1(const PatientData& pazienta, const PatientData& pazientb, const double *par){return 1./(1.+exp(-par[0]-par[1]*CalculateEudEqdAlreadyDone(pazienta, par[2])-par[3]*CalculateEudEqdAlreadyDone(pazientb, par[2])-par[4]*pazienta.clinical_factor[0]-par[5]*pazienta.clinical_factor[1]));};
-// inline double EvalScoreLikehoodAlfabdone2DvhClinical_1(const PatientData& pazienta, const PatientData& pazientb, const double *par){
-//   return (pazienta.tgt_acutegitox<0.5) ? 1.- EvalScoreAlfabdone2DvhClinical_1(pazienta, pazientb, par):EvalScoreAlfabdone2DvhClinical_1(pazienta, pazientb, par) ;};
-
-// inline double EvalScoreDose4Volclinical(const PatientData& paziente, const double *par){ return 1./(1.+exp(-par[0]-par[1]*paziente.dvhcumnormmap.at(par[2]).at(par[3])-par[4]*paziente.clinical_factor[0]-par[5]*paziente.clinical_factor[1]));};
-// inline double EvalScoreLikehoodDose4VolClinical(const PatientData& paziente, const double *par){
-//   return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreDose4Volclinical(paziente, par): EvalScoreDose4Volclinical(paziente, par);};
+inline double EvalScoreDose4VolclinicalAdd(const PatientData& paziente, const double *par){ return 1./(1.+exp(-par[0]-par[1]*paziente.dvhcumnormmap.at(par[2]).at(par[3])-par[4]*paziente.clinical_factor[0]-par[5]*paziente.clinical_factor[1]));};
+inline double EvalScoreLikehoodDose4VolClinicalAdd(const PatientData& paziente, const double *par){
+  return (paziente.tgt_acutegitox<0.5) ? 1.- EvalScoreDose4VolclinicalAdd(paziente, par): EvalScoreDose4VolclinicalAdd(paziente, par);};
 
 
 
@@ -247,22 +253,32 @@ inline double EvalScoreLikehoodDose4VolClinical(const PatientData& paziente, con
 
 inline double EvalScoreSelector(const globalstuff& glbstuff, const PatientData& paziente, const double *par){
   if(glbstuff.usedosevar>=0){ 
-    return  (paziente.dvhcumnormmap.at(par[2]).size()<=par[3]) ? -1 : ((glbstuff.clinicalfactors==0) ? EvalScoreDose4Vol(paziente, par) : EvalScoreDose4Volclinical(paziente, par));
-  }else if(glbstuff.clinicalfactors==0){
-    return (glbstuff.alfabdone < 0) ?  EvalScoreFull(paziente, par) : EvalScoreAlfabdone(paziente, par);
-  }else if(glbstuff.clinicalfactors==1){
-    return (glbstuff.alfabdone < 0) ? EvalScoreFullClinical_0(paziente, par) : EvalScoreAlfabdoneClinical_0(paziente, par);
-  }else if(glbstuff.clinicalfactors==2 && glbstuff.twodvh==0){
-    return (glbstuff.alfabdone < 0) ? EvalScoreFullClinical_1(paziente, par) : EvalScoreAlfabdoneClinical_1(paziente, par);
-  };
+    return  (paziente.dvhcumnormmap.at(par[2]).size()<=par[3]) ? -1 : ((glbstuff.clinicalfactors==0) ? EvalScoreDose4Vol(paziente, par) : (glbstuff.prop2dose==0 ? EvalScoreDose4VolclinicalAdd(paziente, par) : EvalScoreDose4VolClinicalProp(paziente, par)));
+  }
+  switch(glbstuff.clinicalfactors){
+    case 0:
+        return (glbstuff.alfabdone < 0)
+            ? EvalScoreFull(paziente, par)
+            : EvalScoreAlfabdone(paziente, par);
+    case 1:
+        return (glbstuff.alfabdone < 0) ? ( glbstuff.prop2dose==0 ? EvalScoreFullClinical_0Add(paziente, par):EvalScoreFullClinical_0Prop(paziente, par) ): (glbstuff.prop2dose==0 ? EvalScoreAlfabdoneClinical_0Add(paziente, par) : EvalScoreAlfabdoneClinical_0Prop(paziente, par));
+    case 2:
+        if(glbstuff.twodvh == 0){
+            return (glbstuff.alfabdone < 0) ? ( glbstuff.prop2dose==0 ? EvalScoreFullClinical_1Add(paziente, par) : EvalScoreFullClinical_1Prop(paziente, par)): (glbstuff.prop2dose==0 ? EvalScoreAlfabdoneClinical_1Add(paziente, par):EvalScoreAlfabdoneClinical_1Prop(paziente, par));
+        }
+        break;
+  }
+  throw std::runtime_error("EvalScoreSelector: configurazione non supportata");
+
+  return -1;
 }
 
 inline double functorSelector(const globalstuff& glbstuff, const map<int, PatientData> &sample, const double* par){
   if(glbstuff.clinicalfactors==0){
     return (glbstuff.alfabdone < 0) ?  functorLikehoodFull(sample, par) : functorLikehoodAlfabdone(sample, par);
   }else if(glbstuff.clinicalfactors==1){
-    return (glbstuff.alfabdone < 0) ? functorLikehoodFullClinical_0(sample, par) : functorLikehoodAlfabdoneClinical_0(sample, par);
+    return (glbstuff.alfabdone < 0) ? (glbstuff.prop2dose==0 ? functorLikehoodFullClinical_0Add(sample, par): functorLikehoodFullClinical_0Prop(sample, par) ) : (glbstuff.prop2dose==0 ? functorLikehoodAlfabdoneClinical_0Add(sample, par): functorLikehoodAlfabdoneClinical_0Prop(sample, par));
   }else if(glbstuff.clinicalfactors==2){
-    return (glbstuff.alfabdone < 0) ? functorLikehoodFullClinical_1(sample, par) : functorLikehoodAlfabdoneClinical_1(sample, par);
+    return (glbstuff.alfabdone < 0) ? ( glbstuff.prop2dose==0 ?  functorLikehoodFullClinical_1Add(sample, par) : functorLikehoodFullClinical_1Prop(sample, par)) : (glbstuff.prop2dose==0 ? functorLikehoodAlfabdoneClinical_1Add(sample, par):functorLikehoodAlfabdoneClinical_1Prop(sample, par));
   }
 };
