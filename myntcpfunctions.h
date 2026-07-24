@@ -31,6 +31,7 @@
 #include <TFitResultPtr.h>
 #include <TFitResult.h>
 #include <TVectorD.h>
+#include <TRandom3.h>
 #include <TGraphErrors.h>
 #include <TLine.h>
 #include "Math/Minimizer.h"
@@ -117,6 +118,8 @@ struct globalstuff{
   int powptype;
   int twodvh;
   int prop2dose;
+  double btratio;
+  int seed;
 
   //fitted stuff
   vector<pair<string,string>> fitalgo; //algorithm used by tminimizer for fitting
@@ -152,11 +155,12 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
 pair<double,double> optlike_aucROC(const map<int, PatientData> &sample,const globalstuff &glbstuff, const int fitalgindex);
 void computeDCT(const vector<double>& x, vector<double>& c);
 void DrawLikeHood(std::map<int, PatientData>& sample, const globalstuff& glbstuff);
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum, int powptype, int twodvh, int prop2dose, const vector<double> &doses4volume, int usedosevar);
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum, int powptype, int twodvh, int prop2dose, const vector<double> &doses4volume, int usedosevar, double btratio, int seed);
 void ChooseBestFit(globalstuff &glbstuff);
 void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sample, const globalstuff& glbstuff,int fitalgindex, int nbins);
 int SetClusterAsClinicalFactor(map<int, PatientData> &sample, const globalstuff &glbstuff);
 TGraphErrors *MakeBandFromMinimizer(TF1 *f, vector<int> &cov_indices, const int npar, const vector<double> &cov, const globalstuff &glbstuff, int fitalgindex, int npoints, double clscale);
+void Subsample(map<int, PatientData> &sample, globalstuff &glbstuff, int seed);
 
   
 double functorLikehoodFull(const map<int, PatientData> &sample, const double* par);

@@ -1894,7 +1894,7 @@ int SetClusterAsClinicalFactor(map<int, PatientData> &sample, const globalstuff 
   return 0;
 }
 
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum, int powptype, int twodvh, int prop2dose, const vector<double> &doses4volume, int usedosevar){
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum, int powptype, int twodvh, int prop2dose, const vector<double> &doses4volume, int usedosevar, double btratio, int seed){
   glbstuff.alfabdone=alfabdone;
   glbstuff.eqd2binwidth=eqd2binwidth;
   glbstuff.nvalue4eud=nvalue4eud;
@@ -1910,6 +1910,55 @@ void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidt
   glbstuff.prop2dose=prop2dose;
   glbstuff.doses4volume=doses4volume;
   glbstuff.usedosevar=usedosevar;
+  glbstuff.btratio=btratio;
+  glbstuff.seed=seed;
+  return;
+}
+
+void Subsample(map<int, PatientData> &sample, globalstuff &glbstuff , int seed){
+
+  if(debug)
+    cout<<"Subsample: start"<<endl;
+
+  map<pair<int,int>, vector<int>> pattoxclus;
+  for(const auto &paziente: sample)
+    pattoxclus[{paziente.second.cluster, paziente.second.tgt_acutegitox}].push_back(paziente.first);
+
+  if(debug>-5){
+    cout << "Subsample initial composition:"<<endl;
+    for (const auto& [group, ids] : pattoxclus) {
+      cout << "Cluster = " << group.first<< ", Toxicity = " << group.second<< " -> N = " << ids.size() << " : ";
+      for (int id : ids)
+        cout<<id<<" ";
+      cout<<endl;
+    }
+  }
+
+
+    TRandom3 random(seed);
+  for (auto& [group, ids] : pattoxclus) {
+    int nkeep = std::max(1,static_cast<int>(std::round(glbstuff.btratio * ids.size())));
+    for (int i = ids.size() - 1; i > 0; --i)
+        std::swap(ids[i], ids[random.Integer(i + 1)]);
+    for (size_t i = nkeep; i < ids.size(); ++i)
+        sample.erase(ids[i]);
+   ids.resize(nkeep);        
+  }  
+
+  if(debug)
+    cout<<"Subsample: done"<<endl;
+
+  if(debug>-5){
+    cout << "Subsample final composition:"<<endl;
+    for (const auto& [group, ids] : pattoxclus) {
+      cout << "Cluster = " << group.first<< ", Toxicity = " << group.second<< " -> N = " << ids.size() << " : ";
+      for (int id : ids)
+        cout<<id<<" ";
+      cout<<endl;
+    }
+  }
+
+
   return;
 }
 

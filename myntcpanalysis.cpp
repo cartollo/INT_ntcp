@@ -18,6 +18,8 @@ int main(int argc, char* argv[]) {
   TString tgtname("acute GI toxicity");
   int usedosevar=1; //-1=use eud, >=0 use doses4volume index
   vector<double> doses4volume={40, 45, 50};
+  double btratio=0; //use bootstrap, this number represent the ratio of patient to be considered, if 0: bootstrap disabled
+  int seed=0; //0=random seed
   int twodvh=0; //1= use both dvhb and dvha, otherwise only 0 WARNING: if twodvh==1, only clusterfactor 2 and clinicalfactors=2 and alfabdoneshould be set
   int prop2dose=0; //1=clinical factors are proportional to dose, 0=clinical factors added as additional value to the intercept
   int datatype=3; //0=not specified, 1=hiroc synthetic, 2=nanopore by michele with all core features, 3=old article clustering with MB class risk, 4=new michele clustering with only common core features
@@ -84,6 +86,10 @@ if(twodvh>0 && (alfabdone<0 || dvhbfilename.Length()<4 || (datatype!=2 && dataty
   cout<<"ERROR twodvh="<<twodvh<<"  alfabdone="<<alfabdone<<"  dvhbfilename="<<dvhbfilename.Data()<<" datatype="<<datatype<<endl<<"Check the parameters, recompile and relauch, asino"<<endl;
   return 1;  
 }
+if(btratio<0 || btratio>=1){
+  cout<<"btratio is nosense: btratio="<<btratio<<endl;
+  return 1;
+}
 
   for (int i = 0; i < argc; i++) {
     if (strcmp(argv[i], "-d") == 0)         debug = atoi(argv[++i]);
@@ -93,6 +99,7 @@ if(twodvh>0 && (alfabdone<0 || dvhbfilename.Length()<4 || (datatype!=2 && dataty
     if (strcmp(argv[i], "-out") == 0)       outrootname = TString(argv[++i]);
     if (strcmp(argv[i], "-txt") == 0)       txtappended = TString(argv[++i]);
     if (strcmp(argv[i], "-tgt") == 0)       tgtname = TString(argv[++i]);
+    if (strcmp(argv[i], "-seed") == 0)      seed = atoi(argv[++i]);
   }
 
   if(txtappended.Length()>0){
@@ -116,7 +123,7 @@ if(twodvh>0 && (alfabdone<0 || dvhbfilename.Length()<4 || (datatype!=2 && dataty
   }
 
   globalstuff glbstuff; 
-  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, datatype, clinicalfactors, clusternum, powptype, twodvh, prop2dose, doses4volume, usedosevar);
+  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, datatype, clinicalfactors, clusternum, powptype, twodvh, prop2dose, doses4volume, usedosevar, btratio, seed);
 
   map<int, PatientData> sample, samrect;
   
@@ -137,6 +144,9 @@ if(twodvh>0 && (alfabdone<0 || dvhbfilename.Length()<4 || (datatype!=2 && dataty
         return 1;
     }
   }
+
+  if(btratio)
+    Subsample(sample, glbstuff, seed);
 
   if(clinicalfactors>0)
     SetClusterAsClinicalFactor(sample, glbstuff);
