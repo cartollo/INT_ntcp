@@ -100,6 +100,7 @@ if(btratio<0 || btratio>=1){
     if (strcmp(argv[i], "-out") == 0)       outrootname = TString(argv[++i]);
     if (strcmp(argv[i], "-txt") == 0)       txtappended = TString(argv[++i]);
     if (strcmp(argv[i], "-tgt") == 0)       tgtname = TString(argv[++i]);
+    if (strcmp(argv[i], "-btfilename") == 0)       btfilename = TString(argv[++i]);
     if (strcmp(argv[i], "-seed") == 0)      seed = atoi(argv[++i]);
   }
 
