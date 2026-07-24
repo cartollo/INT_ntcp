@@ -18,7 +18,8 @@ int main(int argc, char* argv[]) {
   TString tgtname("acute GI toxicity");
   int usedosevar=1; //-1=use eud, >=0 use doses4volume index
   vector<double> doses4volume={40, 45, 50};
-  double btratio=0; //use bootstrap, this number represent the ratio of patient to be considered, if 0: bootstrap disabled
+  double btratio=0.8; //use bootstrap, this number represent the ratio of patient to be considered, if 0: bootstrap disabled
+  TString btfilename("bootstrapout.txt");
   int seed=0; //0=random seed
   int twodvh=0; //1= use both dvhb and dvha, otherwise only 0 WARNING: if twodvh==1, only clusterfactor 2 and clinicalfactors=2 and alfabdoneshould be set
   int prop2dose=0; //1=clinical factors are proportional to dose, 0=clinical factors added as additional value to the intercept
@@ -123,7 +124,7 @@ if(btratio<0 || btratio>=1){
   }
 
   globalstuff glbstuff; 
-  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, datatype, clinicalfactors, clusternum, powptype, twodvh, prop2dose, doses4volume, usedosevar, btratio, seed);
+  fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, datatype, clinicalfactors, clusternum, powptype, twodvh, prop2dose, doses4volume, usedosevar, btratio, seed, dvhafilename, metafilename);
 
   map<int, PatientData> sample, samrect;
   
@@ -145,8 +146,10 @@ if(btratio<0 || btratio>=1){
     }
   }
 
-  if(btratio)
+  if(btratio){
     Subsample(sample, glbstuff, seed);
+    Btsetoutputfile(glbstuff,btfilename);
+  }
 
   if(clinicalfactors>0)
     SetClusterAsClinicalFactor(sample, glbstuff);

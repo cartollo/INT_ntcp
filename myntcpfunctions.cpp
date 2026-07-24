@@ -890,6 +890,8 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
           std::cout << i << " " << j << " " << fpMinimizer->CovMatrix(i,j)/sqrt(fpMinimizer->CovMatrix(i,i)*fpMinimizer->CovMatrix(j,j)) << std::endl;  
     }
     cout<<"status="<<status<<" CovMatrixStatus="<<fpMinimizer->CovMatrixStatus()<<"  Edm="<<fpMinimizer->Edm()<<"  degree of freedom:"<<fpMinimizer->NFree()<<"  fpMinimizer->NDim()="<<fpMinimizer->NDim()<<"   -loglikehood minimum value:"<<fpMinimizer->MinValue()<<"  AIC="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()<<"  AICc_reduced="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()+2*fpMinimizer->NFree()*(fpMinimizer->NFree()+1)/(sample.size()-fpMinimizer->NFree()-1)<<"  deviance/dof="<<2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())<<endl;
+    if(glbstuff.btratio>0)
+      glbstuff.btoutfile<<"status= "<<status<<" CovMatrixStatus= "<<fpMinimizer->CovMatrixStatus()<<" loglikehood_min_value= "<<fpMinimizer->MinValue()<<endl;
 
     for(int i=0;i<fpMinimizer->NDim();i++){
       if(glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].size()==0){
@@ -904,6 +906,8 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
         glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].at(1)=fpMinimizer->Errors()[i];
       }
       cout<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<endl;
+      if(glbstuff.btratio>0)
+        glbstuff.btoutfile<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<endl;
     }
     glbstuff.fitresults[fitalgindex].insert(glbstuff.fitresults[fitalgindex].end(), {(double)status, (double)fpMinimizer->CovMatrixStatus(), fpMinimizer->Edm(), (double)fpMinimizer->NFree(), fpMinimizer->MinValue(), 2*fpMinimizer->NFree()+2*fpMinimizer->MinValue(), 2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())});    
   }else{ //fixed par just for the calculation of Likehood Ratio Test (LRT) TODO: LRT case for dose4volume case need to be done
@@ -1894,7 +1898,7 @@ int SetClusterAsClinicalFactor(map<int, PatientData> &sample, const globalstuff 
   return 0;
 }
 
-void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum, int powptype, int twodvh, int prop2dose, const vector<double> &doses4volume, int usedosevar, double btratio, int seed){
+void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidth, const vector<double> &nvalue4eud, const vector<double> &alfabeta, const map<string, pair<int,vector<double>>> &fitpars,   const vector<pair<string,string>> &fitalgo, int datatype, int clinicalfactors, int clusternum, int powptype, int twodvh, int prop2dose, const vector<double> &doses4volume, int usedosevar, double btratio, int seed, TString dvhafilename, TString metafilename){
   glbstuff.alfabdone=alfabdone;
   glbstuff.eqd2binwidth=eqd2binwidth;
   glbstuff.nvalue4eud=nvalue4eud;
@@ -1912,6 +1916,8 @@ void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidt
   glbstuff.usedosevar=usedosevar;
   glbstuff.btratio=btratio;
   glbstuff.seed=seed;
+  glbstuff.dvhafilename=dvhafilename;
+  glbstuff.metafilename=metafilename;
   return;
 }
 
@@ -1924,7 +1930,7 @@ void Subsample(map<int, PatientData> &sample, globalstuff &glbstuff , int seed){
   for(const auto &paziente: sample)
     pattoxclus[{paziente.second.cluster, paziente.second.tgt_acutegitox}].push_back(paziente.first);
 
-  if(debug>-5){
+  if(debug>5){
     cout << "Subsample initial composition:"<<endl;
     for (const auto& [group, ids] : pattoxclus) {
       cout << "Cluster = " << group.first<< ", Toxicity = " << group.second<< " -> N = " << ids.size() << " : ";
@@ -1934,8 +1940,7 @@ void Subsample(map<int, PatientData> &sample, globalstuff &glbstuff , int seed){
     }
   }
 
-
-    TRandom3 random(seed);
+  TRandom3 random(seed);
   for (auto& [group, ids] : pattoxclus) {
     int nkeep = std::max(1,static_cast<int>(std::round(glbstuff.btratio * ids.size())));
     for (int i = ids.size() - 1; i > 0; --i)
@@ -1948,7 +1953,7 @@ void Subsample(map<int, PatientData> &sample, globalstuff &glbstuff , int seed){
   if(debug)
     cout<<"Subsample: done"<<endl;
 
-  if(debug>-5){
+  if(debug>5){
     cout << "Subsample final composition:"<<endl;
     for (const auto& [group, ids] : pattoxclus) {
       cout << "Cluster = " << group.first<< ", Toxicity = " << group.second<< " -> N = " << ids.size() << " : ";
@@ -1958,6 +1963,27 @@ void Subsample(map<int, PatientData> &sample, globalstuff &glbstuff , int seed){
     }
   }
 
+  return;
+}
+
+void  Btsetoutputfile(globalstuff &glbstuff, TString btfilename){
+
+  if(debug)
+  cout<<"Btsetoutputfile: start, btfilename="<<btfilename<<endl;
+  
+  bool alreadyexist=std::filesystem::exists(btfilename.Data());
+  glbstuff.btoutfile.open(btfilename.Data(), std::ios::app);
+  if(!alreadyexist){
+    glbstuff.btoutfile<<"bootstrap_ouput_dvhafilename:"<<glbstuff.dvhafilename.Data()<<"_metafilename:"<<glbstuff.metafilename.Data()<<"_powptype:"<<glbstuff.powptype<<"_usedosevar:"<<glbstuff.usedosevar;
+    if(glbstuff.seldosevol!=-1)
+      glbstuff.btoutfile<<"_selectededoses4volume:"<<glbstuff.doses4volume.at(glbstuff.usedosevar);
+    glbstuff.btoutfile<<"_btratio:"<<glbstuff.btratio<<"_twodvh:"<<glbstuff.twodvh<<"_prop2dose:"<<glbstuff.prop2dose<<"_datatype:"<<glbstuff.datatype<<"_clusternum:"<<glbstuff.clusternum<<"_clinicalfactors:"<<glbstuff.clinicalfactors<<"_alfabdone:"<<glbstuff.alfabdone<<"_eqd2binwidth:"<<glbstuff.eqd2binwidth<<endl;
+  }
+
+  glbstuff.btoutfile<<"seed="<<glbstuff.seed<<endl;
+
+  if(debug)
+    cout<<"Btsetoutputfile done="<<endl;
 
   return;
 }
