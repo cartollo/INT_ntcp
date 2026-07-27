@@ -1340,6 +1340,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     tgrer_sigmoidbestnoclinical_0=MakeBandFromMinimizer(sigmoidbestnoclinical_0, covindexxmakeband, 2, cov, glbstuff,fitalgindex, 200, 1);
     tgrer_sigmoidbestnoclinical_0->SetLineColor(kGreen+3);
     tgrer_sigmoidbestnoclinical_0->SetMarkerColor(kGreen+3);
+    tgrer_sigmoidbestnoclinical_0->SetName("tgrer_sigmoidbestnoclinical_0");
   }
 
   if(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3){
@@ -1356,6 +1357,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
       tgrer_sigmoidbestclinical_1=MakeBandFromMinimizer(sigmoidbestnoclinical_1, covindexxmakeband, 3, cov, glbstuff,fitalgindex, 210, 1);
       tgrer_sigmoidbestclinical_1->SetLineColor(kBlue);
       tgrer_sigmoidbestclinical_1->SetMarkerColor(kBlue);
+      tgrer_sigmoidbestclinical_1->SetName("tgrer_sigmoidbestclinical_1");
       // tgrer_sigmoidbestclinical_1->Draw("LCE same");
     }
     gr_eudwithtox_vs_tox.at(1)->SetMarkerColor(kBlue);
@@ -1371,6 +1373,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
       tgrer_sigmoidbestclinical_2=MakeBandFromMinimizer(sigmoidbestnoclinical_2, covindexxmakeband, 3, cov, glbstuff,fitalgindex, 220, 1);
       tgrer_sigmoidbestclinical_2->SetLineColor(kRed);
       tgrer_sigmoidbestclinical_2->SetMarkerColor(kRed);
+      tgrer_sigmoidbestclinical_2->SetName("tgrer_sigmoidbestclinical_2");
       // tgrer_sigmoidbestclinical_2->Draw("LCE same");
     }
     gr_eudwithtox_vs_tox.at(2)->SetMarkerColor(kRed);
@@ -1402,12 +1405,15 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   }
   sigmoidbestnoclinical_0->SetLineColor(kGreen+3);
   tgrer_sigmoidbestnoclinical_0->Draw("E same");
+  tgrer_sigmoidbestnoclinical_0->Write();
   sigmoidbestnoclinical_0->Draw("same");
   if(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3){
     for(int i=1;i<glbstuff.clusternum;i++)
       gr_eudwithtox_vs_tox.at(i)->Draw("P same");
     tgrer_sigmoidbestclinical_1->Draw("E same");
+    tgrer_sigmoidbestclinical_1->Write();
     tgrer_sigmoidbestclinical_2->Draw("E same");
+    tgrer_sigmoidbestclinical_2->Write();
     sigmoidbestnoclinical_1->SetLineColor(kBlue);
     sigmoidbestnoclinical_1->Draw("same");
     sigmoidbestnoclinical_2->SetLineColor(kRed);
@@ -1454,11 +1460,12 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
 
   if(glbstuff.clinicalfactors>0){ 
     for(int i=0;i<gr_eudwithtox_vs_tox.size();i++){
-      TF1* sigmoidfromlikehood=new TF1("sigmoidfromlikehood",  (glbstuff.prop2dose==1) ? "1./(1.+exp(-[0]-([1]+[2])*x))" : "1./(1.+exp(-[0]-[1]*x-[2]))", 0, 100);
+      TF1* sigmoidfromlikehood=new TF1(Form("sigmoidfromlikehood_%i",i),  (glbstuff.prop2dose==1) ? "1./(1.+exp(-[0]-([1]+[2])*x))" : "1./(1.+exp(-[0]-[1]*x-[2]))", 0, (glbstuff.usedosevar==-1) ? 100:0.5);
       sigmoidfromlikehood->FixParameter(0, glbstuff.fittedpar.at(fitalgindex).at("beta_zero").at(0));
       sigmoidfromlikehood->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
       sigmoidfromlikehood->FixParameter(2, (glbstuff.clinicalfactors==1) ? glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0)*i   :    
         (  (i==2) ? glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_1").at(0) :  (  (i==1) ? glbstuff.fittedpar.at(fitalgindex).at("clinical_factor_0").at(0) : 0   ) )  );
+      sigmoidfromlikehood->Write();
       gr_eudwithtox_vs_tox.at(i)->Fit(sigmoidfromlikehood,"BS+","",0,100);
       gr_eudwithtox_vs_tox.at(i)->SetMarkerStyle(20);
       gr_eudwithtox_vs_tox.at(i)->SetMarkerColor(2);

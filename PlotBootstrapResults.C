@@ -44,6 +44,40 @@ string Trim(const string &text){
   return text.substr(first, last - first + 1);
 }
 
+bool ExtractProp2Dose(const std::string& line, int& prop2dose) {
+    static const std::regex pattern(R"(_prop2dose:([01])_)");
+    std::smatch match;
+    if (!std::regex_search(line, match, pattern))
+        return false;
+    prop2dose = std::stoi(match[1].str());
+    cout<<"found prop2dose="<<prop2dose<<endl;
+    return true;
+}
+
+void ExtractUsedDoseVar(const std::string& line, int& useddosevar) {
+    static const std::regex pattern(R"(_selectededoses4volume:([0-9]+)_)");
+    std::smatch match;
+    if (!std::regex_search(line, match, pattern)){
+      useddosevar=-1;
+      cout<<"_selectededoses4volume not found, useddosevar set to eud, useddosevar="<<useddosevar<<endl;
+      return;
+    }
+    useddosevar = std::stoi(match[1].str());
+    cout<<"found _selectededoses4volume; useddosevar="<<useddosevar<<endl;
+    return ;
+}
+
+bool ExtractClinicalFactors(const std::string& line, int& clinicalfactors) {
+    static const std::regex pattern(R"(_clinicalfactors:([0-9]+)_)");
+    std::smatch match;
+    if (!std::regex_search(line, match, pattern)){
+      return false;
+    }
+    clinicalfactors = std::stoi(match[1].str());
+    cout<<"found clinicalfactors="<<clinicalfactors<<endl;
+    return true;
+}
+
 bool ParseSeed(const string &line, int &seed){
   static const regex pattern(R"(^\s*seed\s*=\s*(-?\d+)\s*$)");
   smatch match;
@@ -76,7 +110,7 @@ bool ParseParameterLine(const string &line,string &parameter_name,double &value,
   return true;
 }
 
-bool ReadBootstrapFile(const string &filename,string &reference_header,bool &reference_header_initialized,vector<BootstrapResult> &results, vector<string> &reference_parameter_names,bool &reference_parameters_initialized){
+bool ReadBootstrapFile(const string &filename,string &reference_header,bool &reference_header_initialized,vector<BootstrapResult> &results, vector<string> &reference_parameter_names,bool &reference_parameters_initialized, int &prop2dose, int &useddosevar, int &clinicalfactors){
   ifstream input(filename);
 
   if (!input.is_open()){
@@ -85,7 +119,6 @@ bool ReadBootstrapFile(const string &filename,string &reference_header,bool &ref
   }
 
   string line;
-
   if (!getline(input, line)){
     cerr << "ERROR: empty file " << filename << '\n';
     return false;
@@ -95,9 +128,11 @@ bool ReadBootstrapFile(const string &filename,string &reference_header,bool &ref
 
   if (!reference_header_initialized){
     reference_header = current_header;
+    ExtractProp2Dose(line, prop2dose);
+    ExtractUsedDoseVar(line, useddosevar);
+    ExtractClinicalFactors(line, clinicalfactors);
     reference_header_initialized = true;
-  }
-  else if (current_header != reference_header){
+  } else if (current_header != reference_header){
     cout<<"ERROR: first line differs in file:\n"<<"  "<<filename<<"Reference line:"<<endl;
     cout<<reference_header<<endl;
     cout<<"Current line:"<<endl;
@@ -196,9 +231,9 @@ bool ReadBootstrapFile(const string &filename,string &reference_header,bool &ref
   return true;
 }
 
-void PlotBootstrapResults(const string directory_name=".",const string prefix = "bootstrapout",const string root_filename = "bootstrapresults.root")
-{
+void PlotBootstrapResults(const string directory_name=".",const string prefix = "bootstrapout",const string root_filename = "bootstrapresults.root"){
   namespace fs = filesystem;
+  int prop2dose, useddosevar, clinicalfactors;
 
   if (!fs::exists(directory_name)){
     cerr << "ERROR: directory does not exist: "<< directory_name << '\n';
@@ -206,24 +241,18 @@ void PlotBootstrapResults(const string directory_name=".",const string prefix = 
   }
 
   const regex filename_pattern("^" + prefix + R"(_([0-9]+)\.txt$)");
-
   vector<pair<int, string>> input_files;
 
   //loop su cartella per caricare tutti gli input file validi
   for (const auto &entry : fs::directory_iterator(directory_name)){
     if (!entry.is_regular_file())
       continue;
-
     const string basename = entry.path().filename().string();
     smatch match;
-
     if (!regex_match(basename, match, filename_pattern))
       continue;
-
     const int file_number = stoi(match[1].str());
-
-    input_files.push_back({file_number,
-                           entry.path().string()});
+    input_files.push_back({file_number,entry.path().string()});
   }
 
   if (input_files.empty()){
@@ -246,7 +275,7 @@ void PlotBootstrapResults(const string directory_name=".",const string prefix = 
   bool reference_parameters_initialized = false;
 
   for (const auto &[number, filename] : input_files){
-    if (!ReadBootstrapFile(filename,reference_header,reference_header_initialized,results,parameter_names,reference_parameters_initialized)){
+    if (!ReadBootstrapFile(filename,reference_header,reference_header_initialized,results,parameter_names,reference_parameters_initialized, prop2dose, useddosevar, clinicalfactors)){
       cerr << "ERROR while reading " << filename << '\n';
       return;
     }
@@ -334,10 +363,31 @@ void PlotBootstrapResults(const string directory_name=".",const string prefix = 
   h=new TH1D("CovMatrixStatus", "CovMatrixStatus shuld be 3;CovMatrixStatus;counts",12,-1.5,10.5);  
   int valid_point = 0;
   int invalid_point = 0;
+  double maxxvalue= (useddosevar==-1) ? 70 : 0.5;
+  TH2D* noclfactors_th2d=new TH2D("noclfactors",Form("noclinical ntcp curve heatmap;%s;counts", useddosevar == -1 ? "EUD" : "Volume"),100,0,maxxvalue, 200, 0., 0.);
+  TH2D* clfactor0_th2d=new TH2D("clfactor_0",Form("noclinical ntcp curve heatmap;%s;counts", useddosevar == -1 ? "EUD" : "Volume"),100,0,maxxvalue, 200, 0., 0.);
+  TH2D* clfactor1_th2d=new TH2D("clfactor_1",Form("noclinical ntcp curve heatmap;%s;counts", useddosevar == -1 ? "EUD" : "Volume"),100,0,maxxvalue, 200, 0., 0.);
+  TF1 noclinicaltf1("noclinicaltf1","1./(1.+exp(-[0]-[1]*x))",0.,maxxvalue);
+  TF1 clfactor_0tf1("clfactor_0tf1",(prop2dose==1) ? "1./(1.+exp(-[0]-([1]+[2])*x))" : "1./(1.+exp(-[0]-[1]*x-[2]))",0.,maxxvalue);
+  TF1 clfactor_1tf1("clfactor_1tf1",(prop2dose==1) ? "1./(1.+exp(-[0]-([1]+[2])*x))" : "1./(1.+exp(-[0]-[1]*x-[2]))",0.,maxxvalue);
+  //loop to fill stuff
   for (const BootstrapResult &result : results){
     if ((result.status==0 && result.cov_matrix_status==3)){
       lkmin_val->SetPoint(valid_point,result.seed,result.loglikelihood_min_value);
       ++valid_point;
+      noclinicaltf1.SetParameters(result.parameters.at("beta_zero").value, result.parameters.at("beta_eud_a").value);
+      if(clinicalfactors>0)
+      clfactor_0tf1.SetParameters(result.parameters.at("beta_zero").value, result.parameters.at("beta_eud_a").value, result.parameters.at("clinical_factor_0").value);
+      if(clinicalfactors>1)
+      clfactor_1tf1.SetParameters(result.parameters.at("beta_zero").value, result.parameters.at("beta_eud_a").value, result.parameters.at("clinical_factor_1").value);
+      for(int i=1;i<=noclfactors_th2d->GetXaxis()->GetNbins();i++){
+        double xval=noclfactors_th2d->GetXaxis()->GetBinCenter(i);
+        noclfactors_th2d->Fill(xval,noclinicaltf1.Eval(xval));
+        if(clinicalfactors>0)
+          clfactor0_th2d->Fill(xval,clfactor_0tf1.Eval(xval));
+        if(clinicalfactors>1)
+          clfactor1_th2d->Fill(xval,clfactor_1tf1.Eval(xval));
+      }
     }else{
       lkmin_inv->SetPoint(invalid_point,result.seed,result.loglikelihood_min_value);
       ++invalid_point;
@@ -345,9 +395,14 @@ void PlotBootstrapResults(const string directory_name=".",const string prefix = 
     (dynamic_cast<TH1D*>(gDirectory->Get("status")))->Fill(result.status);    
     (dynamic_cast<TH1D*>(gDirectory->Get("CovMatrixStatus")))->Fill(result.cov_matrix_status);    
   }
+
+  //write stuff
   likeminimum->Add(lkmin_val);
   likeminimum->Add(lkmin_inv);
   likeminimum->Write();
   output_file.Write();
   cout<<"program ended, Created: "<<root_filename<<endl;
+
+  return;
+
 }
