@@ -8,3 +8,9 @@ pdf_statsstuff/*
 __pycache__/
 *.csv
 *.xlsx
+*.root
+*.txt
+gian_codes/*
+*.pdf
+*.d
+

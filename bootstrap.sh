@@ -17,7 +17,7 @@ fi
 
 mkdir -p "$OUTPUT_DIR"
 
-worker=0
+worker=1
 
 while [ "$worker" -lt "$K" ]; do
     (
@@ -26,7 +26,7 @@ while [ "$worker" -lt "$K" ]; do
 
         echo "Avvio ciclo $worker, output append: $btfile"
 
-        while [ "$index" -lt "$N" ]; do
+        while [ "$index" -le "$N" ]; do
             rootfile="${OUTPUT_DIR}/${ROOT_PREFIX}_${index}.root"
 
             echo "Ciclo $worker: bootstrap $index -> $rootfile"
