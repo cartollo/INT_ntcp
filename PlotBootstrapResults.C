@@ -19,6 +19,8 @@
 
 using namespace std;
 
+#define debug 0
+
 struct ParameterResult
 {
   double value = 0.0;
@@ -242,6 +244,9 @@ void PlotBootstrapResults(const string directory_name=".",const string prefix = 
 
   const regex filename_pattern("^" + prefix + R"(_([0-9]+)\.txt$)");
   vector<pair<int, string>> input_files;
+
+  if(debug)
+    cout<<"start loop on folder"<<endl;
 
   //loop su cartella per caricare tutti gli input file validi
   for (const auto &entry : fs::directory_iterator(directory_name)){

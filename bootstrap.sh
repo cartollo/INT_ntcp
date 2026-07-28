@@ -19,7 +19,7 @@ mkdir -p "$OUTPUT_DIR"
 
 worker=1
 
-while [ "$worker" -lt "$K" ]; do
+while [ "$worker" -le "$K" ]; do
     (
         btfile="${OUTPUT_DIR}/bootstrapout_${worker}.txt"
         index="$worker"

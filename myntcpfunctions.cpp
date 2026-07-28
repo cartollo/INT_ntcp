@@ -910,20 +910,22 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
         glbstuff.btoutfile<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<endl;
     }
     glbstuff.fitresults[fitalgindex].insert(glbstuff.fitresults[fitalgindex].end(), {(double)status, (double)fpMinimizer->CovMatrixStatus(), fpMinimizer->Edm(), (double)fpMinimizer->NFree(), fpMinimizer->MinValue(), 2*fpMinimizer->NFree()+2*fpMinimizer->MinValue(), 2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())});    
-  }else{ //fixed par just for the calculation of Likehood Ratio Test (LRT) TODO: LRT case for dose4volume case need to be done
+  }else{ //fixed par just for the calculation of profile likelihood (LRT) TODO: LRT case for dose4volume case need to be done
+    cout<<"TODO: under deveolpment!"<<endl;
     if(debug)
-      cout<<"minimization done for LRT for variable="<<fpMinimizer->VariableName(fixedpar.first)<<" with status="<<status<<endl;
-    if(status==0){
-      if(glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].size()==2){
-        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].push_back(fpMinimizer->MinValue()); //append -loglikehood value for fixed par
-        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].push_back( ROOT::Math::chisquared_cdf_c(2.* (fpMinimizer->MinValue()-glbstuff.fitresults[fitalgindex].at(4)),1) ); //append pvalue
-        cout<<"LRT for "<<fpMinimizer->VariableName(fixedpar.first)<<"  H_reduced w/o variable likehood minimum="<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(2)<<" H_full likehood minimum="<<glbstuff.fitresults[fitalgindex].at(4)<<", pvalue from LRT="<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(3)<<endl;
-      }else{
-        cout<<"WARNING:optimizeLikehood:something wrong happend, I'm trying to do the LR test, but glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)] has a wrong size: "<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].size()<<"  fitalgindex="<<fitalgindex<<"  fpMinimizer->VariableName(fixedpar.first)="<<fpMinimizer->VariableName(fixedpar.first)<<" I'll overwrite everything, but be aware that I don't know what is happening"<<endl;
-        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(2)=fpMinimizer->MinValue(); //append -loglikehood value for fixed par
-        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(3)= ROOT::Math::chisquared_cdf_c(2.* (fpMinimizer->MinValue()-glbstuff.fitresults[fitalgindex].at(4)),1); //append pvalue        
-      }
-    }
+      cout<<"minimization done for profile likelihood for variable="<<fpMinimizer->VariableName(fixedpar.first)<<" with status="<<status<<endl;
+    // if(status==0){
+    //   if(glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].size()==2){
+    //     glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].push_back(fpMinimizer->MinValue()); //append -loglikehood value for fixed par
+    //     glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].push_back( ROOT::Math::chisquared_cdf_c(2.* (fpMinimizer->MinValue()-glbstuff.fitresults[fitalgindex].at(4)),1) ); //append pvalue
+    //     cout<<"LRT for "<<fpMinimizer->VariableName(fixedpar.first)<<"  H_reduced w/o variable likehood minimum="<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(2)<<" H_full likehood minimum="<<glbstuff.fitresults[fitalgindex].at(4)<<", pvalue from LRT="<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(3)<<endl;
+    //   }else{
+    //     cout<<"WARNING:optimizeLikehood:something wrong happend, I'm trying to do the LR test, but glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)] has a wrong size: "<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].size()<<"  fitalgindex="<<fitalgindex<<"  fpMinimizer->VariableName(fixedpar.first)="<<fpMinimizer->VariableName(fixedpar.first)<<" I'll overwrite everything, but be aware that I don't know what is happening"<<endl;
+    //     glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(2)=fpMinimizer->MinValue(); //append -loglikehood value for fixed par
+    //     glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(3)= ROOT::Math::chisquared_cdf_c(2.* (fpMinimizer->MinValue()-glbstuff.fitresults[fitalgindex].at(4)),1); //append pvalue        
+    //   }
+    // }
+    return 0;
   }
 
   if(debug)
@@ -937,17 +939,19 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
     cout<<"fitalgo with "<<glbstuff.fitalgo.at(fitalgindex).first<<" and "<<glbstuff.fitalgo.at(fitalgindex).second<<" done. AUC="<<aucprecres.first<<"  average_precision="<<aucprecres.second<<endl;
     SetAucAvgPrec(fitalgindex, aucprecres, glbstuff); 
     PlotCalibrationCurveQuantilesAndHLtest(sample, glbstuff, fitalgindex, 4);    
-    if(fixedpar.first>0){
-      for(auto &par:glbstuff.fitpars)
-      if(par.second.second.at(1)!=0)//skip fixed pars
-          optimizeLikehood(sample, glbstuff, fitalgindex, samrect, make_pair(par.second.first,0.)); //for Likelihood ratio test, dove parametri in più sono messi a 0 pef fare contfronto. 
-        // for(auto &par:fitpars) //TODO: to be developed
-        //   optimizeLikehood(sample, glbstuff, i, make_pair(par.second.first,par.second)); //for Likelihood profile, dove parametri in più sono messi al minimo per fare likelihood profile.
-    }
+    //under development
+    // if(fixedpar.first>0){
+    //   for(auto &par:glbstuff.fitpars)
+    //     if(par.second.second.at(1)!=0)//skip fixed pars
+    //       optimizeLikehood(sample, glbstuff, fitalgindex, samrect, make_pair(par.second.first,0.)); //for Likelihood ratio test, dove parametri in più sono messi a 0 pef fare contfronto. 
+    //     // for(auto &par:fitpars) //TODO: to be developed
+    //     //   optimizeLikehood(sample, glbstuff, i, make_pair(par.second.first,par.second)); //for Likelihood profile, dove parametri in più sono messi al minimo per fare likelihood profile.
+    // }
   }
 
   return status;
 }
+
 
 //likehood: 
 //par: 0=[0] firstfitted value in tf1, 1=secondfitted value in tf1, 2=nvalue, 3=alfabeta
