@@ -33,6 +33,7 @@
 #include <TVectorD.h>
 #include <TRandom3.h>
 #include <TGraphErrors.h>
+#include <TGraphAsymmErrors.h>
 #include <TLine.h>
 #include "Math/Minimizer.h"
 #include "Math/Factory.h"
@@ -131,7 +132,7 @@ struct globalstuff{
   map<string, pair<int,vector<double>>> fitpars; //ntcp model parameters key: name, value: first:number of parameter index,second: 0=initial value, 1=step, 2=lower, 3=upper (for setlimitedvariable) N.B.: if step==0, the parameter will be fixed and not fitted
   map<int, string> nameindex; //key=number of parameter index, value=name of the variable
   map<int, vector<double>> fitresults; //key: fitalgo index, value: 0=status, 1=CovMatrixStatus, 2=edm, 3=dof, 4=likehood->minvalue, 5=aic, 6=dev/dof, 7=auc, 8=avg_precision
-  map<int, map<string,vector<double>>> fittedpar; //key: fitalgo index, value: fitted parameter name, second. 0=value 1=error, 2=likehoodH0->minvalue(H0=LH value w/o the parameter), 3=pvalue
+  map<int, map<string,vector<double>>> fittedpar; //key: fitalgo index, value: fitted parameter name, second. 0=value 1=error, 2=low error from minos, 3=uperror from minos,4=likehoodH0->minvalue(H0=LH value w/o the parameter), 5=pvalue
   int bestvalue; //index of the best fit 
 };
 
@@ -168,6 +169,7 @@ void ChooseBestFit(globalstuff &glbstuff);
 void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sample, const globalstuff& glbstuff,int fitalgindex, int nbins);
 int SetClusterAsClinicalFactor(map<int, PatientData> &sample, const globalstuff &glbstuff);
 TGraphErrors *MakeBandFromMinimizer(TF1 *f, vector<int> &cov_indices, const int npar, const vector<double> &cov, const globalstuff &glbstuff, int fitalgindex, int npoints, double clscale);
+TGraphAsymmErrors *MakeAsymmetricBandFromMinos(TF1 *f, const std::vector<int> &cov_indices, const int npar, const globalstuff &glbstuff, int fitalgindex, int npoints);
 void Subsample(map<int, PatientData> &sample, globalstuff &glbstuff, int seed);
 void  Btsetoutputfile(globalstuff &glbstuff, TString btfilename);
 

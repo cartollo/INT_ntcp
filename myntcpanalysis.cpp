@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
   TString tgtname("acute GI toxicity");
   int usedosevar=1; //-1=use eud, >=0 use doses4volume index
   vector<double> doses4volume={40, 45, 50};
-  double btratio=0.3; //use bootstrap, this number represent the ratio of patient to be considered, if 0: bootstrap disabled
+  double btratio=0.; //use bootstrap, this number represent the ratio of patient to be considered, if 0: bootstrap disabled
   TString btfilename("bootstrapout.txt");
   int seed=0; //0=random seed
   int twodvh=0; //1= use both dvhb and dvha, otherwise only 0 WARNING: if twodvh==1, only clusterfactor 2 and clinicalfactors=2 and alfabdoneshould be set
@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
   int clusternum=3; //number of cluster considered, it is related to clinicalfactors, (per ora è 0 o 3) 
   int clinicalfactors=2; //0=no clinical factors, 1=only one value as clinical factor, 2= three values of cluster that actually are normalized
   // vector<int> clinicalfactors;
-  int drawlikehood=1; //draw or not the likehood function (it took time)
+  int drawlikehood=0; //draw or not the likehood function (it took time)
   double alfabdone=10; //if the dose are already normalized for fractions and alfa/beta, otherwise set to -1
   double eqd2binwidth=1.; //binwidth in gy di eqd2 normalizzato
   vector<double> alfabeta={0.1,0.5,1,2,4,10};
@@ -182,11 +182,11 @@ if(btratio<0 || btratio>=1){
   //le'ts find the best eud, n, alfabeta, n values minimizing a likehood function
   for(int i=0;i<fitalgo.size();i++){
     int optstatus=optimizeLikehood(sample, glbstuff, i, samrect);//0 because it's the first index for fitalgo which has only one enters, for the moment
-    if(optstatus==true){
-      for(auto &par:glbstuff.fitpars){//profile likelihood
-        optstatus=optimizeLikehood(sample, glbstuff, i, samrect, make_pair(par.second.first,par.second.second.at(1)));
-      }
-    }
+    // if(optstatus==true){
+    //   for(auto &par:glbstuff.fitpars){//profile likelihood
+    //     optstatus=optimizeLikehood(sample, glbstuff, i, samrect, make_pair(par.second.first,par.second.second.at(1)));
+    //   }
+    // }
   }
   
   ChooseBestFit(glbstuff);

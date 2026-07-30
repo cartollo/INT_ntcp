@@ -862,6 +862,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
     cout<<"optimizeLikehood: before minimization"<<endl;  
 
   fpMinimizer->Minimize();
+  fpMinimizer->Hesse(); // force the code to compute the hessain correctly instead of using an approximate covariance matrix, but no real difference has been found
   if(debug)
     cout<<"optimizeLikehood: minimization done"<<endl; 
 // using Minuit2 you have as status: (https://root-forum.cern.ch/t/is-fit-validity-or-minimizer-status-more-important/30637)
@@ -894,9 +895,13 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
       glbstuff.btoutfile<<"status= "<<status<<" CovMatrixStatus= "<<fpMinimizer->CovMatrixStatus()<<" loglikehood_min_value= "<<fpMinimizer->MinValue()<<endl;
 
     for(int i=0;i<fpMinimizer->NDim();i++){
+        double errlow, errup;
+        fpMinimizer->GetMinosError(i, errlow, errup);
       if(glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].size()==0){
         glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].push_back(fpMinimizer->X()[i]);
         glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].push_back(fpMinimizer->Errors()[i]);
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].push_back(errlow);
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].push_back(errup);
         TString tmp_title=glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second+"_likelihood_"+fpMinimizer->VariableName(i);
         TH1D* h=new TH1D(tmp_title, "variable value;likelihood value",200, fpMinimizer->X()[i]-3*fpMinimizer->Errors()[i], fpMinimizer->X()[i]+3.*fpMinimizer->Errors()[i]);   
       }else{
@@ -905,26 +910,26 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
         glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].at(0)=fpMinimizer->X()[i];
         glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].at(1)=fpMinimizer->Errors()[i];
       }
-      cout<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<endl;
+      cout<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<"  errlow="<<errlow<<"  errup="<<errup<<endl;
       if(glbstuff.btratio>0)
         glbstuff.btoutfile<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<endl;
     }
     glbstuff.fitresults[fitalgindex].insert(glbstuff.fitresults[fitalgindex].end(), {(double)status, (double)fpMinimizer->CovMatrixStatus(), fpMinimizer->Edm(), (double)fpMinimizer->NFree(), fpMinimizer->MinValue(), 2*fpMinimizer->NFree()+2*fpMinimizer->MinValue(), 2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())});    
   }else{ //fixed par just for the calculation of profile likelihood (LRT) TODO: LRT case for dose4volume case need to be done
-    cout<<"TODO: under deveolpment!"<<endl;
+    //TODO: actually it can be done directly using minoserror, checking ongoing
     if(debug)
       cout<<"minimization done for profile likelihood for variable="<<fpMinimizer->VariableName(fixedpar.first)<<" with status="<<status<<endl;
-    // if(status==0){
-    //   if(glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].size()==2){
-    //     glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].push_back(fpMinimizer->MinValue()); //append -loglikehood value for fixed par
-    //     glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].push_back( ROOT::Math::chisquared_cdf_c(2.* (fpMinimizer->MinValue()-glbstuff.fitresults[fitalgindex].at(4)),1) ); //append pvalue
-    //     cout<<"LRT for "<<fpMinimizer->VariableName(fixedpar.first)<<"  H_reduced w/o variable likehood minimum="<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(2)<<" H_full likehood minimum="<<glbstuff.fitresults[fitalgindex].at(4)<<", pvalue from LRT="<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(3)<<endl;
-    //   }else{
-    //     cout<<"WARNING:optimizeLikehood:something wrong happend, I'm trying to do the LR test, but glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)] has a wrong size: "<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].size()<<"  fitalgindex="<<fitalgindex<<"  fpMinimizer->VariableName(fixedpar.first)="<<fpMinimizer->VariableName(fixedpar.first)<<" I'll overwrite everything, but be aware that I don't know what is happening"<<endl;
-    //     glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(2)=fpMinimizer->MinValue(); //append -loglikehood value for fixed par
-    //     glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(3)= ROOT::Math::chisquared_cdf_c(2.* (fpMinimizer->MinValue()-glbstuff.fitresults[fitalgindex].at(4)),1); //append pvalue        
-    //   }
-    // }
+    if(status==0){
+      if(glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].size()==2){
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].push_back(fpMinimizer->MinValue()); //append -loglikehood value for fixed par
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].push_back( ROOT::Math::chisquared_cdf_c(2.* (fpMinimizer->MinValue()-glbstuff.fitresults[fitalgindex].at(4)),1) ); //append pvalue
+        cout<<"profile likelihood for "<<fpMinimizer->VariableName(fixedpar.first)<<"  H_reduced w/o variable likehood minimum="<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(2)<<" H_full likehood minimum="<<glbstuff.fitresults[fitalgindex].at(4)<<", pvalue from LRT="<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(3)<<endl;
+      }else{
+        cout<<"WARNING:optimizeLikehood:something wrong happend, I'm trying to do the LR test, but glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)] has a wrong size: "<<glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].size()<<"  fitalgindex="<<fitalgindex<<"  fpMinimizer->VariableName(fixedpar.first)="<<fpMinimizer->VariableName(fixedpar.first)<<" I'll overwrite everything, but be aware that I don't know what is happening"<<endl;
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(2)=fpMinimizer->MinValue(); //append -loglikehood value for fixed par
+        glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(fixedpar.first)].at(3)= ROOT::Math::chisquared_cdf_c(2.* (fpMinimizer->MinValue()-glbstuff.fitresults[fitalgindex].at(4)),1); //append pvalue        
+      }
+    }
     return 0;
   }
 
@@ -1334,6 +1339,7 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   sigmoidbestnoclinical_0->FixParameter(1, glbstuff.fittedpar.at(fitalgindex).at("beta_eud_a").at(0));
   gr_eud_vs_tox->Fit(sigmoidbestnoclinical_0, "BS+","",0,100);
   TGraphErrors *tgrer_sigmoidbestnoclinical_0, *tgrer_sigmoidbestclinical_1, *tgrer_sigmoidbestclinical_2;
+  TGraphAsymmErrors *tgraser_sigmoidbestnoclinical_0, *tgraser_sigmoidbestclinical_1, *tgraser_sigmoidbestclinical_2;
   vector<int> covindexxmakeband;
   if(glbstuff.fitpars.at("beta_zero").second.at(1)>0)
   covindexxmakeband.push_back(glbstuff.fitpars.at("beta_zero").first);
@@ -1345,6 +1351,10 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
     tgrer_sigmoidbestnoclinical_0->SetLineColor(kGreen+3);
     tgrer_sigmoidbestnoclinical_0->SetMarkerColor(kGreen+3);
     tgrer_sigmoidbestnoclinical_0->SetName("tgrer_sigmoidbestnoclinical_0");
+    tgraser_sigmoidbestnoclinical_0=MakeAsymmetricBandFromMinos(sigmoidbestnoclinical_0, covindexxmakeband, 2, glbstuff,fitalgindex, 200);
+    tgraser_sigmoidbestnoclinical_0->SetLineColor(kGreen+3);
+    tgraser_sigmoidbestnoclinical_0->SetMarkerColor(kGreen+3);
+    tgraser_sigmoidbestnoclinical_0->SetName("tgraser_sigmoidbestnoclinical_0");
   }
 
   if(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3){
@@ -1362,6 +1372,10 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
       tgrer_sigmoidbestclinical_1->SetLineColor(kBlue);
       tgrer_sigmoidbestclinical_1->SetMarkerColor(kBlue);
       tgrer_sigmoidbestclinical_1->SetName("tgrer_sigmoidbestclinical_1");
+      tgraser_sigmoidbestclinical_1=MakeAsymmetricBandFromMinos(sigmoidbestnoclinical_1, covindexxmakeband, 3, glbstuff,fitalgindex, 210);
+      tgraser_sigmoidbestclinical_1->SetLineColor(kBlue);
+      tgraser_sigmoidbestclinical_1->SetMarkerColor(kBlue);
+      tgraser_sigmoidbestclinical_1->SetName("tgraser_sigmoidbestclinical_1");
       // tgrer_sigmoidbestclinical_1->Draw("LCE same");
     }
     gr_eudwithtox_vs_tox.at(1)->SetMarkerColor(kBlue);
@@ -1378,6 +1392,10 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
       tgrer_sigmoidbestclinical_2->SetLineColor(kRed);
       tgrer_sigmoidbestclinical_2->SetMarkerColor(kRed);
       tgrer_sigmoidbestclinical_2->SetName("tgrer_sigmoidbestclinical_2");
+      tgraser_sigmoidbestclinical_2=MakeAsymmetricBandFromMinos(sigmoidbestnoclinical_2, covindexxmakeband, 3, glbstuff,fitalgindex, 220);
+      tgraser_sigmoidbestclinical_2->SetLineColor(kRed);
+      tgraser_sigmoidbestclinical_2->SetMarkerColor(kRed);
+      tgraser_sigmoidbestclinical_2->SetName("tgraser_sigmoidbestclinical_2");
       // tgrer_sigmoidbestclinical_2->Draw("LCE same");
     }
     gr_eudwithtox_vs_tox.at(2)->SetMarkerColor(kRed);
@@ -1425,6 +1443,39 @@ void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, in
   }
   canvas_ntcps_eud_vs_tox->Write();
   delete canvas_ntcps_eud_vs_tox;
+
+  TCanvas *canvas_minos_ntcps_eud_vs_tox = new TCanvas("canvas_minos_ntcps_"+varname+"_vs_tox", "ntcp curves", 800, 600);
+  // gr_eud_vs_tox->GetListOfFunctions()->Clear();
+  if(!(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3)){
+    gr_eud_vs_tox->Draw("AP*");
+    gr_eud_vs_tox->GetXaxis()->SetLimits(0, (glbstuff.usedosevar==-1) ? 40:1);   // solo asse X
+    gr_eud_vs_tox->SetMinimum(-0.2);
+    gr_eud_vs_tox->SetMaximum(1.2);         
+  }else{
+    gr_eudwithtox_vs_tox.at(0)->Draw("AP");    
+    gr_eudwithtox_vs_tox.at(0)->GetXaxis()->SetLimits(0, (glbstuff.usedosevar==-1) ? 40:1);   // solo asse X
+    gr_eudwithtox_vs_tox.at(0)->SetMinimum(-0.2);
+    gr_eudwithtox_vs_tox.at(0)->SetMaximum(1.2);         
+
+  }
+  sigmoidbestnoclinical_0->SetLineColor(kGreen+3);
+  tgraser_sigmoidbestnoclinical_0->Draw("E same");
+  tgraser_sigmoidbestnoclinical_0->Write();
+  sigmoidbestnoclinical_0->Draw("same");
+  if(glbstuff.clinicalfactors>0 && glbstuff.clusternum==3){
+    for(int i=1;i<glbstuff.clusternum;i++)
+      gr_eudwithtox_vs_tox.at(i)->Draw("P same");
+    tgraser_sigmoidbestclinical_1->Draw("E same");
+    tgraser_sigmoidbestclinical_1->Write();
+    tgraser_sigmoidbestclinical_2->Draw("E same");
+    tgraser_sigmoidbestclinical_2->Write();
+    sigmoidbestnoclinical_1->SetLineColor(kBlue);
+    sigmoidbestnoclinical_1->Draw("same");
+    sigmoidbestnoclinical_2->SetLineColor(kRed);
+    sigmoidbestnoclinical_2->Draw("same");
+  }
+  canvas_minos_ntcps_eud_vs_tox->Write();
+  delete canvas_minos_ntcps_eud_vs_tox;
 
   //TODO: TO BE FIXED 
   // if(glbstuff.twodvh){
@@ -2070,4 +2121,57 @@ TGraphErrors *MakeBandFromMinimizer(TF1 *f, vector<int> &cov_indices , const int
     cout<<"MakeBandFromMinimizer done"<<endl;
 
     return band;
+}
+
+
+
+TGraphAsymmErrors *MakeAsymmetricBandFromMinos(TF1 *f, const std::vector<int> &cov_indices, const int npar, const globalstuff &glbstuff, int fitalgindex, int npoints) {
+
+  if (!f)
+      throw std::invalid_argument("Null TF1 or minimizer.");
+
+  if (static_cast<int>(cov_indices.size()) != npar)
+      throw std::invalid_argument("cov_indices must contain one minimizer index ""for each TF1 parameter.");
+
+  if (npoints < 2)
+      throw std::invalid_argument("npoints must be at least 2.");
+
+  double xmin = f->GetXmin(), xmax = f->GetXmax();
+
+  std::vector<double> best_parameters(npar);
+  std::vector<double> minos_low(npar);
+  std::vector<double> minos_up(npar);
+
+  for (int i = 0; i < npar; i++)
+    f->SetParameter(i, glbstuff.fittedpar.at(fitalgindex).at(glbstuff.nameindex.at(cov_indices[i])).at(0));
+  
+  if(std::strcmp(f->GetName(), "sigmoidbestnoclinical_2") == 0 && glbstuff.clinicalfactors==1)
+    f->SetParameter(2,f->GetParameter(2)*2);
+
+  auto *band = new TGraphAsymmErrors(npoints);
+  band->SetName((std::string(f->GetName()) + "_minos_band").c_str());
+
+  for (int ix = 0; ix < npoints; ++ix) {
+    const double x = xmin + (xmax - xmin) * ix / (npoints - 1.0);
+    const double y_best = f->Eval(x);
+    double variance_low = 0.0;
+    double variance_up = 0.0;
+    for (int i = 0; i < npar; ++i) {
+      f->SetParameter(i, glbstuff.fittedpar.at(fitalgindex).at(glbstuff.nameindex.at(cov_indices[i])).at(0)+glbstuff.fittedpar.at(fitalgindex).at(glbstuff.nameindex.at(cov_indices[i])).at(2));
+      const double y_at_low_parameter = f->Eval(x);
+      f->SetParameter(i, glbstuff.fittedpar.at(fitalgindex).at(glbstuff.nameindex.at(cov_indices[i])).at(0)+glbstuff.fittedpar.at(fitalgindex).at(glbstuff.nameindex.at(cov_indices[i])).at(3));
+      const double y_at_up_parameter = f->Eval(x);
+      const double shift_1 = y_at_low_parameter - y_best;
+      const double shift_2 = y_at_up_parameter - y_best;
+      const double positive_shift=std::max({0.0, shift_1, shift_2});
+      const double negative_shift=std::max({0.0, -shift_1, -shift_2});
+      variance_up += positive_shift * positive_shift;
+      variance_low += negative_shift * negative_shift;
+      f->SetParameter(i, glbstuff.fittedpar.at(fitalgindex).at(glbstuff.nameindex.at(cov_indices[i])).at(0));
+    }
+    band->SetPoint(ix, x, y_best);
+    band->SetPointError(ix,0.0,0.0,std::sqrt(variance_low),std::sqrt(variance_up));
+  }
+
+  return band;
 }
