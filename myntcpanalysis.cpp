@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
   TString tgtname("acute GI toxicity");
   int usedosevar=1; //-1=use eud, >=0 use doses4volume index
   vector<double> doses4volume={40, 45, 50};
-  double btratio=0.; //use bootstrap, this number represent the ratio of patient to be considered, if 0: bootstrap disabled
+  double btratio=-1.; //use bootstrap, this number represent the ratio of patient to be considered, if 0: bootstrap disabled, if negative: resample enabled
   TString btfilename("bootstrapout.txt");
   int seed=0; //0=random seed
   int twodvh=0; //1= use both dvhb and dvha, otherwise only 0 WARNING: if twodvh==1, only clusterfactor 2 and clinicalfactors=2 and alfabdoneshould be set
@@ -87,10 +87,12 @@ if(twodvh>0 && (alfabdone<0 || dvhbfilename.Length()<4 || (datatype!=2 && dataty
   cout<<"ERROR twodvh="<<twodvh<<"  alfabdone="<<alfabdone<<"  dvhbfilename="<<dvhbfilename.Data()<<" datatype="<<datatype<<endl<<"Check the parameters, recompile and relauch, asino"<<endl;
   return 1;  
 }
-if(btratio<0 || btratio>=1){
+
+if(btratio>1){
   cout<<"btratio is nosense: btratio="<<btratio<<endl;
   return 1;
 }
+
 
   for (int i = 0; i < argc; i++) {
     if (strcmp(argv[i], "-d") == 0)         debug = atoi(argv[++i]);
@@ -148,7 +150,7 @@ if(btratio<0 || btratio>=1){
   }
 
   if(btratio){
-    Subsample(sample, glbstuff, seed);
+    SubResample(sample, glbstuff, seed);
     Btsetoutputfile(glbstuff,btfilename);
   }
 

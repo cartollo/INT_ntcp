@@ -170,7 +170,7 @@ void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sa
 int SetClusterAsClinicalFactor(map<int, PatientData> &sample, const globalstuff &glbstuff);
 TGraphErrors *MakeBandFromMinimizer(TF1 *f, vector<int> &cov_indices, const int npar, const vector<double> &cov, const globalstuff &glbstuff, int fitalgindex, int npoints, double clscale);
 TGraphAsymmErrors *MakeAsymmetricBandFromMinos(TF1 *f, const std::vector<int> &cov_indices, const int npar, const globalstuff &glbstuff, int fitalgindex, int npoints);
-void Subsample(map<int, PatientData> &sample, globalstuff &glbstuff, int seed);
+void SubResample(map<int, PatientData> &sample, globalstuff &glbstuff, int seed);
 void  Btsetoutputfile(globalstuff &glbstuff, TString btfilename);
 
   

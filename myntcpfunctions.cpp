@@ -113,58 +113,63 @@ void fillHisto(map<int, PatientData> &sample,const globalstuff &glbstuff){
   if(debug>5)
     cout<<"fillHisto: start first loop on sample"<<endl;
   
-    vector<double> dctdiff_tgtyes(glbstuff.maxbin,0), dctdiff_tgtno(glbstuff.maxbin,0);
+  vector<double> dctdiff_tgtyes(glbstuff.maxbin,0), dctdiff_tgtno(glbstuff.maxbin,0);
+  std::unordered_set<int> used_ids;
   for(auto &paziente : sample){
     //dvh plots
-    gDirectory->mkdir(Form("pz_%i",paziente.second.id));
-    gDirectory->cd(Form("pz_%i",paziente.second.id));
-    TH1D* hdvhcum=new TH1D(Form("pzdvhcum_%i",paziente.second.id), "DVH cumulative plot;Dose [gy];Volume",paziente.second.dvhmapcum.size(), 0., paziente.second.dvhmapcum.size());
-    TH1D* hdvhdiff=new TH1D(Form("pzdvhdiff_%i",paziente.second.id), "DVH differential plot;Dose [gy];Volume",paziente.second.dvhmapdiff.size(), 0., paziente.second.dvhmapdiff.size());
-    TH1D* hdctdiff=new TH1D(Form("pzdctdiff_%i",paziente.second.id), "DCT of DVH differential plot;index;value",paziente.second.dvhdctdiff.size(), 0., paziente.second.dvhdctdiff.size());
-    bool isboring=true; //si dice vingardium monotonic
-    for(int i=0;i<paziente.second.dvhmapcum.size();i++){
-      hdvhcum->SetBinContent(i+1,paziente.second.dvhmapcum.at(i));
-      if(i>0){
-        if(paziente.second.dvhmapcum.at(i)>paziente.second.dvhmapcum.at(i-1)){
-          cout<<"WARNING in fillHisto: the dvh function of patient id="<<paziente.second.id<<"is not monotonous"<<endl;
-          throw std::runtime_error("patient dhv not monotonous, patient id: " + paziente.second.id);         
-          isboring=false;
-          break;
+    if(used_ids.find(paziente.second.id) == used_ids.end()){
+      gDirectory->mkdir(Form("pz_%i",paziente.second.id));
+      gDirectory->cd(Form("pz_%i",paziente.second.id));
+      TH1D* hdvhcum=new TH1D(Form("pzdvhcum_%i",paziente.second.id), "DVH cumulative plot;Dose [gy];Volume",paziente.second.dvhmapcum.size(), 0., paziente.second.dvhmapcum.size());
+      TH1D* hdvhdiff=new TH1D(Form("pzdvhdiff_%i",paziente.second.id), "DVH differential plot;Dose [gy];Volume",paziente.second.dvhmapdiff.size(), 0., paziente.second.dvhmapdiff.size());
+      TH1D* hdctdiff=new TH1D(Form("pzdctdiff_%i",paziente.second.id), "DCT of DVH differential plot;index;value",paziente.second.dvhdctdiff.size(), 0., paziente.second.dvhdctdiff.size());
+      bool isboring=true; //si dice vingardium monotonic
+      for(int i=0;i<paziente.second.dvhmapcum.size();i++){
+        hdvhcum->SetBinContent(i+1,paziente.second.dvhmapcum.at(i));
+        if(i>0){
+          if(paziente.second.dvhmapcum.at(i)>paziente.second.dvhmapcum.at(i-1)){
+            cout<<"WARNING in fillHisto: the dvh function of patient id="<<paziente.second.id<<"is not monotonous"<<endl;
+            throw std::runtime_error("patient dhv not monotonous, patient id: " + paziente.second.id);         
+            isboring=false;
+            break;
+          }
         }
       }
-    }
-    
-    if(debug>5)
-      cout<<"fillHisto; first sample loop: loop on paziente.second.dvhmapcum.size() done"<<endl;
-    
-    for(int i=0;i<paziente.second.dvhmapdiff.size();i++)
-    hdvhdiff->SetBinContent(i+1,paziente.second.dvhmapdiff.at(i));
-    for(int i=0;i<paziente.second.dvhdctdiff.size();i++)
-    hdctdiff->SetBinContent(i+1,paziente.second.dvhdctdiff.at(i));
-    if(!isboring){
-      hdvhcum->SetName(Form("pzdvhcum_%i_notmonotonous",paziente.second.id));
-      paziente.second.status=1;
-    }    
-    
-    if(debug>5)
-      cout<<"fillHisto; first sample loop: loop on paziente.second.dvhmapdiff.size() done"<<endl;
-  
-    //scaled dose plots
-    for(auto const &asub:glbstuff.alfabeta){
-      TH1D* hdvhcumnorm=new TH1D(Form("pzdvhcumnorm_%i_%.2f",paziente.second.id, asub), "Normalized DVH cumulative plot;Equivalent Dose [gy];Volume",paziente.second.dvhcumnormmap.at(asub).size(), 0., paziente.second.dvhcumnormmap.at(asub).size()*glbstuff.eqd2binwidth);
-      for(int i=0;i<paziente.second.dvhcumnormmap.at(asub).size();i++)
-        hdvhcumnorm->SetBinContent(i+1,paziente.second.dvhcumnormmap.at(asub).at(i));
       
-      TH1D* hdvhdiffnorm=new TH1D(Form("pzdvhdiffnorm_%i_%.2f",paziente.second.id, asub), "Normalized DVH differential plot;Equivalent Dose [gy];Volume",paziente.second.dvhdiffnormmap.at(asub).size(), 0., paziente.second.dvhdiffnormmap.at(asub).size()*glbstuff.eqd2binwidth);
-      for(int i=0;i<paziente.second.dvhdiffnormmap.at(asub).size();i++)
-        hdvhdiffnorm->SetBinContent(i+1,paziente.second.dvhdiffnormmap.at(asub).at(i));      
+      if(debug>5)
+        cout<<"fillHisto; first sample loop: loop on paziente.second.dvhmapcum.size() done"<<endl;
+      
+      for(int i=0;i<paziente.second.dvhmapdiff.size();i++)
+      hdvhdiff->SetBinContent(i+1,paziente.second.dvhmapdiff.at(i));
+      for(int i=0;i<paziente.second.dvhdctdiff.size();i++)
+      hdctdiff->SetBinContent(i+1,paziente.second.dvhdctdiff.at(i));
+      if(!isboring){
+        hdvhcum->SetName(Form("pzdvhcum_%i_notmonotonous",paziente.second.id));
+        paziente.second.status=1;
+      }    
+      
+      if(debug>5)
+        cout<<"fillHisto; first sample loop: loop on paziente.second.dvhmapdiff.size() done"<<endl;
+    
+      //scaled dose plots
+      for(auto const &asub:glbstuff.alfabeta){
+        TH1D* hdvhcumnorm=new TH1D(Form("pzdvhcumnorm_%i_%.2f",paziente.second.id, asub), "Normalized DVH cumulative plot;Equivalent Dose [gy];Volume",paziente.second.dvhcumnormmap.at(asub).size(), 0., paziente.second.dvhcumnormmap.at(asub).size()*glbstuff.eqd2binwidth);
+        for(int i=0;i<paziente.second.dvhcumnormmap.at(asub).size();i++)
+          hdvhcumnorm->SetBinContent(i+1,paziente.second.dvhcumnormmap.at(asub).at(i));
+        
+        TH1D* hdvhdiffnorm=new TH1D(Form("pzdvhdiffnorm_%i_%.2f",paziente.second.id, asub), "Normalized DVH differential plot;Equivalent Dose [gy];Volume",paziente.second.dvhdiffnormmap.at(asub).size(), 0., paziente.second.dvhdiffnormmap.at(asub).size()*glbstuff.eqd2binwidth);
+        for(int i=0;i<paziente.second.dvhdiffnormmap.at(asub).size();i++)
+          hdvhdiffnorm->SetBinContent(i+1,paziente.second.dvhdiffnormmap.at(asub).at(i));      
+      }
+  
+      if(debug>5)
+      cout<<"fillHisto; first sample loop: loop on scaled dose plots done"<<endl;
+      
+      gDirectory->cd(".."); 
+    }else{
+      used_ids.insert(paziente.second.id);
     }
 
-    if(debug>5)
-    cout<<"fillHisto; first sample loop: loop on scaled dose plots done"<<endl;
-    
-    gDirectory->cd(".."); 
-    
     (dynamic_cast<TH1D*>(gDirectory->Get("../sample_volumesAll")))->Fill(paziente.second.volume);
     (dynamic_cast<TH1D*>(gDirectory->Get(paziente.second.tgt_acutegitox>0 ? "../sample_volumesYes" : "../sample_volumesNo")))->Fill(paziente.second.volume);
     (dynamic_cast<TH1D*>(gDirectory->Get("../max_dose_planAll")))->Fill(paziente.second.max_dose_plan);
@@ -891,7 +896,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
           std::cout << i << " " << j << " " << fpMinimizer->CovMatrix(i,j)/sqrt(fpMinimizer->CovMatrix(i,i)*fpMinimizer->CovMatrix(j,j)) << std::endl;  
     }
     cout<<"status="<<status<<" CovMatrixStatus="<<fpMinimizer->CovMatrixStatus()<<"  Edm="<<fpMinimizer->Edm()<<"  degree of freedom:"<<fpMinimizer->NFree()<<"  fpMinimizer->NDim()="<<fpMinimizer->NDim()<<"   -loglikehood minimum value:"<<fpMinimizer->MinValue()<<"  AIC="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()<<"  AICc_reduced="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()+2*fpMinimizer->NFree()*(fpMinimizer->NFree()+1)/(sample.size()-fpMinimizer->NFree()-1)<<"  deviance/dof="<<2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())<<endl;
-    if(glbstuff.btratio>0)
+    if(glbstuff.btratio!=0)
       glbstuff.btoutfile<<"status= "<<status<<" CovMatrixStatus= "<<fpMinimizer->CovMatrixStatus()<<" loglikehood_min_value= "<<fpMinimizer->MinValue()<<endl;
 
     for(int i=0;i<fpMinimizer->NDim();i++){
@@ -911,7 +916,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
         glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].at(1)=fpMinimizer->Errors()[i];
       }
       cout<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<"  errlow="<<errlow<<"  errup="<<errup<<endl;
-      if(glbstuff.btratio>0)
+      if(glbstuff.btratio!=0)
         glbstuff.btoutfile<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<endl;
     }
     glbstuff.fitresults[fitalgindex].insert(glbstuff.fitresults[fitalgindex].end(), {(double)status, (double)fpMinimizer->CovMatrixStatus(), fpMinimizer->Edm(), (double)fpMinimizer->NFree(), fpMinimizer->MinValue(), 2*fpMinimizer->NFree()+2*fpMinimizer->MinValue(), 2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())});    
@@ -1983,49 +1988,66 @@ void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidt
   return;
 }
 
-void Subsample(map<int, PatientData> &sample, globalstuff &glbstuff , int seed){
+void SubResample(map<int, PatientData> &sample, globalstuff &glbstuff, int seed){
 
   if(debug)
-    cout<<"Subsample: start"<<endl;
+    cout<<"Resample: start, btratio="<<glbstuff.btratio<<endl;
 
   map<pair<int,int>, vector<int>> pattoxclus;
-  for(const auto &paziente: sample)
-    pattoxclus[{paziente.second.cluster, paziente.second.tgt_acutegitox}].push_back(paziente.first);
-
+  for(const auto &[id, paziente] : sample)
+    pattoxclus[{paziente.cluster, paziente.tgt_acutegitox}].push_back(id);
   if(debug>5){
-    cout << "Subsample initial composition:"<<endl;
-    for (const auto& [group, ids] : pattoxclus) {
-      cout << "Cluster = " << group.first<< ", Toxicity = " << group.second<< " -> N = " << ids.size() << " : ";
-      for (int id : ids)
+    cout<<"Initial composition:"<<endl;
+    for(const auto &[group, ids] : pattoxclus){
+      cout<<"Cluster = "<<group.first<<", Toxicity = "<<group.second<<" -> N = "<<ids.size()<<" : ";
+      for(int id : ids)
         cout<<id<<" ";
       cout<<endl;
     }
   }
 
   TRandom3 random(seed);
-  for (auto& [group, ids] : pattoxclus) {
-    int nkeep = std::max(1,static_cast<int>(std::round(glbstuff.btratio * ids.size())));
-    for (int i = ids.size() - 1; i > 0; --i)
+  if(glbstuff.btratio<0){
+    map<int, PatientData> bootstrap_sample;
+    for(const auto &[group, ids] : pattoxclus){
+      if(ids.empty())
+        continue;
+      int ndraw = std::max(1, static_cast<int>(std::round(fabs(glbstuff.btratio) * ids.size())));
+      for(int i = 0; i < ndraw; ++i){
+        int original_id = ids[random.Integer(ids.size())];
+        int new_id = original_id;
+        while(bootstrap_sample.count(new_id))
+          new_id += 1000;
+        bootstrap_sample.emplace(new_id, sample.at(original_id));
+      }
+    }
+    sample = std::move(bootstrap_sample);
+  }else{
+    for(auto &[group, ids] : pattoxclus){
+      int nkeep = std::max(1, static_cast<int>(std::round(fabs(glbstuff.btratio) * ids.size())));
+      for(int i = static_cast<int>(ids.size()) - 1; i > 0; --i)
         std::swap(ids[i], ids[random.Integer(i + 1)]);
-    for (size_t i = nkeep; i < ids.size(); ++i)
+      for(size_t i = nkeep; i < ids.size(); ++i)
         sample.erase(ids[i]);
-   ids.resize(nkeep);        
-  }  
-
-  if(debug)
-    cout<<"Subsample: done"<<endl;
+      ids.resize(nkeep);
+    }
+  }
 
   if(debug>5){
-    cout << "Subsample final composition:"<<endl;
-    for (const auto& [group, ids] : pattoxclus) {
-      cout << "Cluster = " << group.first<< ", Toxicity = " << group.second<< " -> N = " << ids.size() << " : ";
-      for (int id : ids)
+    map<pair<int,int>, vector<int>> final_patients;
+    for(const auto &[id, paziente] : sample)
+      final_patients[{paziente.cluster, paziente.tgt_acutegitox}].push_back(id);
+    cout<<"Final composition:"<<endl;
+    for(const auto &[group, ids] : final_patients){
+      cout<<"Cluster = "<<group.first<<", Toxicity = "<<group.second<<" -> N = "<<ids.size()<<" : ";
+      for(int id : ids)
         cout<<id<<" ";
       cout<<endl;
     }
   }
 
-  return;
+  if(debug)
+    cout<<"Resample: done, final N = "<<sample.size()<<endl;
 }
 
 void  Btsetoutputfile(globalstuff &glbstuff, TString btfilename){
