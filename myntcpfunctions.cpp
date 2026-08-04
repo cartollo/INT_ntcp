@@ -896,8 +896,11 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
           std::cout << i << " " << j << " " << fpMinimizer->CovMatrix(i,j)/sqrt(fpMinimizer->CovMatrix(i,i)*fpMinimizer->CovMatrix(j,j)) << std::endl;  
     }
     cout<<"status="<<status<<" CovMatrixStatus="<<fpMinimizer->CovMatrixStatus()<<"  Edm="<<fpMinimizer->Edm()<<"  degree of freedom:"<<fpMinimizer->NFree()<<"  fpMinimizer->NDim()="<<fpMinimizer->NDim()<<"   -loglikehood minimum value:"<<fpMinimizer->MinValue()<<"  AIC="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()<<"  AICc_reduced="<<2*fpMinimizer->NFree()+2*fpMinimizer->MinValue()+2*fpMinimizer->NFree()*(fpMinimizer->NFree()+1)/(sample.size()-fpMinimizer->NFree()-1)<<"  deviance/dof="<<2*fpMinimizer->MinValue()/(sample.size()-fpMinimizer->NFree())<<endl;
-    if(glbstuff.btratio!=0)
+    glbstuff.tobeprinted += Form("status=%d CovMatrixStatus=%d  Edm=%g  degree of freedom=%u  fpMinimizer->NDim()=%u  -loglikelihood minimum value=%g  AIC=%g  AICc_reduced=%g  deviance/dof=%g\n", status, fpMinimizer->CovMatrixStatus(), fpMinimizer->Edm(), fpMinimizer->NFree(), fpMinimizer->NDim(), fpMinimizer->MinValue(), 2.0 * fpMinimizer->NFree() + 2.0 * fpMinimizer->MinValue(), 2.0 * fpMinimizer->NFree() + 2.0 * fpMinimizer->MinValue() + 2.0 * fpMinimizer->NFree() * (fpMinimizer->NFree() + 1.0) / (static_cast<double>(sample.size()) - fpMinimizer->NFree() - 1.0), 2.0 * fpMinimizer->MinValue() / (static_cast<double>(sample.size()) - fpMinimizer->NFree()));;
+    if(glbstuff.btratio!=0){
       glbstuff.btoutfile<<"status= "<<status<<" CovMatrixStatus= "<<fpMinimizer->CovMatrixStatus()<<" loglikehood_min_value= "<<fpMinimizer->MinValue()<<endl;
+      glbstuff.tobeprinted+"status= "+status+" CovMatrixStatus= "+fpMinimizer->CovMatrixStatus()+" loglikehood_min_value= "+fpMinimizer->MinValue();
+    }
 
     for(int i=0;i<fpMinimizer->NDim();i++){
         double errlow, errup;
@@ -916,6 +919,7 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
         glbstuff.fittedpar[fitalgindex][fpMinimizer->VariableName(i)].at(1)=fpMinimizer->Errors()[i];
       }
       cout<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<"  errlow="<<errlow<<"  errup="<<errup<<endl;
+      glbstuff.tobeprinted += Form("%s: %g +- %g  errlow=%g  errup=%g\n", fpMinimizer->VariableName(i).c_str(), fpMinimizer->X()[i], fpMinimizer->Errors()[i], errlow, errup);      
       if(glbstuff.btratio!=0)
         glbstuff.btoutfile<<fpMinimizer->VariableName(i)<<":  "<<fpMinimizer->X()[i]<<" +- "<<fpMinimizer->Errors()[i]<<endl;
     }
@@ -1986,6 +1990,54 @@ void fillGlobalStuff(globalstuff &glbstuff, double alfabdone, double eqd2binwidt
   glbstuff.dvhafilename=dvhafilename;
   glbstuff.metafilename=metafilename;
   return;
+}
+
+void fillToBePrinted(globalstuff &glbstuff, TString dvhbfilename, TString tgtname){
+  glbstuff.tobeprinted += Form(
+      "dvha=%s  dvhbfilename=%s  metafilename=%s  tgtname=%s  usedosevar=%d\n",
+      glbstuff.dvhafilename.Data(),
+      dvhbfilename.Data(),
+      glbstuff.metafilename.Data(),
+      tgtname.Data(),
+      glbstuff.usedosevar
+  );
+
+  glbstuff.tobeprinted += Form(
+      "datatype=%d  powptype=%d  clusternum=%d  clinicalfactors=%d  alfabdone=%g  eqd2binwidth=%g\n",
+      glbstuff.datatype,
+      glbstuff.powptype,
+      glbstuff.clusternum,
+      glbstuff.clinicalfactors,
+      glbstuff.alfabdone,
+      glbstuff.eqd2binwidth
+  );
+
+  glbstuff.tobeprinted += "alfabeta=(";
+
+  for (double value : glbstuff.alfabeta)
+      glbstuff.tobeprinted += Form("%g, ", value);
+
+  glbstuff.tobeprinted += ")\n";
+
+  glbstuff.tobeprinted += "nvalue4eud=(";
+
+  for (double value : glbstuff.nvalue4eud)
+      glbstuff.tobeprinted += Form("%g, ", value);
+
+  glbstuff.tobeprinted += ")\n";
+
+  for (const auto& p : glbstuff.fitpars) {
+      glbstuff.tobeprinted += Form(
+          "%s %g",
+          p.first.c_str(),
+          p.second.first
+      );
+
+      for (double x : p.second.second)
+          glbstuff.tobeprinted += Form(", %g", x);
+
+      glbstuff.tobeprinted += "\n";
+  }  
 }
 
 void SubResample(map<int, PatientData> &sample, globalstuff &glbstuff, int seed){
