@@ -23,9 +23,9 @@ int main(int argc, char* argv[]) {
   int seed=0; //0=random seed
   int twodvh=0; //1= use both dvhb and dvha, otherwise only 0 WARNING: if twodvh==1, only clusterfactor 2 and clinicalfactors=2 and alfabdoneshould be set
   int prop2dose=0; //1=clinical factors are proportional to dose, 0=clinical factors added as additional value to the intercept
-  int datatype=3; //0=not specified, 1=hiroc synthetic, 2=nanopore by michele with all core features, 3=old article clustering with MB class risk, 4=new michele clustering with only common core features
-  int clusternum=0; //number of cluster considered, it is related to clinicalfactors, (per ora è 0 o 3) 
-  int clinicalfactors=0; //0=no clinical factors, 1=only one value as clinical factor, 2= three values of cluster that actually are normalized
+  int datatype=4; //0=not specified, 1=hiroc synthetic, 2=nanopore by michele with all core features, 3=old article clustering with MB class risk, 4=new michele clustering with only common core features
+  int clusternum=3; //number of cluster considered, it is related to clinicalfactors, (per ora è 0 o 3) 
+  int clinicalfactors=2; //0=no clinical factors, 1=only one value as clinical factor, 2= three values of cluster that actually are normalized
   // vector<int> clinicalfactors;
   int drawlikehood=0; //draw or not the likehood function (it took time)
   double alfabdone=10; //if the dose are already normalized for fractions and alfa/beta, otherwise set to -1
@@ -50,9 +50,9 @@ int main(int argc, char* argv[]) {
   
   //value: 0:number of parameter index, 1=initial value, 2=step, 3=lower, 4=upper (for setlimitedvariable)
   int parnum=0;
-  vector parlimits = {-2.0, 0.0001, -5.0, 5.0};
+  vector parlimits = {-2.0, 0.0001, -10.0, 10.0};
   fitpars["beta_zero"]=make_pair(parnum++, parlimits);
-  parlimits={0.0, 0.0001, -10., 10.0};
+  parlimits={0.0, 0.0001, -50., 50.0};
   fitpars["beta_eud_a"]=make_pair(parnum++, parlimits);
   if(usedosevar==-1){
     parlimits={0.5, 0.0001, 0, 1.0};
