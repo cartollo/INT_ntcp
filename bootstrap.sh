@@ -4,14 +4,20 @@ N="$1"
 K="$2"
 OUTPUT_DIR="$3"
 ROOT_PREFIX="$4"
+EXECUTABLE="$5"
 
-if [ -z "$N" ] || [ -z "$K" ] || [ -z "$OUTPUT_DIR" ] || [ -z "$ROOT_PREFIX" ]; then
-    echo "Usage: sh bootstrap.sh <N> <K> <output_dir> <root_prefix>"
+if [ -z "$N" ] || [ -z "$K" ] || [ -z "$OUTPUT_DIR" ] || [ -z "$ROOT_PREFIX" ] || [ -z "$EXECUTABLE" ]; then
+    echo "Usage: sh bootstrap.sh <N> <K> <output_dir> <root_prefix> <executable>"
     exit 1
 fi
 
 if [ "$N" -le 0 ] || [ "$K" -le 0 ]; then
     echo "N e K devono essere maggiori di zero."
+    exit 1
+fi
+
+if [ ! -x "$EXECUTABLE" ]; then
+    echo "Errore: eseguibile non trovato o non eseguibile: $EXECUTABLE"
     exit 1
 fi
 
@@ -31,7 +37,7 @@ while [ "$worker" -le "$K" ]; do
 
             echo "Ciclo $worker: bootstrap $index -> $rootfile"
 
-            ./myntcpanalysis \
+            "$EXECUTABLE" \
                 -out "$rootfile" \
                 -seed "$index" \
                 -btfilename "$btfile"
