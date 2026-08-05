@@ -94,6 +94,7 @@ int cluster; //microbiota cluster classification
 
 map<double, double> volmindose; //volume with a minimum of dose, key=minimum dose value, value=volume
 
+int isused; //-1= not used due to problem/inconsistency (not set now), 0=not used by choice (e.g.: bootstrap), >=1:used and the number indicates the number of time it is used (e.g.: >1 due to bootstrap)
 
 
 //calculated stuff
@@ -157,7 +158,7 @@ double fitSigmoidal(TGraph* graph, int parnum, int functype);
 string trim(const string& s);
 vector<string> splitCsvLine(const string& line, const TString delimiter);
 void CreateHistoFromTgraph(TGraph *gr, TH1D *h);
-int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex, map<int, PatientData> &samrect, const pair<int,double> fixedpar=make_pair(-1,-1) );
+int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex, map<int, PatientData> &samrect, map<int, PatientData> &oobple, const pair<int,double> fixedpar=make_pair(-1,-1) );
 void optlike_fill(map<int, PatientData> &sample, const globalstuff &glbstuff, int fitalgindex, map<int, PatientData> &samrect, vector<double> &cov);
 bool likelihoodprofile(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex, const int parindex=-1);
 void fillToBePrinted(globalstuff &glbstuff, TString dvhbfilename, TString tgtname);
@@ -172,7 +173,7 @@ void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sa
 int SetClusterAsClinicalFactor(map<int, PatientData> &sample, const globalstuff &glbstuff);
 TGraphErrors *MakeBandFromMinimizer(TF1 *f, vector<int> &cov_indices, const int npar, const vector<double> &cov, const globalstuff &glbstuff, int fitalgindex, int npoints, double clscale);
 TGraphAsymmErrors *MakeAsymmetricBandFromMinos(TF1 *f, const std::vector<int> &cov_indices, const int npar, const globalstuff &glbstuff, int fitalgindex, int npoints);
-void SubResample(map<int, PatientData> &sample, globalstuff &glbstuff, int seed);
+void SubResample(map<int, PatientData> &sample, globalstuff &glbstuff, int seed, map<int, PatientData> &oobple);
 void  Btsetoutputfile(globalstuff &glbstuff, TString btfilename);
 
   

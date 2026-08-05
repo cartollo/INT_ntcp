@@ -711,6 +711,7 @@ int loadSyntheticFile(const string& filename,   map<int, PatientData> &sample){
     patient.semivesicle_irr=-1;
     patient.mb_risk=-1;
     patient.cluster=-99;
+    patient.isused=1;
     sample.insert(std::pair{id,patient});
 }
 
@@ -738,7 +739,7 @@ int CheckSampleSamrectConsistency(const map<int, PatientData> &sample, const map
 
 
 
-int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex,  map<int, PatientData> &samrect, const pair<int,double> fixedpar) {
+int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const int fitalgindex,  map<int, PatientData> &samrect, map<int, PatientData> &oobple,const pair<int,double> fixedpar) {
   
   if(debug)
     cout<<"start optimizeLikehood, fitalgindex="<<fitalgindex<<endl;
@@ -888,6 +889,10 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
       for(auto &paziente : sample){//fill scores
         paziente.second.optlike_ntcpscore[fitalgindex]= (glbstuff.twodvh==0) ? EvalScoreSelector(glbstuff, paziente.second, par) : (glbstuff.prop2dose==0 ? EvalScoreAlfabdone2DvhClinical_1Add(paziente.second, samrect.at(paziente.second.id), par) : EvalScoreAlfabdone2DvhClinical_1Prop(paziente.second, samrect.at(paziente.second.id), par) )  ;
       }
+      if(oobple.size()>0){
+        for(auto &paziente : oobple)//fill scores
+          paziente.second.optlike_ntcpscore[fitalgindex]= (glbstuff.twodvh==0) ? EvalScoreSelector(glbstuff, paziente.second, par) : (glbstuff.prop2dose==0 ? EvalScoreAlfabdone2DvhClinical_1Add(paziente.second, samrect.at(paziente.second.id), par) : EvalScoreAlfabdone2DvhClinical_1Prop(paziente.second, samrect.at(paziente.second.id), par) )  ;
+      }
     }else{
       cout<<"minimization failed"<<endl;  
       cout<<"print correlations:"<<endl;
@@ -953,6 +958,11 @@ int optimizeLikehood(map<int, PatientData> &sample, globalstuff &glbstuff, const
     cout<<"fitalgo with "<<glbstuff.fitalgo.at(fitalgindex).first<<" and "<<glbstuff.fitalgo.at(fitalgindex).second<<" done. AUC="<<aucprecres.first<<"  average_precision="<<aucprecres.second<<endl;
     SetAucAvgPrec(fitalgindex, aucprecres, glbstuff); 
     PlotCalibrationCurveQuantilesAndHLtest(sample, glbstuff, fitalgindex, 4);    
+    if(glbstuff.btratio!=0){
+      glbstuff.btoutfile<<"oobplesize= "<<oobple.size()<<endl;
+      for(auto const paziente: oobple)
+        glbstuff.btoutfile<<"patient_id: "<<paziente.first%1000<<"  prediction: "<<paziente.second.optlike_ntcpscore.at(fitalgindex)<<endl;
+    }
     //under development
     // if(fixedpar.first>0){
     //   for(auto &par:glbstuff.fitpars)
@@ -1689,7 +1699,7 @@ void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sa
       double pred = paziente.second.optlike_ntcpscore.at(fitalgindex);
       double obs  = paziente.second.tgt_acutegitox;
 
-      if((pred > 1.0) || (pred < 0. && glbstuff.usedosevar==-1 ) ){
+      if(pred > 1.0 || pred<0.){
         cout<<"ERROR:PlotCalibrationCurveQuantiles: predicted ntcpscore is "<<pred<<endl;
         continue;
       }
@@ -1698,6 +1708,12 @@ void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sa
 
   std::sort(data.begin(), data.end(),[](const auto& a, const auto& b){return a.first < b.first;});
   int n = data.size();
+
+  if(debug>5){
+    cout<<"PlotCalibrationCurveQuantilesAndHLtest: print ordered data vector"<<endl;
+    for(const auto& valori:data)
+      cout<<valori.first<<"  "<<valori.second<<endl;
+  }
 
   if(n == 0){
     cout<<"ERROR:PlotCalibrationCurveQuantiles: number of data is =0"<<endl;
@@ -1744,7 +1760,7 @@ void PlotCalibrationCurveQuantilesAndHLtest(const std::map<int, PatientData>& sa
   TGraphErrors* gr = new TGraphErrors(x.size(), x.data(), y.data(),ex.data(),ey.data());
   pltname="calib_"+glbstuff.fitalgo.at(fitalgindex).first+"/"+glbstuff.fitalgo.at(fitalgindex).second;
   gr->SetName(pltname);
-  gr->SetTitle(";Mean predicted NTCP;Observed toxicity rate");
+  gr->SetTitle("NTCP quantile calibration plot;Mean predicted NTCP;Observed toxicity rate");
   gr->SetMarkerStyle(20);
   gr->SetMarkerSize(1.2);
   gr->SetLineWidth(2);
@@ -2040,7 +2056,7 @@ void fillToBePrinted(globalstuff &glbstuff, TString dvhbfilename, TString tgtnam
   }  
 }
 
-void SubResample(map<int, PatientData> &sample, globalstuff &glbstuff, int seed){
+void SubResample(map<int, PatientData> &sample, globalstuff &glbstuff, int seed, map<int, PatientData> &oobple){
 
   if(debug)
     cout<<"Resample: start, btratio="<<glbstuff.btratio<<endl;
@@ -2071,7 +2087,32 @@ void SubResample(map<int, PatientData> &sample, globalstuff &glbstuff, int seed)
         while(bootstrap_sample.count(new_id))
           new_id += 1000;
         bootstrap_sample.emplace(new_id, sample.at(original_id));
+        bootstrap_sample[new_id].id=new_id;
+        if(new_id!=original_id)
+          bootstrap_sample[original_id].isused++;
       }
+    }
+    auto itsample = sample.begin();
+    auto itbootstrap = bootstrap_sample.begin();
+    while (itsample!=sample.end() && itbootstrap!=bootstrap_sample.end()) {
+      if (itsample->first < itbootstrap->first) {
+        auto nodeToMove = itsample++;
+        oobple.insert(oobple.end(), sample.extract(nodeToMove));
+      }
+      else if (itbootstrap->first < itsample->first) {
+        cout<<"WARNING: THIS SHOULD NOT HAPPEN... HOWEVER I'LL CONTINUE itbootstrap.first="<<itbootstrap->first<<endl;
+        ++itbootstrap;
+      }
+      else {
+        ++itsample;
+        ++itbootstrap;
+      }
+    }
+
+    // Tutti gli elementi rimasti in a non possono essere in b
+    while (itsample != sample.end()) {
+      auto nodeToMove = itsample++;
+      oobple.insert(oobple.end(), sample.extract(nodeToMove));
     }
     sample = std::move(bootstrap_sample);
   }else{
@@ -2080,7 +2121,7 @@ void SubResample(map<int, PatientData> &sample, globalstuff &glbstuff, int seed)
       for(int i = static_cast<int>(ids.size()) - 1; i > 0; --i)
         std::swap(ids[i], ids[random.Integer(i + 1)]);
       for(size_t i = nkeep; i < ids.size(); ++i)
-        sample.erase(ids[i]);
+        oobple.insert(sample.extract(ids[i]));
       ids.resize(nkeep);
     }
   }
@@ -2105,7 +2146,7 @@ void SubResample(map<int, PatientData> &sample, globalstuff &glbstuff, int seed)
 void  Btsetoutputfile(globalstuff &glbstuff, TString btfilename){
 
   if(debug)
-  cout<<"Btsetoutputfile: start, btfilename="<<btfilename<<endl;
+    cout<<"Btsetoutputfile: start, btfilename="<<btfilename<<endl;
   
   bool alreadyexist=std::filesystem::exists(btfilename.Data());
   glbstuff.btoutfile.open(btfilename.Data(), std::ios::app);

@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
   TString tgtname("acute GI toxicity");
   int usedosevar=1; //-1=use eud, >=0 use doses4volume index
   vector<double> doses4volume={40, 45, 50};
-  double btratio=0.; //use bootstrap, this number represent the ratio of patient to be considered, if 0: bootstrap disabled, if negative: resample enabled
+  double btratio=-0.7; //use bootstrap, this number represent the ratio of patient to be considered, if 0: bootstrap disabled, if negative: resample enabled
   TString btfilename("bootstrapout.txt");
   int seed=0; //0=random seed
   int twodvh=0; //1= use both dvhb and dvha, otherwise only 0 WARNING: if twodvh==1, only clusterfactor 2 and clinicalfactors=2 and alfabdoneshould be set
@@ -130,7 +130,7 @@ if(btratio>1){
   fillGlobalStuff(glbstuff, alfabdone, eqd2binwidth, nvalue4eud, alfabeta, fitpars, fitalgo, datatype, clinicalfactors, clusternum, powptype, twodvh, prop2dose, doses4volume, usedosevar, btratio, seed, dvhafilename, metafilename);
   fillToBePrinted(glbstuff, dvhbfilename, tgtname);
 
-  map<int, PatientData> sample, samrect;
+  map<int, PatientData> sample, samrect, oobple; //sample is the main patient database, samrect for the dvhbanalyusis that combine two different dvh of the same patient analysis, oobple is the out-of-bootystrap patients that are excluòded from bootstrap and are used for model calibration/evaluation purpouses
   
   if(datatype==1){
     if(loadSyntheticFile(dvhafilename.Data(), sample))
@@ -150,11 +150,6 @@ if(btratio>1){
     }
   }
 
-  if(btratio){
-    SubResample(sample, glbstuff, seed);
-    Btsetoutputfile(glbstuff,btfilename);
-  }
-
   if(clinicalfactors>0)
     SetClusterAsClinicalFactor(sample, glbstuff);
   if(clinicalfactors>0 && twodvh)
@@ -164,11 +159,15 @@ if(btratio>1){
     evaluateEqdEud(sample, glbstuff);
     if(samrect.size()>0)
     evaluateEqdEud(samrect, glbstuff);
-  }
-  else{
+  }else{
     FillEqdEud(sample, glbstuff);
     if(samrect.size()>0)
       FillEqdEud(samrect,glbstuff);
+  }
+
+  if(btratio){
+    SubResample(sample, glbstuff, seed, oobple);
+    Btsetoutputfile(glbstuff,btfilename);
   }
 
   TFile* outrootfile = new TFile(outrootname, "RECREATE");
@@ -184,10 +183,10 @@ if(btratio>1){
   
   //le'ts find the best eud, n, alfabeta, n values minimizing a likehood function
   for(int i=0;i<fitalgo.size();i++){
-    int optstatus=optimizeLikehood(sample, glbstuff, i, samrect);//0 because it's the first index for fitalgo which has only one enters, for the moment
+    int optstatus=optimizeLikehood(sample, glbstuff, i, samrect, oobple);//0 because it's the first index for fitalgo which has only one enters, for the moment
     // if(optstatus==true){
     //   for(auto &par:glbstuff.fitpars){//profile likelihood
-    //     optstatus=optimizeLikehood(sample, glbstuff, i, samrect, make_pair(par.second.first,par.second.second.at(1)));
+    //     optstatus=optimizeLikehood(sample, glbstuff, i, samrect, oobple, make_pair(par.second.first,par.second.second.at(1)));
     //   }
     // }
   }
@@ -200,6 +199,8 @@ if(btratio>1){
   outrootfile->Write();
   outrootfile->Close();
   cout<<"myntcpanalysis done: outputfile: "<<outrootfile->GetName()<<endl;
+  if(btratio!=0)
+    cout<<"bootstrap file: "<<btfilename.Data()<<endl;
 
 return 0;
 }
