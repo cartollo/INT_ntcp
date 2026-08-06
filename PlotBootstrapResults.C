@@ -34,8 +34,16 @@ struct BootstrapResult
   int cov_matrix_status = -999;
   double loglikelihood_min_value = 0.0;
   map<string, ParameterResult> parameters;
+  map<int, vector<double>> ptidscore;
   string source_file;
 };
+
+enum class OobpleParseResult {
+    NotMatched,
+    Parsed,
+    Error
+};
+
 
 //toglie gli spazi bianchi prima e dopo
 string Trim(const string &text){
@@ -110,6 +118,47 @@ bool ParseParameterLine(const string &line,string &parameter_name,double &value,
   value = stod(match[2].str());
   error = stod(match[3].str());
   return true;
+}
+
+OobpleParseResult ParseOobpleLine(const std::string &line, std::istream &input, int &oobplesize, vector<pair<int, double>> &id_prediction){
+  static const std::regex size_pattern(R"(^\s*oobplesize\s*=\s*([0-9]+)\s*$)");
+  static const std::regex prediction_pattern(R"(^\s*patient_id\s*:\s*(-?[0-9]+)\s+prediction\s*:\s*([-+]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)\s*$)");
+  std::smatch match;
+  // La riga corrente non è l'inizio di un blocco OOB.
+  if (!std::regex_match(line, match, size_pattern))
+    return OobpleParseResult::NotMatched;
+  try{
+    oobplesize = std::stoi(match[1].str());
+  }catch(const std::exception &e){
+    std::cerr<<"ERROR: invalid oobplesize in line: "<<line<<endl;
+    return OobpleParseResult::Error;
+  }
+
+  id_prediction.clear();
+  id_prediction.reserve(static_cast<std::size_t>(oobplesize));
+  for (int i=0;i<oobplesize;++i){
+    std::string prediction_line;
+    if (!std::getline(input, prediction_line)){
+      std::cerr<<"ERROR: unexpected end of file while reading OOB predictions. Expected"<<oobplesize<<" predictions, found only "<<i<<endl;
+      return OobpleParseResult::Error;
+    }
+    prediction_line = Trim(prediction_line);
+    std::smatch prediction_match;
+    if (!std::regex_match(prediction_line,prediction_match,prediction_pattern)){
+      std::cerr<<"ERROR: invalid OOB prediction line:"<<endl<<prediction_line<<endl<<"Expected format:"<<endl<<"patient_id: <int>  prediction: <double>"<<endl;
+      return OobpleParseResult::Error;
+    }
+
+    try{
+      const int patient_id=std::stoi(prediction_match[1].str());
+      const double prediction=std::stod(prediction_match[2].str());
+      id_prediction.emplace_back(patient_id, prediction);
+    }catch(const std::exception &e){
+      std::cerr<<"ERROR: invalid numeric value in OOB prediction line:"<<endl<<prediction_line <<endl;
+      return OobpleParseResult::Error;
+    }
+  }
+  return OobpleParseResult::Parsed;
 }
 
 bool ReadBootstrapFile(const string &filename,string &reference_header,bool &reference_header_initialized,vector<BootstrapResult> &results, vector<string> &reference_parameter_names,bool &reference_parameters_initialized, int &prop2dose, int &useddosevar, int &clinicalfactors){
@@ -224,6 +273,18 @@ bool ReadBootstrapFile(const string &filename,string &reference_header,bool &ref
       current_result.parameters[parameter_name] = {value, error};
       continue;
     }
+    int oobplesize=0;
+    vector<pair<int, double>> id_prediction;
+    const OobpleParseResult oobple_result=ParseOobpleLine(line,input,oobplesize,id_prediction);
+    if (oobple_result == OobpleParseResult::Error)
+      return false;
+    if(oobple_result==OobpleParseResult::Parsed){
+      for(const auto& [patient_id, prediction] : id_prediction) {
+        current_result.ptidscore[patient_id].push_back(prediction);
+      }
+      continue;
+    }
+
     cerr<<"WARNING: unrecognized line in "<<filename<<": "<<line<<endl;
   }
 
@@ -375,6 +436,7 @@ void PlotBootstrapResults(const string directory_name=".",const string prefix = 
   TF1 noclinicaltf1("noclinicaltf1","1./(1.+exp(-[0]-[1]*x))",0.,maxxvalue);
   TF1 clfactor_0tf1("clfactor_0tf1",(prop2dose==1) ? "1./(1.+exp(-[0]-([1]+[2])*x))" : "1./(1.+exp(-[0]-[1]*x-[2]))",0.,maxxvalue);
   TF1 clfactor_1tf1("clfactor_1tf1",(prop2dose==1) ? "1./(1.+exp(-[0]-([1]+[2])*x))" : "1./(1.+exp(-[0]-[1]*x-[2]))",0.,maxxvalue);
+  TDirectory *pzscoredir =output_file.mkdir("patients_scores");
   //loop to fill stuff
   for (const BootstrapResult &result : results){
     if ((result.status==0 && result.cov_matrix_status==3)){
@@ -389,9 +451,20 @@ void PlotBootstrapResults(const string directory_name=".",const string prefix = 
         double xval=noclfactors_th2d->GetXaxis()->GetBinCenter(i);
         noclfactors_th2d->Fill(xval,noclinicaltf1.Eval(xval));
         if(clinicalfactors>0)
-          clfactor0_th2d->Fill(xval,clfactor_0tf1.Eval(xval));
+        clfactor0_th2d->Fill(xval,clfactor_0tf1.Eval(xval));
         if(clinicalfactors>1)
-          clfactor1_th2d->Fill(xval,clfactor_1tf1.Eval(xval));
+        clfactor1_th2d->Fill(xval,clfactor_1tf1.Eval(xval));
+      }
+      //patients scores
+      TH1D *h = nullptr;
+      for(const auto &pzt:result.ptidscore){
+        pzscoredir->GetObject(Form("pzscore_%i",pzt.first),h);
+        if(!h){
+          h=new TH1D(Form("pzscore_%i",pzt.first), Form("patient %i NTCP score;bootstrap repetitions;NTCP score",pzt.first), 120,-0.1,1.1);
+          h->SetDirectory(pzscoredir);
+        }
+        for(const auto &score:pzt.second)
+          h->Fill(score);
       }
     }else{
       lkmin_inv->SetPoint(invalid_point,result.seed,result.loglikelihood_min_value);
