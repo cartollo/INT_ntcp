@@ -2290,3 +2290,12 @@ TGraphAsymmErrors *MakeAsymmetricBandFromMinos(TF1 *f, const std::vector<int> &c
 
   return band;
 }
+
+void PrintUsefulStuff(const globalstuff &glbstuff,const map<int, PatientData> &sample){
+  ofstream myfile;
+  myfile.open("pazient_tox.txt");
+  for(const auto &paziente:sample)
+    myfile<<paziente.first<<"  "<<paziente.second.tgt_acutegitox<<endl; 
+  myfile.close();
+  return;
+}

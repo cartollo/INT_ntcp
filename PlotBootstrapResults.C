@@ -460,7 +460,7 @@ void PlotBootstrapResults(const string directory_name=".",const string prefix = 
       for(const auto &pzt:result.ptidscore){
         pzscoredir->GetObject(Form("pzscore_%i",pzt.first),h);
         if(!h){
-          h=new TH1D(Form("pzscore_%i",pzt.first), Form("patient %i NTCP score;bootstrap repetitions;NTCP score",pzt.first), 120,-0.1,1.1);
+          h=new TH1D(Form("pzscore_%i",pzt.first), Form("patient %i OOB NTCP score;bootstrap repetitions;NTCP score",pzt.first), 120,-0.1,1.1);
           h->SetDirectory(pzscoredir);
         }
         for(const auto &score:pzt.second)
@@ -473,6 +473,14 @@ void PlotBootstrapResults(const string directory_name=".",const string prefix = 
     (dynamic_cast<TH1D*>(gDirectory->Get("status")))->Fill(result.status);    
     (dynamic_cast<TH1D*>(gDirectory->Get("CovMatrixStatus")))->Fill(result.cov_matrix_status);    
   }
+
+  //OOB calibration curve
+    std::map<int, int> pzid_tox;
+    std::ifstream pzidtoxfile("pazient_tox.txt");
+    int key, value;
+    while(pzidtoxfile>>key>>value)
+      pzid_tox[key]=value;
+    pzidtoxfile.close();
 
   //write stuff
   likeminimum->Add(lkmin_val);

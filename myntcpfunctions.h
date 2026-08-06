@@ -175,7 +175,7 @@ TGraphErrors *MakeBandFromMinimizer(TF1 *f, vector<int> &cov_indices, const int 
 TGraphAsymmErrors *MakeAsymmetricBandFromMinos(TF1 *f, const std::vector<int> &cov_indices, const int npar, const globalstuff &glbstuff, int fitalgindex, int npoints);
 void SubResample(map<int, PatientData> &sample, globalstuff &glbstuff, int seed, map<int, PatientData> &oobple);
 void  Btsetoutputfile(globalstuff &glbstuff, TString btfilename);
-
+void  PrintUsefulStuff(const globalstuff &glbstuff,const map<int, PatientData> &sample);
   
 double functorLikehoodFull(const map<int, PatientData> &sample, const double* par);
 double functorLikehoodAlfabdone(const map<int, PatientData> &sample, const double* par);
